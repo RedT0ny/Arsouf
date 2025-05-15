@@ -14,6 +14,9 @@ class Unit:
         self.row = row
         self.col = col
     
+    def atacar(self, tgt_row, tgt_col):
+        print(f"Atacar unidad en {tgt_row},{tgt_col}?")
+
     def __repr__(self):
         return f"{self.__class__.__name__}(row={self.row}, col={self.col})"
 
@@ -27,6 +30,7 @@ class Ricardo(Unit):
         super().__init__("ricardo")
         self.power = 2
         self.speed = 2
+        self.health = 1
         self.bonus = 2
 
 class Templario(Unit):
@@ -35,34 +39,41 @@ class Templario(Unit):
         super().__init__("templario")
         self.power = 4
         self.speed = 2
-
+        self.health = 1
+        
 class Hospitalario(Unit):
     """Caballeros Hospitalarios (élite)."""
     def __init__(self):
         super().__init__("hospitalario")
         self.power = 4
         self.speed = 2
-
+        self.health = 1
+        
 class Caballero(Unit):
     """Caballeros estándar."""
     def __init__(self):
         super().__init__("caballero")
         self.power = 3
         self.speed = 2
+        self.health = 1
 
 class Infanteria(Unit):
     """Soldados de infantería básicos."""
     def __init__(self):
         super().__init__("infanteria")
         self.power = 2
-        self.speed = 1
-
+        self.speed = 2
+        self.health = 1
+        self.slow = 1
+        
 class Bagaje(Unit):
     """Carros de suministros (no combaten)."""
     def __init__(self):
         super().__init__("bagaje")
         self.power = 1
-        self.speed = 1
+        self.speed = 2
+        self.health = 1
+        self.slow = 1
 
 # ------------------------------
 # UNIDADES SARRACENAS (Saladino)
@@ -74,6 +85,7 @@ class Saladino(Unit):
         super().__init__("saladino")
         self.power = 2
         self.speed = 3
+        self.health = 1
         self.bonus = 2
         
 class Mameluco(Unit):
@@ -82,6 +94,7 @@ class Mameluco(Unit):
         super().__init__("mameluco")
         self.power = 3
         self.speed = 3
+        self.health = 1
         
 class Arquero(Unit):
     """Arqueros a caballo."""
@@ -89,10 +102,12 @@ class Arquero(Unit):
         super().__init__("arquero")
         self.power = 2
         self.speed = 3
-
+        self.health = 1
+        
 class Explorador(Unit):
     """Unidades rápidas de reconocimiento."""
     def __init__(self):
         super().__init__("explorador")
         self.power = 1
         self.speed = 3
+        self.health = 1

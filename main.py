@@ -1,9 +1,11 @@
 # main.py
 import pygame
 import sys
+import random
 from config import *
 from hexgrid import HexGrid
 from units import *
+from gameui import GameUI
 
 class Game:
     def __init__(self):
@@ -13,23 +15,33 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Batalla de Arsuf")
         
-        # Cargar y escalar tablero (usando constantes de config.py)
+        # Cargar y escalar tablero
         self.tablero_escalado = pygame.transform.smoothscale(
             pygame.image.load(IMAGE_PATHS["board"]).convert_alpha(),
             (int(TABLERO_REAL_WIDTH * ESCALA), int(TABLERO_REAL_HEIGHT * ESCALA))
         )
-                
-        self.hex_size = HEX_SIZE  # Ajuste preciso
-
-        # Inicializar grid
+        
+        # Inicializar componentes
         self.grid = HexGrid()
-
+        self.ui = GameUI(self)
         self.clock = pygame.time.Clock()
         self.running = True
         
-        # Cargar imágenes de unidades (ya escaladas)
+        # Cargar imágenes de unidades
         self.images = self._load_images()
-        self._place_initial_units()
+        
+        # Estados del juego
+        self.state = "SELECT_SIDE"
+        self.player_side = None
+        self.ai_side = None
+        
+        # Unidades por colocar
+        self.units_to_deploy = self._get_initial_units()
+        self.current_deploying_unit = None
+        
+        # Movimiento
+        self.selected_unit = None
+        self.possible_moves = []
     
     def _load_images(self):
         images = {}
@@ -37,93 +49,248 @@ class Game:
             if key == "board": continue
             try:
                 img = pygame.image.load(path).convert_alpha()
-                # Escalar unidades al 95% del hex_size (para espacio entre ellas)
-                size = int(self.hex_size * 0.95)
+                size = int(HEX_SIZE * 0.95)
                 images[key] = pygame.transform.smoothscale(img, (size, size))
             except Exception as e:
                 print(f"Error cargando {path}: {e}")
-                # Placeholder verde (para distinguir de errores)
                 images[key] = pygame.Surface((size, size), pygame.SRCALPHA)
                 pygame.draw.circle(images[key], (0, 255, 0), (size//2, size//2), size//2)
         return images
     
-    def _place_initial_units(self):
-        """Coloca todas las unidades en sus posiciones iniciales."""
-        # ---- CRUZADOS (últimas 4 columnas, primeras 4 filas) ----
-        # Líder y unidades especiales
-        self.grid.add_unit(0, HEX_COLS-1, Ricardo())  # Esquina superior derecha
-        self.grid.add_unit(1, HEX_COLS-2, Templario())
-        self.grid.add_unit(2, HEX_COLS-1, Hospitalario())
-
-        # 3x Caballeros
-        self.grid.add_unit(0, HEX_COLS-3, Caballero())
-        self.grid.add_unit(1, HEX_COLS-4, Caballero())
-        self.grid.add_unit(3, HEX_COLS-2, Caballero())
-
-        # 6x Infantería (distribuida en las primeras 4 filas, últimas 4 columnas)
-        for row, col in [(0, HEX_COLS-4), (0, HEX_COLS-2),
-                        (1, HEX_COLS-1), (1, HEX_COLS-3),
-                        (2, HEX_COLS-3), (3, HEX_COLS-4)]:
-            self.grid.add_unit(row, col, Infanteria())
-
-        # 4x Carros de bagaje
-        for row, col in [(2, HEX_COLS-2), (3, HEX_COLS-1),
-                        (2, HEX_COLS-4), (3, HEX_COLS-3)]:
-            self.grid.add_unit(row, col, Bagaje())
-
-        # ---- SARACENOS (primeras 8 columnas, últimas 2 filas) ----
-        # Líder
-        self.grid.add_unit(HEX_ROWS-1, 0, Saladino())  # Esquina inferior izquierda
-
-        # 4x Mamelucos (columnas impares)
-        for col in [1, 3, 5, 7]:
-            self.grid.add_unit(HEX_ROWS-2, col, Mameluco())
-
-        # 6x Arqueros a caballo
-        for row, col in [(HEX_ROWS-1, 1), (HEX_ROWS-1, 2),
-                        (HEX_ROWS-1, 3), (HEX_ROWS-1, 4),
-                        (HEX_ROWS-1, 5), (HEX_ROWS-1, 6)]:
-            if col < 8:  # Asegurar que está en las primeras 8 columnas
-                self.grid.add_unit(row, col, Arquero())
-
-        # 5x Exploradores
-        for row, col in [(HEX_ROWS-2, 2), (HEX_ROWS-2, 4),
-                        (HEX_ROWS-2, 6), (HEX_ROWS-2, 0),
-                        (HEX_ROWS-1, 7)]:
-            self.grid.add_unit(row, col, Explorador())
-
-    def run(self):
-        while self.running:
-            self._handle_events()
-            self._draw()
-            self.clock.tick(FPS)
-        pygame.quit()
-        sys.exit()
-
+    def _get_initial_units(self):
+        """Devuelve las unidades iniciales para cada bando."""
+        return {
+            "CRUZADOS": [
+                Ricardo(), Templario(), Hospitalario(),
+                Caballero(), Caballero(), Caballero(),
+                *[Infanteria() for _ in range(6)],
+                *[Bagaje() for _ in range(4)]
+            ],
+            "SARRACENOS": [
+                Saladino(),
+                *[Mameluco() for _ in range(4)],
+                *[Arquero() for _ in range(6)],
+                *[Explorador() for _ in range(5)]
+            ]
+        }
+    
     def _handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.running = False
+            
+            if self.state == "SELECT_SIDE":
+                self._handle_side_selection(event)
+            elif self.state == "DEPLOY_PLAYER":
+                self._handle_deployment(event)
+            elif self.state == "PLAYER_TURN":
+                self._handle_player_turn(event)
+    
+    def _handle_side_selection(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            cruzados_rect, sarracenos_rect = self.ui.draw_side_selection()
+            mouse_pos = pygame.mouse.get_pos()
+            
+            if cruzados_rect.collidepoint(mouse_pos):
+                self._start_game("CRUZADOS")
+            elif sarracenos_rect.collidepoint(mouse_pos):
+                self._start_game("SARRACENOS")
+    
+    def _start_game(self, player_side):
+        self.player_side = player_side
+        self.ai_side = "SARRACENOS" if player_side == "CRUZADOS" else "CRUZADOS"
+        self.state = "DEPLOY_PLAYER"
+        self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
+        self.ui.add_log_message(f"Jugando como {player_side}. Comienza el despliegue.")
+    
+    def _handle_deployment(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            pos_x = 0 #(SCREEN_WIDTH - self.tablero_escalado.get_width()) // 2
+            pos_y = 0 #(SCREEN_HEIGHT - self.tablero_escalado.get_height()) // 2
+            tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(), self.tablero_escalado.get_height())
+            
+            if tablero_rect.collidepoint(mouse_pos):
+                self._place_unit(mouse_pos, pos_x, pos_y)
+    
+    def _place_unit(self, mouse_pos, offset_x, offset_y):
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                x, y = self.grid.hex_to_pixel(row, col)
+                x += offset_x
+                y += offset_y
+                
+                distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
+                if distance < HEX_SIZE / 2 and self.grid.grid[row][col] is None:
+                    if self._is_in_deployment_zone(row, col, self.player_side):
+                        self.grid.add_unit(row, col, self.current_deploying_unit)
+                        if self.units_to_deploy[self.player_side]:
+                            self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
+                        else:
+                            self.current_deploying_unit = None
+    
+    def _is_in_deployment_zone(self, row, col, side):
+        if side == "CRUZADOS":
+            return col >= HEX_COLS - 4 and row < 4
+        else:
+            return col < 8 and row >= HEX_ROWS - 2
+    
+    def _handle_player_turn(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            tablero_rect = pygame.Rect(0, 0, self.tablero_escalado.get_width(), self.tablero_escalado.get_height())
+            
+            if tablero_rect.collidepoint(mouse_pos):
+                self._handle_board_click(mouse_pos)
+    
+    def _handle_board_click(self, mouse_pos):
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                x, y = self.grid.hex_to_pixel(row, col)
+                
+                distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
+                if distance < HEX_SIZE / 2:
+                    self._process_hex_click(row, col)
+                    break
+    
+    def _process_hex_click(self, row, col):
+        unit = self.grid.grid[row][col]
+        
+        if not self.selected_unit and unit and self._is_player_unit(unit):
+            self.selected_unit = (row, col)
+            self._calculate_possible_moves(row, col, unit.speed)
+        elif self.selected_unit and (row, col) in self.possible_moves:
+            self._move_unit(row, col)
+        else:
+            self.selected_unit = None
+            self.possible_moves = []
+    
+    def _move_unit(self, row, col):
+        old_row, old_col = self.selected_unit
+        moving_unit = self.grid.grid[old_row][old_col]
+        self.grid.grid[old_row][old_col] = None
+        self.grid.add_unit(row, col, moving_unit)
+        self.selected_unit = None
+        self.possible_moves = []
+    
+    def _is_player_unit(self, unit):
+        if self.player_side == "CRUZADOS":
+            return isinstance(unit, (Ricardo, Templario, Hospitalario, Caballero, Infanteria, Bagaje))
+        else:
+            return isinstance(unit, (Saladino, Mameluco, Arquero, Explorador))
+    
+    def _calculate_possible_moves(self, row, col, speed):
+        self.possible_moves = []
+        for r in range(max(0, row - speed), min(HEX_ROWS, row + speed + 1)):
+            for c in range(max(0, col - speed), min(HEX_COLS, col + speed + 1)):
+                if (r != row or c != col) and self.grid.grid[r][c] is None:
+                    distance = abs(r - row) + abs(c - col)
+                    if distance <= speed:
+                        self.possible_moves.append((r, c))
+    
+    def _ai_deploy_units(self):
+        if not self.units_to_deploy[self.ai_side]:
+            self.state = "PLAYER_TURN"
+            return
+            
+        unit = random.choice(self.units_to_deploy[self.ai_side])
+        self.units_to_deploy[self.ai_side].remove(unit)
+        
+        valid_positions = []
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                if self.grid.grid[row][col] is None and self._is_in_deployment_zone(row, col, self.ai_side):
+                    valid_positions.append((row, col))
+        
+        if valid_positions:
+            row, col = random.choice(valid_positions)
+            self.grid.add_unit(row, col, unit)
+        
+        if not self.units_to_deploy[self.ai_side]:
+            self.state = "PLAYER_TURN"
+    
+    def _ai_turn(self):
+        ai_units = []
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                unit = self.grid.grid[row][col]
+                if unit and not self._is_player_unit(unit):
+                    ai_units.append((row, col, unit))
+        
+        for row, col, unit in ai_units:
+            if random.random() < 0.7:
+                self._calculate_possible_moves(row, col, unit.speed)
+                if self.possible_moves:
+                    new_row, new_col = random.choice(self.possible_moves)
+                    self.grid.grid[row][col] = None
+                    self.grid.add_unit(new_row, new_col, unit)
+        
+        self.state = "PLAYER_TURN"
+    
+    def run(self):
+        while self.running:
+            self._handle_events()
+            
+            if self.state == "DEPLOY_AI":
+                self._ai_deploy_units()
+            elif self.state == "AI_TURN":
+                self._ai_turn()
+            
+            self._draw()
+            self.clock.tick(FPS)
+        
+        pygame.quit()
+        sys.exit()
     
     def _draw(self):
-        # Centrar el tablero escalado en la ventana
-        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width()) // 2
-        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height()) // 2
-
-        self.screen.fill(COLOR_BG)  # Fondo
+        # Dibujar elementos en el orden correcto (los últimos se superponen)
+        self.screen.fill(COLOR_BG)
+        
+        # 1. Dibujar tablero (fondo)
+        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
+        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2  # Ajuste para el panel LOG
+        
         self.screen.blit(self.tablero_escalado, (pos_x, pos_y))
- 
+        
+        # 2. Dibujar elementos del juego (unidades, etc.)
         if __debug__: 
-            # DEBUG VISUAL: Dibuja líneas donde se calculan los bordes
-            pygame.draw.line(self.screen, (255,0,0), (MARGENES_ESCALADOS["izquierdo"], 0), (MARGENES_ESCALADOS["izquierdo"], SCREEN_HEIGHT), 2)
-            pygame.draw.line(self.screen, (0,255,0), (0, MARGENES_ESCALADOS["superior"]), (SCREEN_WIDTH, MARGENES_ESCALADOS["superior"]), 2)
-            
-            # Dibujar hexágonos DEBUG (antes que las unidades)
             self.grid.draw_hex_debug(self.screen)
-    
-        # Dibujar unidades (ajustando a la posición centrada del tablero)
+        
         self.grid.draw(self.screen, self.images, pos_x, pos_y)
+        self._draw_possible_moves()
+        
+        # 3. Dibujar paneles de UI (encima del tablero)
+        self.ui.draw_log_panel()
+        button_rect = self.ui.draw_panel()
+        self.ui.draw_deployment_zones()
+        
+        # 4. Dibujar pantalla de selección ENCIMA de todo si es necesario
+        if self.state == "SELECT_SIDE":
+            self.ui.draw_side_selection()
+        
+        # Manejar clics en el botón del panel
+        if button_rect and pygame.mouse.get_pressed()[0]:
+            mouse_pos = pygame.mouse.get_pos()
+            if button_rect.collidepoint(mouse_pos):
+                if self.state == "PLAYER_TURN":
+                    self.state = "AI_TURN"
+                    self.ui.add_log_message("Turno pasado al ordenador")
+                elif self.state == "DEPLOY_PLAYER" and not self.current_deploying_unit:
+                    self.state = "DEPLOY_AI"
+                    self.ui.add_log_message("Despliegue confirmado. El ordenador está desplegando")
+        
         pygame.display.flip()
+    
+    def _draw_possible_moves(self):
+        if not self.selected_unit or not self.possible_moves:
+            return
+            
+        for (row, col) in self.possible_moves:
+            x, y = self.grid.hex_to_pixel(row, col)
+            
+            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
+            pygame.draw.circle(s, (100, 200, 255, 150), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
+            self.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
 
 if __name__ == "__main__":
     game = Game()

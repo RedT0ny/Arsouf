@@ -54,14 +54,7 @@ class HexGrid:
         
         # 4. Actualizar posición interna de la unidad
         unit.set_position(row, col)
-        
-#         # 5. Calcular posición en píxeles (opcional, para debug)
-#         pixel_x, pixel_y = self.hex_to_pixel(row, col)
-#         if __debug__:  # Solo se ejecuta en modo desarrollo
-#             print(f"Unidad {type(unit).__name__} añadida en:")
-#             print(f"- Grid: ({row}, {col})")
-#             print(f"- Píxeles: ({pixel_x}, {pixel_y})")
-    
+            
     def draw(self, screen, images, tablero_x=0, tablero_y=0):
         """
         Dibuja todas las unidades en el grid.
@@ -78,8 +71,8 @@ class HexGrid:
                 if unit:
                     x, y = self.hex_to_pixel(row, col)
                     # Aplicar offset del tablero centrado
-                    x += tablero_x
-                    y += tablero_y
+#                     x += tablero_x
+#                     y += tablero_y
 
                     img = images.get(unit.image_key)
                     if img:
