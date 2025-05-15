@@ -1,0 +1,83 @@
+# config.py (versión optimizada)
+import os
+import pygame
+
+# 1. Configuración de pantalla
+SCREEN_WIDTH = 1500
+SCREEN_HEIGHT = 974
+FPS = 60
+COLOR_BG = (40, 40, 40)
+
+# 2. Dimensiones ORIGINALES del tablero (píxeles físicos)
+TABLERO_REAL_WIDTH = 2400
+TABLERO_REAL_HEIGHT = 1558
+
+# 3. Márgenes REALES (de tu imagen JPG)
+MARGENES = {
+    "superior": 118,
+    "inferior": 60,
+    "izquierdo": 45,
+    "derecho": 40
+}
+
+# 4. Área hexagonal REAL (píxeles en tu imagen)
+HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["derecho"]
+HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
+
+# 5. Grid hexagonal
+HEX_ROWS = 15
+HEX_COLS = 22
+
+# 6. Cálculo de ESCALA (centralizado aquí)
+ESCALA = min(SCREEN_WIDTH / TABLERO_REAL_WIDTH, SCREEN_HEIGHT / TABLERO_REAL_HEIGHT)
+FACTOR_ALTURA = 0.97
+
+# 7. Tamaño de hexágono REAL (calculado una sola vez)
+HEX_REAL_SIZE = int((HEX_AREA_REAL_WIDTH / HEX_COLS) * FACTOR_ALTURA)  # Factor ajustable
+
+# 8. Tamaño de hexágono ESCALADO (para pantalla)
+HEX_SIZE = int(HEX_REAL_SIZE * ESCALA)
+
+# 9. Márgenes escalados (calculados una vez)
+MARGENES_ESCALADOS = {
+    "superior": int(MARGENES["superior"] * ESCALA),
+    "izquierdo": int(MARGENES["izquierdo"] * ESCALA)
+}
+
+# ------------------------------
+# RUTAS DE ASSETS
+# ------------------------------
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+
+# Imágenes (SVG/PNG)
+IMAGE_PATHS = {
+    "board": os.path.join(ASSETS_DIR, "tablero.jpg"),
+    # Cruzados
+    "ricardo": os.path.join(ASSETS_DIR, "ricardo.svg"),
+    "templario": os.path.join(ASSETS_DIR, "templario.svg"),
+    "hospitalario": os.path.join(ASSETS_DIR, "hospitalario.svg"),
+    "caballero": os.path.join(ASSETS_DIR, "caballero.svg"),
+    "infanteria": os.path.join(ASSETS_DIR, "infanteria.svg"),
+    "bagaje": os.path.join(ASSETS_DIR, "bagaje.svg"),
+    # Sarracenos
+    "saladino": os.path.join(ASSETS_DIR, "saladino.svg"),
+    "mameluco": os.path.join(ASSETS_DIR, "mameluco.svg"),
+    "arquero": os.path.join(ASSETS_DIR, "arquero.svg"),
+    "explorador": os.path.join(ASSETS_DIR, "explorador.svg"),
+}
+
+# ------------------------------
+# CONSTANTES DE JUEGO
+# ------------------------------
+# Colores para debug
+COLOR_HEX_GRID = (100, 200, 100, 50)  # Verde translúcido (para debug)
+COLOR_UNIT_DEBUG = (255, 0, 0)  # Rojo para placeholders
+
+# ------------------------------
+# VALIDACIÓN DE CONFIG
+# ------------------------------
+if __name__ == "__main__":
+    print(f"Configuración cargada correctamente:")
+    print(f"- Tamaño de ventana: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
+    print(f"- Hexágonos: {HEX_ROWS}x{HEX_COLS} (size: {HEX_SIZE}px)")
+    print(f"- Escala: {ESCALA:.2f}")
