@@ -8,7 +8,131 @@ class GameUI:
         self.font = pygame.font.SysFont('Arial', 24)
         self.log_font = pygame.font.SysFont('Arial', LOG_FONT_SIZE)
         self.log_messages = []        
+        self.log_scroll_position = 0
+        self.log_scroll_dragging = False
+        self.log_scroll_handle_rect = None
 
+    def draw_log_panel(self):
+        """Dibuja el panel de log con scroll."""
+        panel_rect = pygame.Rect(0, SCREEN_HEIGHT - LOG_PANEL_HEIGHT, 
+                                LOG_PANEL_WIDTH, LOG_PANEL_HEIGHT)
+        pygame.draw.rect(self.game.screen, LOG_PANEL_COLOR, panel_rect)
+        pygame.draw.rect(self.game.screen, (60, 60, 80), panel_rect, 1)  # Borde
+        
+        # Área de texto (excluyendo la barra de scroll)
+        text_area = pygame.Rect(
+            panel_rect.x + LOG_MARGIN,
+            panel_rect.y + LOG_MARGIN,
+            panel_rect.width - LOG_MARGIN * 2 - LOG_SCROLLBAR_WIDTH,
+            panel_rect.height - LOG_MARGIN * 2
+        )
+ 
+        # DEBUG: Dibujar rectángulo alrededor del área de scroll
+        pygame.draw.rect(self.game.screen, (255, 255, 0), (
+            panel_rect.right - LOG_SCROLLBAR_WIDTH - LOG_MARGIN - 1,
+            panel_rect.y + LOG_MARGIN - 1,
+            LOG_SCROLLBAR_WIDTH + 2,
+            panel_rect.height - 2*LOG_MARGIN + 2
+        ), 1)
+
+        # Crear superficie para recortar el texto
+        clip_rect = pygame.Rect(0, 0, text_area.width, text_area.height)
+        text_surface = pygame.Surface((text_area.width, text_area.height))
+        text_surface.fill(LOG_PANEL_COLOR)
+
+        # Calcular líneas visibles y posición del scroll
+        visible_lines = text_area.height // LOG_LINE_HEIGHT
+        total_lines = len(self.log_messages)
+        
+        # Ajustar posición del scroll si es necesario
+        max_scroll = max(0, total_lines - visible_lines)
+        self.log_scroll_position = min(self.log_scroll_position, max_scroll)
+        
+        # Dibujar mensajes visibles
+        y_offset = 0
+        for i in range(self.log_scroll_position, min(self.log_scroll_position + visible_lines, total_lines)):
+            msg = self.log_messages[i]
+            msg_text = self.log_font.render(msg, True, LOG_TEXT_COLOR)
+            text_surface.blit(msg_text, (0, y_offset))
+            y_offset += LOG_LINE_HEIGHT
+        
+        # Aplicar recorte y dibujar
+        old_clip = self.game.screen.get_clip()
+        self.game.screen.set_clip(text_area)
+        self.game.screen.blit(text_surface, (text_area.x, text_area.y))
+        self.game.screen.set_clip(old_clip)
+                
+        # Dibujar barra de scroll solo si hay más mensajes de los visibles
+        if total_lines > visible_lines:
+            self._draw_log_scrollbar(panel_rect, total_lines, visible_lines)
+
+    def _draw_log_scrollbar(self, panel_rect, total_lines, visible_lines):
+        """Dibuja la barra de scroll bien visible"""
+        # Barra de fondo
+        scrollbar_rect = pygame.Rect(
+            panel_rect.right - LOG_SCROLLBAR_WIDTH - LOG_MARGIN,
+            panel_rect.y + LOG_MARGIN,
+            LOG_SCROLLBAR_WIDTH,
+            panel_rect.height - 2*LOG_MARGIN
+        )
+        pygame.draw.rect(self.game.screen, (50, 50, 70), scrollbar_rect)
+        
+        # Mango del scroll
+        scroll_ratio = self.log_scroll_position / total_lines
+        handle_height = max(30, (visible_lines / total_lines) * scrollbar_rect.height)
+        handle_y = scrollbar_rect.y + scroll_ratio * (scrollbar_rect.height - handle_height)
+        
+        handle_rect = pygame.Rect(
+            scrollbar_rect.x + 1,
+            handle_y,
+            scrollbar_rect.width - 2,
+            handle_height
+        )
+        
+        # Mango con gradiente para mejor visibilidad
+        handle_surface = pygame.Surface((handle_rect.width, handle_rect.height))
+        pygame.draw.rect(handle_surface, (100, 100, 130), (0, 0, handle_rect.width, handle_rect.height))
+        pygame.draw.rect(handle_surface, (140, 140, 170), (0, 0, handle_rect.width, handle_rect.height//2))
+        self.game.screen.blit(handle_surface, (handle_rect.x, handle_rect.y))
+        pygame.draw.rect(self.game.screen, (180, 180, 210), handle_rect, 1)  # Borde
+        
+    def handle_log_scroll(self, event):
+        """Maneja el scroll del panel de log."""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if (self.log_scroll_handle_rect and 
+                self.log_scroll_handle_rect.collidepoint(event.pos)):
+                self.log_scroll_dragging = True
+                self.drag_start_y = event.pos[1]
+                self.drag_start_scroll = self.log_scroll_position
+        
+        elif event.type == pygame.MOUSEBUTTONUP:
+            self.log_scroll_dragging = False
+        
+        elif event.type == pygame.MOUSEMOTION and self.log_scroll_dragging:
+            # Calcular nueva posición del scroll basada en el arrastre
+            total_lines = len(self.log_messages)
+            visible_lines = (SCREEN_HEIGHT - LOG_PANEL_HEIGHT) // LOG_LINE_HEIGHT
+            max_scroll = max(0, total_lines - visible_lines)
+            
+            delta_y = event.pos[1] - self.drag_start_y
+            line_delta = delta_y * total_lines / (SCREEN_HEIGHT - LOG_PANEL_HEIGHT)
+            self.log_scroll_position = min(max(0, self.drag_start_scroll + line_delta), max_scroll)
+        
+        elif event.type == pygame.MOUSEWHEEL:
+            # Scroll con rueda del ratón
+            self.log_scroll_position = max(0, self.log_scroll_position - event.y)
+    
+    def add_log_message(self, message):
+        """Añade un mensaje al log y ajusta el scroll."""
+        self.log_messages.append(message)
+        if len(self.log_messages) > LOG_MAX_MESSAGES:
+            self.log_messages.pop(0)
+        
+        # Auto-scroll al final si está cerca del final
+        visible_lines = (SCREEN_HEIGHT - LOG_PANEL_HEIGHT) // LOG_LINE_HEIGHT
+        if len(self.log_messages) - self.log_scroll_position <= visible_lines + 5:
+            self.log_scroll_position = max(0, len(self.log_messages) - visible_lines)
+            
     def draw_side_selection(self):
         """Dibuja la pantalla de selección de lado."""
         self.game.screen.fill(COLOR_BG)
@@ -84,27 +208,6 @@ class GameUI:
         self.game.screen.blit(button_text, (button_rect.centerx - button_text.get_width()//2, 
                                          button_rect.centery - button_text.get_height()//2))
         return button_rect
-
-    def draw_log_panel(self):
-        """Dibuja el panel de log en la parte inferior."""
-        panel_rect = pygame.Rect(0, SCREEN_HEIGHT - LOG_PANEL_HEIGHT, SCREEN_WIDTH, LOG_PANEL_HEIGHT)
-        pygame.draw.rect(self.game.screen, LOG_PANEL_COLOR, panel_rect)
-        
-        # Dibujar mensajes de log (los últimos que caben)
-        y_offset = panel_rect.y + LOG_MARGIN
-        max_lines = (LOG_PANEL_HEIGHT - 2*LOG_MARGIN) // (LOG_FONT_SIZE + 2)
-        
-        for msg in self.log_messages[-max_lines:]:
-            log_text = self.log_font.render(msg, True, LOG_TEXT_COLOR)
-            self.game.screen.blit(log_text, (panel_rect.x + LOG_MARGIN, y_offset))
-            y_offset += LOG_FONT_SIZE + 2
-
-    def add_log_message(self, message):
-        """Añade un mensaje al log."""
-        self.log_messages.append(message)
-        # Limitar el número máximo de mensajes almacenados
-        if len(self.log_messages) > 100:
-            self.log_messages.pop(0)
 
     def draw_deployment_zones(self):
         """Dibuja las zonas de despliegue para cada bando."""

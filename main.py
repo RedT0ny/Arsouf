@@ -78,7 +78,10 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.running = False
-            
+            # Pasar eventos de scroll al UI
+            if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, 
+                         pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
+                self.ui.handle_log_scroll(event)            
             if self.state == "SELECT_SIDE":
                 self._handle_side_selection(event)
             elif self.state == "DEPLOY_PLAYER":
@@ -210,6 +213,12 @@ class Game:
             self.state = "PLAYER_TURN"
     
     def _ai_turn(self):
+        # Añadir mensaje solo al comenzar el turno de la IA
+        if not hasattr(self, '_ai_turn_started'):
+            self.ui.add_log_message("Turno del ordenador")
+            self._ai_turn_started = True
+        
+        # Realizar movimientos de la IA
         ai_units = []
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
@@ -224,8 +233,12 @@ class Game:
                     new_row, new_col = random.choice(self.possible_moves)
                     self.grid.grid[row][col] = None
                     self.grid.add_unit(new_row, new_col, unit)
+                    self.ui.add_log_message(f"{type(unit).__name__} se mueve a ({new_row}, {new_col})")
         
+        # Finalizar turno de la IA
         self.state = "PLAYER_TURN"
+        self.ui.add_log_message("Turno del ordenador finalizado")
+        delattr(self, '_ai_turn_started')  # Limpiar flag
     
     def run(self):
         while self.running:
