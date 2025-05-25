@@ -9,119 +9,169 @@ class GameUI:
         self.log_font = pygame.font.SysFont('Arial', LOG_FONT_SIZE)
         self.log_messages = []        
         self.log_scroll_position = 0
-        self.log_scroll_dragging = False
+        self.log_scroll_dragging = False # Estado de arrastre
         self.log_scroll_handle_rect = None
+        self.log_scroll_start_y = 0  # Posición inicial del arrastre
+        self.log_scroll_start_position = 0  # Posición inicial del scroll
+        self.debug_drawn = False # Control mensajes DEBUG
+
+    def _get_visible_lines(self):
+        """Calcula cuántas líneas son visibles en el panel"""
+        return (LOG_PANEL_HEIGHT - 2*LOG_MARGIN) // LOG_LINE_HEIGHT
 
     def draw_log_panel(self):
-        """Dibuja el panel de log con scroll."""
-        panel_rect = pygame.Rect(0, SCREEN_HEIGHT - LOG_PANEL_HEIGHT, 
-                                LOG_PANEL_WIDTH, LOG_PANEL_HEIGHT)
-        pygame.draw.rect(self.game.screen, LOG_PANEL_COLOR, panel_rect)
-        pygame.draw.rect(self.game.screen, (60, 60, 80), panel_rect, 1)  # Borde
-        
-        # Área de texto (excluyendo la barra de scroll)
-        text_area = pygame.Rect(
-            panel_rect.x + LOG_MARGIN,
-            panel_rect.y + LOG_MARGIN,
-            panel_rect.width - LOG_MARGIN * 2 - LOG_SCROLLBAR_WIDTH,
-            panel_rect.height - LOG_MARGIN * 2
-        )
- 
-        # DEBUG: Dibujar rectángulo alrededor del área de scroll
-        pygame.draw.rect(self.game.screen, (255, 255, 0), (
-            panel_rect.right - LOG_SCROLLBAR_WIDTH - LOG_MARGIN - 1,
-            panel_rect.y + LOG_MARGIN - 1,
-            LOG_SCROLLBAR_WIDTH + 2,
-            panel_rect.height - 2*LOG_MARGIN + 2
-        ), 1)
-
-        # Crear superficie para recortar el texto
-        clip_rect = pygame.Rect(0, 0, text_area.width, text_area.height)
-        text_surface = pygame.Surface((text_area.width, text_area.height))
-        text_surface.fill(LOG_PANEL_COLOR)
-
-        # Calcular líneas visibles y posición del scroll
-        visible_lines = text_area.height // LOG_LINE_HEIGHT
-        total_lines = len(self.log_messages)
-        
-        # Ajustar posición del scroll si es necesario
-        max_scroll = max(0, total_lines - visible_lines)
-        self.log_scroll_position = min(self.log_scroll_position, max_scroll)
-        
-        # Dibujar mensajes visibles
-        y_offset = 0
-        for i in range(self.log_scroll_position, min(self.log_scroll_position + visible_lines, total_lines)):
-            msg = self.log_messages[i]
-            msg_text = self.log_font.render(msg, True, LOG_TEXT_COLOR)
-            text_surface.blit(msg_text, (0, y_offset))
-            y_offset += LOG_LINE_HEIGHT
-        
-        # Aplicar recorte y dibujar
-        old_clip = self.game.screen.get_clip()
-        self.game.screen.set_clip(text_area)
-        self.game.screen.blit(text_surface, (text_area.x, text_area.y))
-        self.game.screen.set_clip(old_clip)
+        try:
+            panel_rect = pygame.Rect(0, SCREEN_HEIGHT - LOG_PANEL_HEIGHT, 
+                                   LOG_PANEL_WIDTH, LOG_PANEL_HEIGHT)
+            
+            # 1. Fondo del panel
+            pygame.draw.rect(self.game.screen, (30, 30, 40), panel_rect)
+            
+            # 2. Área de texto
+            text_area = pygame.Rect(
+                panel_rect.x + LOG_MARGIN,
+                panel_rect.y + LOG_MARGIN,
+                panel_rect.width - 2*LOG_MARGIN - LOG_SCROLLBAR_WIDTH,
+                panel_rect.height - 2*LOG_MARGIN
+            )
+            
+            # 3. Dibujar mensajes (con scroll aplicado)
+            visible_lines = self._get_visible_lines()
+            total_lines = len(self.log_messages)
+            
+            # Ajustar posición del scroll
+            self.log_scroll_position = max(0, min(self.log_scroll_position, total_lines - visible_lines))
+            
+            # Dibujar líneas visibles
+            for i in range(visible_lines):
+                line_index = int(self.log_scroll_position) + i
+                if 0 <= line_index < len(self.log_messages):
+                    msg = self.log_messages[line_index]
+                    msg_text = self.log_font.render(msg, True, (220, 220, 220))
+                    self.game.screen.blit(msg_text, 
+                                        (text_area.x, 
+                                         text_area.y + i * LOG_LINE_HEIGHT))
+            
+            # 4. Barra de scroll (si es necesaria)
+            if total_lines > visible_lines:
+                self._draw_log_scrollbar(panel_rect, total_lines, visible_lines)
                 
-        # Dibujar barra de scroll solo si hay más mensajes de los visibles
-        if total_lines > visible_lines:
-            self._draw_log_scrollbar(panel_rect, total_lines, visible_lines)
-
+        except Exception as e:
+            print(f"ERROR dibujando panel LOG: {e}")
+            raise
+    
     def _draw_log_scrollbar(self, panel_rect, total_lines, visible_lines):
-        """Dibuja la barra de scroll bien visible"""
-        # Barra de fondo
+        """Dibuja una barra de scroll altamente visible"""
+        # Área de la barra
         scrollbar_rect = pygame.Rect(
-            panel_rect.right - LOG_SCROLLBAR_WIDTH - LOG_MARGIN,
-            panel_rect.y + LOG_MARGIN,
+            panel_rect.right - LOG_SCROLLBAR_WIDTH - 5,
+            panel_rect.y + 5,
             LOG_SCROLLBAR_WIDTH,
-            panel_rect.height - 2*LOG_MARGIN
-        )
-        pygame.draw.rect(self.game.screen, (50, 50, 70), scrollbar_rect)
-        
-        # Mango del scroll
-        scroll_ratio = self.log_scroll_position / total_lines
-        handle_height = max(30, (visible_lines / total_lines) * scrollbar_rect.height)
-        handle_y = scrollbar_rect.y + scroll_ratio * (scrollbar_rect.height - handle_height)
-        
-        handle_rect = pygame.Rect(
-            scrollbar_rect.x + 1,
-            handle_y,
-            scrollbar_rect.width - 2,
-            handle_height
+            panel_rect.height - 10
         )
         
-        # Mango con gradiente para mejor visibilidad
-        handle_surface = pygame.Surface((handle_rect.width, handle_rect.height))
-        pygame.draw.rect(handle_surface, (100, 100, 130), (0, 0, handle_rect.width, handle_rect.height))
-        pygame.draw.rect(handle_surface, (140, 140, 170), (0, 0, handle_rect.width, handle_rect.height//2))
-        self.game.screen.blit(handle_surface, (handle_rect.x, handle_rect.y))
-        pygame.draw.rect(self.game.screen, (180, 180, 210), handle_rect, 1)  # Borde
+        # Fondo de la barra (color sólido)
+        pygame.draw.rect(self.game.screen, (80, 80, 100), scrollbar_rect)
         
-    def handle_log_scroll(self, event):
-        """Maneja el scroll del panel de log."""
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if (self.log_scroll_handle_rect and 
-                self.log_scroll_handle_rect.collidepoint(event.pos)):
-                self.log_scroll_dragging = True
-                self.drag_start_y = event.pos[1]
-                self.drag_start_scroll = self.log_scroll_position
+        # Mango del scroll (más grande para mejor detección)
+        handle_height = max(40, (visible_lines / total_lines) * scrollbar_rect.height)
+        handle_y = scrollbar_rect.y + (self.log_scroll_position / total_lines) * (scrollbar_rect.height - handle_height)
         
-        elif event.type == pygame.MOUSEBUTTONUP:
+        self.log_scroll_handle_rect = pygame.Rect(
+            scrollbar_rect.x - 2,  # Extender área de detección
+            handle_y - 2,
+            scrollbar_rect.width + 4,
+            handle_height + 4
+        )
+        
+        # Dibujar mango con borde
+        pygame.draw.rect(self.game.screen, (160, 160, 190), self.log_scroll_handle_rect)
+        pygame.draw.rect(self.game.screen, (200, 200, 230), self.log_scroll_handle_rect, 2)
+        
+        # Texto de posición (solo debug)
+        if __debug__:
+            debug_font = pygame.font.SysFont('Arial', 12)
+            debug_text = debug_font.render(f"{int(self.log_scroll_position)}/{total_lines}", True, (255, 255, 255))
+            self.game.screen.blit(debug_text, (scrollbar_rect.x - 30, scrollbar_rect.y))
+        
+    def handle_events(self, event):
+        """Manejo de eventos con depuración controlada"""
+        # Solo mostrar mensaje de debug una vez
+        if not self.debug_drawn:
+            print("DEBUG: Sistema de scroll inicializado")
+            self.debug_drawn = True
+        
+        # Coordenadas del ratón
+        mouse_pos = pygame.mouse.get_pos()
+        log_panel_rect = pygame.Rect(0, SCREEN_HEIGHT - LOG_PANEL_HEIGHT, 
+                                   LOG_PANEL_WIDTH, LOG_PANEL_HEIGHT)
+        
+        # Verificar si el ratón está en el panel LOG
+        mouse_in_log = log_panel_rect.collidepoint(mouse_pos)
+        
+        # Manejar eventos de arrastre
+        if event.type == pygame.MOUSEBUTTONDOWN and mouse_in_log:
+            if hasattr(self, 'log_scroll_handle_rect') and self.log_scroll_handle_rect:
+                if self.log_scroll_handle_rect.collidepoint(mouse_pos):
+                    self.log_scroll_dragging = True
+                    self.drag_start_y = mouse_pos[1]
+                    self.drag_start_position = self.log_scroll_position
+                    print("DEBUG: Scroll - Arrastre iniciado (clic en mango)")
+                    return True
+        
+        elif event.type == pygame.MOUSEBUTTONUP and self.log_scroll_dragging:
             self.log_scroll_dragging = False
+            print("DEBUG: Scroll - Arrastre finalizado")
+            return True
         
         elif event.type == pygame.MOUSEMOTION and self.log_scroll_dragging:
-            # Calcular nueva posición del scroll basada en el arrastre
-            total_lines = len(self.log_messages)
-            visible_lines = (SCREEN_HEIGHT - LOG_PANEL_HEIGHT) // LOG_LINE_HEIGHT
-            max_scroll = max(0, total_lines - visible_lines)
-            
-            delta_y = event.pos[1] - self.drag_start_y
-            line_delta = delta_y * total_lines / (SCREEN_HEIGHT - LOG_PANEL_HEIGHT)
-            self.log_scroll_position = min(max(0, self.drag_start_scroll + line_delta), max_scroll)
+            self._handle_scroll_drag(mouse_pos)
+            return True
         
-        elif event.type == pygame.MOUSEWHEEL:
-            # Scroll con rueda del ratón
-            self.log_scroll_position = max(0, self.log_scroll_position - event.y)
-    
+        elif event.type == pygame.MOUSEWHEEL and mouse_in_log:
+            self._handle_wheel_scroll(event.y)
+            return True
+        
+        return False
+
+    def _handle_scroll_drag(self, mouse_pos):
+        """Manejo preciso del arrastre"""
+        delta_y = mouse_pos[1] - self.drag_start_y
+        total_lines = len(self.log_messages)
+        visible_lines = self._get_visible_lines()
+        
+        if total_lines <= visible_lines:
+            return
+        
+        # Calcular nueva posición
+        handle_height = self.log_scroll_handle_rect.height
+        scroll_area_height = LOG_PANEL_HEIGHT - 2*LOG_MARGIN - handle_height
+        
+        if scroll_area_height > 0:
+            scroll_ratio = delta_y / scroll_area_height
+            max_scroll = total_lines - visible_lines
+            self.log_scroll_position = min(max(0, self.drag_start_position + scroll_ratio * max_scroll), 
+                                         max_scroll)
+
+    def _handle_wheel_scroll(self, wheel_delta):
+        """Maneja el scroll con rueda del ratón con precisión"""
+        total_lines = len(self.log_messages)
+        visible_lines = self._get_visible_lines()
+        
+        if total_lines <= visible_lines:
+            return
+        
+        # Ajustar la velocidad del scroll (puedes modificar el 3 para cambiar la sensibilidad)
+        scroll_delta = wheel_delta * 3
+        
+        # Calcular nueva posición con límites
+        max_scroll = total_lines - visible_lines
+        self.log_scroll_position = max(0, min(self.log_scroll_position - scroll_delta, max_scroll))
+        
+        # Debug opcional
+        if __debug__:
+            print(f"DEBUG: Wheel scroll - Delta: {wheel_delta}, Posición: {self.log_scroll_position}/{max_scroll}")
+
     def add_log_message(self, message):
         """Añade un mensaje al log y ajusta el scroll."""
         self.log_messages.append(message)

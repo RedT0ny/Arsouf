@@ -78,10 +78,13 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.running = False
-            # Pasar eventos de scroll al UI
+                
+            # Primero manejar eventos de UI (scroll)
             if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, 
-                         pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
-                self.ui.handle_log_scroll(event)            
+                             pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
+                if self.ui.handle_events(event):
+                    continue  # Si el UI consumió el evento, no procesarlo más
+            
             if self.state == "SELECT_SIDE":
                 self._handle_side_selection(event)
             elif self.state == "DEPLOY_PLAYER":
