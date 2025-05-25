@@ -54,7 +54,21 @@ class HexGrid:
         
         # 4. Actualizar posición interna de la unidad
         unit.set_position(row, col)
+
+    def is_in_deployment_zone(self, row, col, side):
+        """Determina si una posición está en la zona de despliegue."""
+        if side == "CRUZADOS":
+            return col >= HEX_COLS - 4 and row < 4
+        else:
+            return col < 8 and row >= HEX_ROWS - 2
             
+    def calculate_zone_rect(self, start_col, start_row, cols, rows):
+        """Calcula el rectángulo que engloba una zona del grid."""
+        x, y = self.hex_to_pixel(start_row, start_col)
+        width = cols * self.hex_width * 1.025
+        height = rows * self.hex_height * 0.79
+        return pygame.Rect(x, y, width, height)
+
     def draw(self, screen, images, tablero_x=0, tablero_y=0):
         """
         Dibuja todas las unidades en el grid.

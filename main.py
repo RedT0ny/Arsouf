@@ -141,19 +141,13 @@ class Game:
                 
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
                 if distance < HEX_SIZE / 2 and self.grid.grid[row][col] is None:
-                    if self._is_in_deployment_zone(row, col, self.player_side):
+                    if self.grid.is_in_deployment_zone(row, col, self.player_side):
                         self.grid.add_unit(row, col, self.current_deploying_unit)
                         if self.units_to_deploy[self.player_side]:
                             self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
                         else:
                             self.current_deploying_unit = None
-    
-    def _is_in_deployment_zone(self, row, col, side):
-        if side == "CRUZADOS":
-            return col >= HEX_COLS - 4 and row < 4
-        else:
-            return col < 8 and row >= HEX_ROWS - 2
-    
+        
     def _handle_player_turn(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
@@ -341,7 +335,7 @@ class Game:
         valid_positions = []
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
-                if self.grid.grid[row][col] is None and self._is_in_deployment_zone(row, col, self.ai_side):
+                if self.grid.grid[row][col] is None and self.grid.is_in_deployment_zone(row, col, self.ai_side):
                     valid_positions.append((row, col))
         
         if valid_positions:
@@ -393,7 +387,11 @@ class Game:
             del self._ai_units_to_consider
         self.selected_unit = None
         self.possible_moves = []
-        
+
+    def _draw(self):
+       self.ui.draw_game(self)
+       pygame.display.flip()
+
     def run(self):
         while self.running:
             self._handle_events()
@@ -409,58 +407,7 @@ class Game:
             
         pygame.quit()
         sys.exit()
-    
-    def _draw(self):
-        # Dibujar elementos en el orden correcto (los últimos se superponen)
-        self.screen.fill(COLOR_BG)
-        
-        # 1. Dibujar tablero (fondo)
-        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2  # Ajuste para el panel LOG       
-        self.screen.blit(self.tablero_escalado, (pos_x, pos_y))
-
-        # Dibujar debug de movimiento si existe
-        if __debug__ and hasattr(self, 'last_move_debug_pos') and self.last_move_debug_pos:
-            row, col = self.last_move_debug_pos
-            x, y = self.grid.hex_to_pixel(row, col)
-            x += pos_x  # Añadir offset del tablero
-            y += pos_y
-            
-            # Dibujar círculo más visible (tamaño aumentado)
-            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
-            pygame.draw.circle(s, (255, 0, 0, 180), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//3)
-            self.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
-
-        # Debug hex grid
-        if __debug__: 
-            self.grid.draw_hex_debug(self.screen)
-
-        # 2. Dibujar elementos del juego (unidades, etc.)
-        self.grid.draw(self.screen, self.images, pos_x, pos_y)
-        self._draw_possible_moves()
-        
-        # 3. Dibujar paneles de UI (encima del tablero)
-        self.ui.draw_log_panel()
-        button_rect = self.ui.draw_panel()
-        self.ui.draw_deployment_zones()
-
-        # 4. Dibujar pantalla de selección ENCIMA de todo si es necesario
-        if self.state == "SELECT_SIDE":
-            self.ui.draw_side_selection()
                 
-        pygame.display.flip()
-    
-    def _draw_possible_moves(self):
-        if not self.selected_unit or not self.possible_moves:
-            return
-            
-        for (row, col) in self.possible_moves:
-            x, y = self.grid.hex_to_pixel(row, col)
-            
-            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
-            pygame.draw.circle(s, (100, 200, 255, 150), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
-            self.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
-
 if __name__ == "__main__":
     game = Game()
     game.run()

@@ -19,6 +19,12 @@ class GameUI:
         """Calcula cuántas líneas son visibles en el panel"""
         return (LOG_PANEL_HEIGHT - 2*LOG_MARGIN) // LOG_LINE_HEIGHT
 
+    def _calculate_board_position(self, tablero_surface):
+        """Calcula la posición centrada del tablero."""
+        pos_x = (SCREEN_WIDTH - tablero_surface.get_width() - PANEL_WIDTH) // 2
+        pos_y = (SCREEN_HEIGHT - tablero_surface.get_height() - LOG_PANEL_HEIGHT) // 2
+        return pos_x, pos_y
+
     def draw_log_panel(self):
         try:
             panel_rect = pygame.Rect(0, SCREEN_HEIGHT - LOG_PANEL_HEIGHT, 
@@ -376,3 +382,57 @@ class GameUI:
         s = pygame.Surface((zone_rect.width, zone_rect.height), pygame.SRCALPHA)
         s.fill(color)
         self.game.screen.blit(s, (zone_rect.x, zone_rect.y))
+
+    def draw_possible_moves(self, possible_moves, grid, offset_x=0, offset_y=0):
+        """Dibuja los movimientos posibles."""
+        if not possible_moves:
+            return
+            
+        for (row, col) in possible_moves:
+            x, y = grid.hex_to_pixel(row, col)
+            x += offset_x
+            y += offset_y
+            
+            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
+            pygame.draw.circle(s, (100, 200, 255, 150), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
+            self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+
+    def draw_game(self, game):
+        """Dibuja todos los elementos del juego."""
+        # 1. Dibujar fondo
+        game.screen.fill(COLOR_BG)
+        
+        # 2. Dibujar tablero (fondo)
+        pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
+        game.screen.blit(game.tablero_escalado, (pos_x, pos_y))
+
+        # 3. Dibujar debug de movimiento si existe
+        if __debug__ and hasattr(game, 'last_move_debug_pos') and game.last_move_debug_pos:
+            row, col = game.last_move_debug_pos
+            x, y = game.grid.hex_to_pixel(row, col)
+            x += pos_x
+            y += pos_y
+            
+            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
+            pygame.draw.circle(s, (255, 0, 0, 180), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//3)
+            game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+
+        # 4. Debug hex grid (opcional)
+        if __debug__: 
+            game.grid.draw_hex_debug(game.screen)
+
+        # 5. Dibujar unidades
+        game.grid.draw(game.screen, game.images, pos_x, pos_y)
+        
+        # 6. Dibujar movimientos posibles
+        if game.selected_unit and game.possible_moves:
+            self.draw_possible_moves(game.possible_moves, game.grid, pos_x, pos_y)
+        
+        # 7. Dibujar UI
+        self.draw_log_panel()
+        self.draw_panel()
+        self.draw_deployment_zones()
+
+        # 8. Dibujar pantalla de selección si es necesario
+        if game.state == "SELECT_SIDE":
+            self.draw_side_selection()
