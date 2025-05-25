@@ -95,63 +95,77 @@ class GameUI:
             self.game.screen.blit(debug_text, (scrollbar_rect.x - 30, scrollbar_rect.y))
         
     def handle_events(self, event):
-        """Manejo de eventos con depuración controlada"""
-        # Solo mostrar mensaje de debug una vez
-        if not self.debug_drawn:
-            print("DEBUG: Sistema de scroll inicializado")
-            self.debug_drawn = True
-        
+        """Manejo completo de eventos de scroll"""
         # Coordenadas del ratón
         mouse_pos = pygame.mouse.get_pos()
         log_panel_rect = pygame.Rect(0, SCREEN_HEIGHT - LOG_PANEL_HEIGHT, 
                                    LOG_PANEL_WIDTH, LOG_PANEL_HEIGHT)
         
-        # Verificar si el ratón está en el panel LOG
-        mouse_in_log = log_panel_rect.collidepoint(mouse_pos)
+        # Solo manejar eventos en el área del LOG
+        if not log_panel_rect.collidepoint(mouse_pos):
+            return False
+
+        # Manejar eventos específicos
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            return self._handle_scroll_start(mouse_pos)
         
-        # Manejar eventos de arrastre
-        if event.type == pygame.MOUSEBUTTONDOWN and mouse_in_log:
-            if hasattr(self, 'log_scroll_handle_rect') and self.log_scroll_handle_rect:
-                if self.log_scroll_handle_rect.collidepoint(mouse_pos):
-                    self.log_scroll_dragging = True
-                    self.drag_start_y = mouse_pos[1]
-                    self.drag_start_position = self.log_scroll_position
-                    print("DEBUG: Scroll - Arrastre iniciado (clic en mango)")
-                    return True
+        elif event.type == pygame.MOUSEBUTTONUP:
+            return self._handle_scroll_end()
         
-        elif event.type == pygame.MOUSEBUTTONUP and self.log_scroll_dragging:
-            self.log_scroll_dragging = False
-            print("DEBUG: Scroll - Arrastre finalizado")
-            return True
+        elif event.type == pygame.MOUSEMOTION:
+            return self._handle_scroll_drag(mouse_pos)
         
-        elif event.type == pygame.MOUSEMOTION and self.log_scroll_dragging:
-            self._handle_scroll_drag(mouse_pos)
-            return True
-        
-        elif event.type == pygame.MOUSEWHEEL and mouse_in_log:
-            self._handle_wheel_scroll(event.y)
-            return True
+        elif event.type == pygame.MOUSEWHEEL:
+            return self._handle_wheel_scroll(event.y)
         
         return False
 
+    def _handle_scroll_start(self, mouse_pos):
+        """Inicia el arrastre del scroll"""
+        if hasattr(self, 'log_scroll_handle_rect') and self.log_scroll_handle_rect:
+            if self.log_scroll_handle_rect.collidepoint(mouse_pos):
+                self.log_scroll_dragging = True
+                self.drag_start_y = mouse_pos[1]
+                self.drag_start_position = self.log_scroll_position
+                if __debug__:
+                    print("DEBUG: Scroll - Arrastre iniciado")
+                return True
+        return False
+
+    def _handle_scroll_end(self):
+        """Finaliza el arrastre del scroll"""
+        if self.log_scroll_dragging:
+            self.log_scroll_dragging = False
+            if __debug__:
+                print("DEBUG: Scroll - Arrastre finalizado")
+            return True
+        return False
+
     def _handle_scroll_drag(self, mouse_pos):
-        """Manejo preciso del arrastre"""
+        """Maneja el arrastre continuo"""
+        if not self.log_scroll_dragging:
+            return False
+        
         delta_y = mouse_pos[1] - self.drag_start_y
         total_lines = len(self.log_messages)
         visible_lines = self._get_visible_lines()
         
         if total_lines <= visible_lines:
-            return
+            return True
         
-        # Calcular nueva posición
+        # Cálculo preciso del desplazamiento
         handle_height = self.log_scroll_handle_rect.height
         scroll_area_height = LOG_PANEL_HEIGHT - 2*LOG_MARGIN - handle_height
         
         if scroll_area_height > 0:
             scroll_ratio = delta_y / scroll_area_height
             max_scroll = total_lines - visible_lines
-            self.log_scroll_position = min(max(0, self.drag_start_position + scroll_ratio * max_scroll), 
-                                         max_scroll)
+            self.log_scroll_position = max(0, min(
+                self.drag_start_position + scroll_ratio * max_scroll,
+                max_scroll
+            ))
+        
+        return True
 
     def _handle_wheel_scroll(self, wheel_delta):
         """Maneja el scroll con rueda del ratón con precisión"""
