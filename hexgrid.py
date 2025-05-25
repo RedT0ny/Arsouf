@@ -1,8 +1,9 @@
 # hexgrid.py
 import pygame
 import math
+from typing import List, Tuple, Optional  # Añadir estas importaciones
 from config import *
-from units import *
+from units import Unit
 
 class HexGrid:
     def __init__(self):
@@ -169,7 +170,60 @@ class HexGrid:
             return col >= HEX_COLS - 4 and row < 4
         else:
             return col < 8 and row >= HEX_ROWS - 2
+
+    def get_adjacent_enemies(self, row, col, side):
+        """Devuelve unidades enemigas adyacentes"""
+        enemies = []
+        for (r, c), _ in self._get_valid_neighbors(row, col, []):
+            unit = self.grid[r][c]
+            if unit and unit.side != side:
+                enemies.append(unit)
+        return enemies
+
+    def get_adjacent_positions(self, row: int, col: int) -> List[tuple]:
+        """Nuevo método: devuelve posiciones adyacentes sin validar"""
+        directions = [
+            [(-1,0), (-1,1), (0,1), (1,0), (1,1), (0,-1)],  # Filas pares
+            [(-1,-1), (-1,0), (0,1), (1,-1), (1,0), (0,-1)]  # Filas impares
+        ]
+        return [(row + dr, col + dc) for dr, dc in directions[row % 2]]
+
+    def get_unit(self, row: int, col: int) -> Optional['Unit']:
+        """Método seguro para obtener unidades"""
+        if 0 <= row < self.rows and 0 <= col < self.cols:
+            return self.grid[row][col]
+        return None
+
+    def eliminar_unidad(self, row, col):
+        self.grid[row][col] = None
+        
+    def get_units_in_radius(self, row, col, radius, side=None):
+        """Obtiene unidades en un radio, filtrando por bando si se especifica"""
+        units = []
+        visited = set()
+        queue = deque()
+        queue.append((row, col, 0))
+        visited.add((row, col))
+        
+        while queue:
+            r, c, dist = queue.popleft()
             
+            if 0 < dist <= radius:
+                unit = self.grid[r][c]
+                if unit and (side is None or unit.side == side):
+                    units.append(unit)
+            
+            if dist < radius:
+                dir_set = directions[r % 2]
+                for dr, dc in dir_set:
+                    nr, nc = r + dr, c + dc
+                    if (0 <= nr < self.rows and 0 <= nc < self.cols and 
+                        (nr, nc) not in visited):
+                        visited.add((nr, nc))
+                        queue.append((nr, nc, dist + 1))
+        
+        return units
+    
     def calculate_zone_rect(self, start_col, start_row, cols, rows):
         """Calcula el rectángulo que engloba una zona del grid."""
         x, y = self.hex_to_pixel(start_row, start_col)

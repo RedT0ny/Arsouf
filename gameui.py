@@ -440,6 +440,24 @@ class GameUI:
             pygame.draw.circle(s, (100, 200, 255, 150), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
             self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
 
+    def draw_combat_indicators(self):
+        # Dibujar marcadores de heridas y rangos de ataque
+        for row in range(self.game.grid.rows):
+            for col in range(self.game.grid.cols):
+                unit = self.game.grid.grid[row][col]
+                if unit and unit.wounded_mark:
+                    x, y = self.game.grid.hex_to_pixel(row, col)
+                    pygame.draw.circle(self.game.screen, COMBAT_COLORS['wounded'], (x, y), 10, 2)
+    
+    def draw_attack_options(self, attacker, targets):
+        # Resaltar unidades que pueden ser atacadas
+        for target in targets:
+            row, col = target.row, target.col
+            x, y = self.game.grid.hex_to_pixel(row, col)
+            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
+            s.fill((255, 0, 0, 100))
+            self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+
     def draw_game(self, game):
         """Dibuja todos los elementos del juego."""
         # 1. Dibujar fondo

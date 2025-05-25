@@ -3,8 +3,8 @@ import os
 import pygame
 
 # 1. Configuración de pantalla
-SCREEN_WIDTH = 1500
-SCREEN_HEIGHT = 974
+SCREEN_WIDTH = 1837
+SCREEN_HEIGHT = 1193
 FPS = 60
 COLOR_BG = (0, 0, 0)
 
@@ -128,6 +128,18 @@ COLOR_BOTON_CANCELAR = (200, 50, 50)
 COLOR_TEXTO = (255, 255, 255)
 COLOR_ZONA_JUGADOR = (100, 200, 100, 50)
 COLOR_ZONA_IA = (200, 100, 100, 50)
+
+
+# ------------------------------
+# COMBATE
+# ------------------------------
+# Colores
+COMBAT_COLORS = {
+    'attack': (255, 50, 50),
+    'defense': (50, 50, 255),
+    'wounded': (255, 0, 0)
+}
+
 
 # ------------------------------
 # VALIDACIÓN DE CONFIG

@@ -161,6 +161,7 @@ class Game:
             self.state = "DEPLOY_AI"
             self.ui.add_log_message("Despliegue confirmado. El ordenador está desplegando")
         
+        self._check_unit_recovery()
         self.selected_unit = None
         self.possible_moves = []
         
@@ -269,8 +270,43 @@ class Game:
             del self._ai_turn_initialized
             del self._ai_moved_units_this_turn
             del self._ai_units_to_consider
+        self._check_unit_recovery()
         self.selected_unit = None
         self.possible_moves = []
+
+    def _check_unit_recovery(self):
+        """Verifica recuperación de todas las unidades heridas"""
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                unit = self.grid.grid[row][col]
+                if unit and unit.health == 1:
+                    unit.recuperar(self.grid)
+
+    def _init_combat_phase(self):
+        self.attacks_this_turn = set()
+        self.attack_mode = False
+        self.current_attacker = None
+    
+    def _handle_combat_phase(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            hex_pos = self._get_hex_under_mouse(pygame.mouse.get_pos())
+            if hex_pos:
+                self._process_combat_click(hex_pos)
+    
+    def _process_combat_click(self, hex_pos):
+        row, col = hex_pos
+        unit = self.grid.grid[row][col]
+        
+        if not self.attack_mode:
+            if unit and unit.side == self.current_turn_side and unit.health == 2:
+                self.current_attacker = unit
+                self.attack_mode = True
+        else:
+            if unit and unit.side != self.current_turn_side:
+                # Realizar ataque
+                if self.current_attacker.atacar(unit, self.grid):
+                    self.ui.add_log_message(f"{type(self.current_attacker).__name__} atacó a {type(unit).__name__}!")
+                self.attack_mode = False
 
     def _draw(self):
        self.ui.draw_game(self)
