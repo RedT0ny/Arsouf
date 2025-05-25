@@ -156,9 +156,15 @@ class Game:
                 
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
                 if distance < HEX_SIZE / 2:
+                    # Mensaje de debug para verificar coordenadas
+                    print(f"Has hecho click en coordenadas del grid: ({row}, {col})")
+                    print(f"Posición en píxeles: {self.grid.hex_to_pixel(row, col)}")
+
                     self._process_hex_click(row, col)
                     break
-    
+    # DEBUG: Si no se encontró ningún hexágono
+    print("Click fuera del tablero o entre hexágonos")
+
     def _process_hex_click(self, row, col):
         unit = self.grid.grid[row][col]
         
@@ -187,13 +193,57 @@ class Game:
     
     def _calculate_possible_moves(self, row, col, speed):
         self.possible_moves = []
-        for r in range(max(0, row - speed), min(HEX_ROWS, row + speed + 1)):
-            for c in range(max(0, col - speed), min(HEX_COLS, col + speed + 1)):
-                if (r != row or c != col) and self.grid.grid[r][c] is None:
-                    distance = abs(r - row) + abs(c - col)
-                    if distance <= speed:
-                        self.possible_moves.append((r, c))
-    
+        
+        # Direcciones para hex grid vertical (punto arriba)
+        # Estructura: (dr, dc) donde dr = cambio en fila, dc = cambio en columna
+        # Organizadas en anillos concéntricos
+        directions = [
+            # Primer anillo (distancia 1)
+            [(-1, 0), (-1, 1), (0, 1), (1, 0), (1, 1), (0, -1)],  # Filas pares
+            [(-1, -1), (-1, 0), (0, 1), (1, -1), (1, 0), (0, -1)]  # Filas impares
+        ]
+        
+        visited = set()
+        queue = [(row, col, 0)]
+        visited.add((row, col))
+        
+        while queue:
+            r, c, dist = queue.pop(0)
+            
+            # Seleccionar el conjunto de direcciones según paridad de fila
+            dir_set = directions[r % 2]
+            
+            for dr, dc in dir_set:
+                nr = r + dr
+                nc = c + dc
+                
+                # Verificar límites del tablero
+                if 0 <= nr < self.grid.rows and 0 <= nc < self.grid.cols:
+                    if (nr, nc) not in visited and dist + 1 <= speed:
+                        visited.add((nr, nc))
+                        if self.grid.grid[nr][nc] is None:  # Solo casillas vacías
+                            self.possible_moves.append((nr, nc))
+                        queue.append((nr, nc, dist + 1))
+        
+        # Debug: Mostrar resultados ordenados
+        print("\nMovimientos calculados para velocidad", speed)
+        print("Posición inicial:", (row, col))
+        print("Posibles movimientos (ordenados):")
+        for r in range(max(0, row-speed), min(self.grid.rows, row+speed+1)):
+            line = []
+            for c in range(max(0, col-speed), min(self.grid.cols, col+speed+1)):
+                if (r, c) in self.possible_moves:
+                    line.append(f"({r},{c})")
+                elif r == row and c == col:
+                    line.append("POS")
+                else:
+                    line.append("    ")
+            # Alineación para mostrar estructura hexagonal
+            if r % 2 == 1:
+                print("  " + "  ".join(line))
+            else:
+                print("    " + "  ".join(line))
+            
     def _ai_deploy_units(self):
         if not self.units_to_deploy[self.ai_side]:
             self.state = "PLAYER_TURN"

@@ -84,4 +84,4 @@ class HexGrid:
         for row in range(self.rows):
             for col in range(self.cols):
                 x, y = self.hex_to_pixel(row, col)
-                pygame.draw.circle(screen, (0, 255, 255, 0.2), (x, y), self.hex_width * 0.5, 1)  # Puntos morados
+                pygame.draw.circle(screen, (0, 255, 255, 0.2), (x, y), self.hex_width * 0.5, 1)  # círculos cian
