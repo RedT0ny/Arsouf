@@ -333,7 +333,7 @@ class Game:
                     new_row, new_col = random.choice(self.possible_moves)
                     self.grid.grid[row][col] = None
                     self.grid.add_unit(new_row, new_col, unit)
-                    self.ui.add_log_message(f"{type(unit).__name__} se mueve a ({new_row}, {new_col})")
+                    self.ui.add_log_message(f"{type(unit).__name__} se mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
         
         # Finalizar turno de la IA
         self.state = "PLAYER_TURN"
