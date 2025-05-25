@@ -2,6 +2,7 @@
 import pygame
 import math
 from config import *
+from units import *
 
 class HexGrid:
     def __init__(self):
@@ -54,6 +55,113 @@ class HexGrid:
         
         # 4. Actualizar posición interna de la unidad
         unit.set_position(row, col)
+
+    def get_possible_moves(self, row, col, speed, moved_units=None, current_path=None):
+        """Calcula todos los movimientos posibles desde una posición dada."""
+        if moved_units is None:
+            moved_units = set()
+        if current_path is None:
+            current_path = []
+        
+        possible_moves = []
+        unit = self.grid[row][col]
+        
+        if not unit or (row, col) in moved_units:
+            return possible_moves
+
+        # Ajusta velocidad de unidades a pie (slow) en carretera
+        effective_speed = speed
+        if hasattr(unit, 'slow') and (row, col) in ROAD_HEXES:
+            effective_speed += 1  # Bonus por empezar en carretera
+        
+        from collections import deque
+        visited = {}
+        queue = deque()
+        queue.append((row, col, 0.0, current_path.copy())) # (row, col, accumulated_cost, path)
+        visited[(row, col)] = 0.0
+
+        while queue:
+            r, c, dist, path = queue.popleft()
+            
+            if dist > 0 and self.grid[r][c] is None:
+                possible_moves.append((r, c))
+
+            for (nr, nc), cost in self._get_valid_neighbors(r, c, path, unit):
+                new_dist = dist + cost
+                if new_dist <= effective_speed and (nr, nc not in visited or new_dist < visited.get((nr, nc), float('inf'))):
+                    visited[(nr, nc)] = new_dist
+                    queue.append((nr, nc, new_dist, path + [(r, c)]))
+                            
+        return possible_moves
+    
+    def _get_valid_neighbors(self, row, col, current_path, unit):
+        """Devuelve vecinos válidos y costo de movimiento, considerando barreras"""
+        # Direcciones para hex grid vertical (punto arriba)
+        # Estructura: (dr, dc) donde dr = cambio en fila, dc = cambio en columna
+        # Organizadas en anillos concéntricos
+        directions = [
+            [(-1,0), (-1,1), (0,1), (1,0), (1,1), (0,-1)],  # Filas pares
+            [(-1,-1), (-1,0), (0,1), (1,-1), (1,0), (0,-1)]  # Filas impares
+        ]
+        
+        neighbors = []
+        dir_set = directions[row % 2]
+        
+        for dr, dc in dir_set:
+            nr = row + dr
+            nc = col + dc
+            
+            # 1. Verificar límites y hexágonos prohibidos
+            if not (0 <= nr < self.rows and 0 <= nc < self.cols):
+                continue
+            if (nr, nc) in FORBIDDEN_HEXES:
+                continue
+            
+            # 2. Determinar costo base del movimiento
+            move_pair = frozenset({(row, col), (nr, nc)})
+            cost = 1  # Costo base
+            
+            # 3. Aplicar modificadores de terreno
+            # a) Barreras de río
+            if move_pair in RIVER_BARRIERS:
+                if FORD_HEX not in current_path and FORD_HEX != (row, col) and FORD_HEX != (nr, nc):
+                    continue # Bloquear movimiento
+                cost = 2 # Penalización por cruzar río
+            
+            # Modificadores para unidades slow
+            if hasattr(unit, 'slow'):
+                on_road_start = (row, col) in ROAD_HEXES
+                on_road_end = (nr, nc) in ROAD_HEXES
+                
+                # Bonus: movimiento más rápido EN carretera
+                if on_road_start and on_road_end:
+                    cost = 0.75  # Mitad de costo en carretera continua
+                # Penalización: salir de carretera
+                elif on_road_start and not on_road_end:
+                    cost = 1.25  # Costo extra por dejar carretera
+                    
+            neighbors.append(((nr, nc), cost))
+        
+        return neighbors
+
+    def is_unit_of_side(self, unit, side):
+        """Determina si una unidad pertenece a un bando."""
+        if side == "CRUZADOS":
+            return isinstance(unit, (Ricardo, Templario, Hospitalario, Caballero, Infanteria, Bagaje))
+        else:
+            return isinstance(unit, (Saladino, Mameluco, Arquero, Explorador))
+
+    def move_unit(self, from_row, from_col, to_row, to_col):
+        """Mueve una unidad entre posiciones."""
+        if not (0 <= to_row < self.rows and 0 <= to_col < self.cols):
+            return False
+            
+        unit = self.grid[from_row][from_col]
+        if unit and self.grid[to_row][to_col] is None:
+            self.grid[from_row][from_col] = None
+            self.add_unit(to_row, to_col, unit)
+            return True
+        return False
 
     def is_in_deployment_zone(self, row, col, side):
         """Determina si una posición está en la zona de despliegue."""

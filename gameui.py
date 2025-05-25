@@ -202,7 +202,50 @@ class GameUI:
         visible_lines = (SCREEN_HEIGHT - LOG_PANEL_HEIGHT) // LOG_LINE_HEIGHT
         if len(self.log_messages) - self.log_scroll_position <= visible_lines + 5:
             self.log_scroll_position = max(0, len(self.log_messages) - visible_lines)
+
+    def handle_deployment_click(self, mouse_pos, game):
+        """Maneja el clic durante el despliegue."""
+        tablero_rect = pygame.Rect(0, 0, game.tablero_escalado.get_width(), 
+                                  game.tablero_escalado.get_height())
+        
+        if tablero_rect.collidepoint(mouse_pos):
+            return self._find_hex_under_mouse(mouse_pos, game.grid)
+        return None
+
+    def _find_hex_under_mouse(self, mouse_pos, grid):
+        """Encuentra el hexágono bajo el cursor."""
+        for row in range(grid.rows):
+            for col in range(grid.cols):
+                x, y = grid.hex_to_pixel(row, col)
+                distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
+                if distance < HEX_SIZE / 2:
+                    return (row, col)
+        return None
+
+    def get_button_rect(self):
+        """Devuelve el rect del botón actual si existe."""
+        if self.game.state == "PLAYER_TURN":
+            panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)
+            return pygame.Rect(panel_rect.x + (PANEL_WIDTH - BOTON_WIDTH)//2, 
+                             SCREEN_HEIGHT - 80, BOTON_WIDTH, BOTON_HEIGHT)
+        elif self.game.state == "DEPLOY_PLAYER" and not getattr(self.game, 'current_deploying_unit', None):
+            panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)
+            return pygame.Rect(panel_rect.x + (PANEL_WIDTH - BOTON_WIDTH)//2,
+                             SCREEN_HEIGHT - 80, BOTON_WIDTH, BOTON_HEIGHT)
+        return None
+
+    def handle_side_selection(self, event):
+        """Maneja la selección de bando."""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            cruzados_rect, sarracenos_rect = self.draw_side_selection()
+            mouse_pos = pygame.mouse.get_pos()
             
+            if cruzados_rect.collidepoint(mouse_pos):
+                return "CRUZADOS"
+            elif sarracenos_rect.collidepoint(mouse_pos):
+                return "SARRACENOS"
+        return None
+
     def draw_side_selection(self):
         """Dibuja la pantalla de selección de lado."""
         self.game.screen.fill(COLOR_BG)
@@ -227,7 +270,7 @@ class GameUI:
         
         pygame.display.flip()
         return cruzados_rect, sarracenos_rect
-    
+
     def draw_panel(self):
         """Dibuja el panel lateral con información del juego."""
         panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)

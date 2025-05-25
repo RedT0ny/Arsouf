@@ -1,6 +1,6 @@
 # units.py
-import pygame
-from config import ESCALA
+# import pygame
+# from config import *
 
 class Unit:
     """Clase base para todas las unidades del juego."""
@@ -8,6 +8,7 @@ class Unit:
         self.image_key = image_key  # Clave para acceder a la imagen en IMAGE_PATHS
         self.row = None
         self.col = None
+        self.health = 2
     
     def set_position(self, row, col):
         """Establece la posición en el grid."""
@@ -16,6 +17,9 @@ class Unit:
     
     def atacar(self, tgt_row, tgt_col):
         print(f"Atacar unidad en {tgt_row},{tgt_col}?")
+        
+    def herida(self):
+        self.health -= 1
 
     def __repr__(self):
         return f"{self.__class__.__name__}(row={self.row}, col={self.col})"
@@ -30,7 +34,6 @@ class Ricardo(Unit):
         super().__init__("ricardo")
         self.power = 2
         self.speed = 2
-        self.health = 1
         self.bonus = 2
 
 class Templario(Unit):
@@ -39,7 +42,6 @@ class Templario(Unit):
         super().__init__("templario")
         self.power = 4
         self.speed = 2
-        self.health = 1
         
 class Hospitalario(Unit):
     """Caballeros Hospitalarios (élite)."""
@@ -47,7 +49,6 @@ class Hospitalario(Unit):
         super().__init__("hospitalario")
         self.power = 4
         self.speed = 2
-        self.health = 1
         
 class Caballero(Unit):
     """Caballeros estándar."""
@@ -55,7 +56,6 @@ class Caballero(Unit):
         super().__init__("caballero")
         self.power = 3
         self.speed = 2
-        self.health = 1
 
 class Infanteria(Unit):
     """Soldados de infantería básicos."""
@@ -63,7 +63,6 @@ class Infanteria(Unit):
         super().__init__("infanteria")
         self.power = 2
         self.speed = 1
-        self.health = 1
         self.slow = 1
         
 class Bagaje(Unit):
@@ -72,7 +71,6 @@ class Bagaje(Unit):
         super().__init__("bagaje")
         self.power = 1
         self.speed = 1
-        self.health = 1
         self.slow = 1
 
 # ------------------------------
@@ -85,7 +83,6 @@ class Saladino(Unit):
         super().__init__("saladino")
         self.power = 2
         self.speed = 3
-        self.health = 1
         self.bonus = 2
         
 class Mameluco(Unit):
@@ -94,7 +91,6 @@ class Mameluco(Unit):
         super().__init__("mameluco")
         self.power = 3
         self.speed = 3
-        self.health = 1
         
 class Arquero(Unit):
     """Arqueros a caballo."""
@@ -102,7 +98,6 @@ class Arquero(Unit):
         super().__init__("arquero")
         self.power = 2
         self.speed = 3
-        self.health = 1
         
 class Explorador(Unit):
     """Unidades rápidas de reconocimiento."""
@@ -110,4 +105,3 @@ class Explorador(Unit):
         super().__init__("explorador")
         self.power = 1
         self.speed = 3
-        self.health = 1
