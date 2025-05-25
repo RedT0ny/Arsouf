@@ -206,25 +206,35 @@ class Game:
         visited = set()
         queue = [(row, col, 0)]
         visited.add((row, col))
+        unit = self.grid.grid[row][col]
+        
+        # Ajustar velocidad si es unidad lenta en carretera
+        effective_speed = speed
+        if hasattr(unit, 'slow') and (row, col) in ROAD_HEXES:
+            effective_speed += 1
         
         while queue:
             r, c, dist = queue.pop(0)
             
-            # Seleccionar el conjunto de direcciones según paridad de fila
             dir_set = directions[r % 2]
-            
             for dr, dc in dir_set:
                 nr = r + dr
                 nc = c + dc
                 
-                # Verificar límites del tablero
-                if 0 <= nr < self.grid.rows and 0 <= nc < self.grid.cols:
-                    if (nr, nc) not in visited and dist + 1 <= speed:
+                # Verificar límites y hexágonos prohibidos
+                if (0 <= nr < self.grid.rows and 0 <= nc < self.grid.cols and 
+                    (nr, nc) not in FORBIDDEN_HEXES):
+                    
+                    if (nr, nc) not in visited and dist + 1 <= effective_speed:
                         visited.add((nr, nc))
-                        if self.grid.grid[nr][nc] is None:  # Solo casillas vacías
+                        if self.grid.grid[nr][nc] is None:  # Casilla vacía
                             self.possible_moves.append((nr, nc))
-                        queue.append((nr, nc, dist + 1))
-        
+                            # Ajustar distancia si movemos a unidad lenta a carretera
+                            new_dist = dist + 1
+                            if hasattr(unit, 'slow') and (nr, nc) in ROAD_HEXES and new_dist == speed:
+                                new_dist -= 0.5  # Permite movimiento extra
+                            queue.append((nr, nc, new_dist))
+                        
         # Debug: Mostrar resultados ordenados
         print("\nMovimientos calculados para velocidad", speed)
         print("Posición inicial:", (row, col))

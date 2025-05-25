@@ -62,7 +62,7 @@ class Infanteria(Unit):
     def __init__(self):
         super().__init__("infanteria")
         self.power = 2
-        self.speed = 2
+        self.speed = 1
         self.health = 1
         self.slow = 1
         
@@ -71,7 +71,7 @@ class Bagaje(Unit):
     def __init__(self):
         super().__init__("bagaje")
         self.power = 1
-        self.speed = 2
+        self.speed = 1
         self.health = 1
         self.slow = 1
 

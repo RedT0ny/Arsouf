@@ -49,6 +49,22 @@ HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["in
 HEX_ROWS = 15
 HEX_COLS = 22
 
+# Zonas especiales del tablero
+ROAD_HEXES = {
+    (1,0), (1,1), (2,0), (2,1),
+    (3,2), (3,3), (3,4), *{(3,c) for c in range(11, 22)},
+    *{(4,c) for c in range(4, 11)}
+}
+
+FORBIDDEN_HEXES = {
+    (0,0), (0,1),  # Mar Mediterráneo
+    *{(4,c) for c in range(16, 20)},  # Pantano
+    *{(5,c) for c in range(16, 19)},
+    *{(6,c) for c in range(15, 18)},
+    *{(7,c) for c in range(16, 19)},
+    (8,17)  # de Birket-Ramadan
+}
+
 # 6. Cálculo de ESCALA (centralizado aquí)
 ESCALA = min((SCREEN_WIDTH - PANEL_WIDTH) / TABLERO_REAL_WIDTH, (SCREEN_HEIGHT - LOG_PANEL_HEIGHT) / TABLERO_REAL_HEIGHT)
 FACTOR_ALTURA = 0.97
