@@ -44,6 +44,7 @@ class Game:
         self.possible_moves = []
         self.moved_units = set()  # Unidades que ya han movido en este turno
         self.current_turn_side = None  # Bandos del turno actual
+        self.last_move_debug_pos = None  # Para debug visual
 
     def _load_images(self):
         images = {}
@@ -163,8 +164,8 @@ class Game:
 
     def _end_player_turn(self):
         if self.state == "PLAYER_TURN":
-            self.state = "AI_TURN"
             self.moved_units = set()  # Resetear unidades movidas
+            self.state = "AI_TURN"
             self.current_turn_side = self.ai_side
             self.ui.add_log_message("Turno del jugador finalizado")
         elif self.state == "DEPLOY_PLAYER" and not self.current_deploying_unit:
@@ -195,15 +196,17 @@ class Game:
         
         if not self.selected_unit and unit and self._is_player_unit(unit):
             if (row, col) in self.moved_units:
-                print("Esta unidad ya ha movido este turno")
+                self.ui.add_log_message(f"Ya has movido a [{type(unit).__name__}] este turno")
                 return
                 
             self.selected_unit = (row, col)
             self._calculate_possible_moves(row, col, unit.speed)
         elif self.selected_unit and (row, col) in self.possible_moves:
             old_row, old_col = self.selected_unit
-            self.moved_units.add((old_row, old_col))  # Registrar unidad movida
             self._move_unit(row, col)
+            self.moved_units.add((row, col))
+            # Almacenar posición para debug
+            self.last_move_debug_pos = (old_row, old_col)  # <-- Nueva línea
         else:
             self.selected_unit = None
             self.possible_moves = []
@@ -225,7 +228,12 @@ class Game:
     def _calculate_possible_moves(self, row, col, speed):
         self.possible_moves = []
         unit = self.grid.grid[row][col]
-        
+
+        # Si la unidad ya movió, no calcular movimientos
+        if (row, col) in self.moved_units:
+            print("DEBUG: Movimiento bloqueado - unidad ya movió")
+            return
+
         # Ajustar velocidad si es unidad lenta empezando en carretera
         effective_speed = speed
         if hasattr(unit, 'slow') and (row, col) in ROAD_HEXES:
@@ -251,24 +259,24 @@ class Game:
                     queue.append((nr, nc, new_dist, path + [(r, c)]))
                 
         # Debug: Mostrar resultados ordenados
-        if __debug__:
-            print("\nMovimientos calculados para velocidad", speed)
-            print("Posición inicial:", (row, col))
-            print("Posibles movimientos (ordenados):")
-            for r in range(max(0, row-speed), min(self.grid.rows, row+speed+1)):
-                line = []
-                for c in range(max(0, col-speed), min(self.grid.cols, col+speed+1)):
-                    if (r, c) in self.possible_moves:
-                        line.append(f"({r},{c})")
-                    elif r == row and c == col:
-                        line.append("POS")
-                    else:
-                        line.append("    ")
-                # Alineación para mostrar estructura hexagonal
-                if r % 2 == 1:
-                    print("  " + "  ".join(line))
-                else:
-                    print("    " + "  ".join(line))
+#         if __debug__:
+#             print("\nMovimientos calculados para velocidad", speed)
+#             print("Posición inicial:", (row, col))
+#             print("Posibles movimientos (ordenados):")
+#             for r in range(max(0, row-speed), min(self.grid.rows, row+speed+1)):
+#                 line = []
+#                 for c in range(max(0, col-speed), min(self.grid.cols, col+speed+1)):
+#                     if (r, c) in self.possible_moves:
+#                         line.append(f"({r},{c})")
+#                     elif r == row and c == col:
+#                         line.append("POS")
+#                     else:
+#                         line.append("    ")
+#                 # Alineación para mostrar estructura hexagonal
+#                 if r % 2 == 1:
+#                     print("  " + "  ".join(line))
+#                 else:
+#                     print("    " + "  ".join(line))
 
     def _get_valid_neighbors(self, row, col, current_path):
         """Devuelve vecinos válidos y costo de movimiento, considerando barreras"""
@@ -408,14 +416,26 @@ class Game:
         
         # 1. Dibujar tablero (fondo)
         pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2  # Ajuste para el panel LOG
-        
+        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2  # Ajuste para el panel LOG       
         self.screen.blit(self.tablero_escalado, (pos_x, pos_y))
-        
-        # 2. Dibujar elementos del juego (unidades, etc.)
+
+        # Dibujar debug de movimiento si existe
+        if __debug__ and hasattr(self, 'last_move_debug_pos') and self.last_move_debug_pos:
+            row, col = self.last_move_debug_pos
+            x, y = self.grid.hex_to_pixel(row, col)
+            x += pos_x  # Añadir offset del tablero
+            y += pos_y
+            
+            # Dibujar círculo más visible (tamaño aumentado)
+            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
+            pygame.draw.circle(s, (255, 0, 0, 180), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//3)
+            self.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+
+        # Debug hex grid
         if __debug__: 
             self.grid.draw_hex_debug(self.screen)
-        
+
+        # 2. Dibujar elementos del juego (unidades, etc.)
         self.grid.draw(self.screen, self.images, pos_x, pos_y)
         self._draw_possible_moves()
         
@@ -423,7 +443,7 @@ class Game:
         self.ui.draw_log_panel()
         button_rect = self.ui.draw_panel()
         self.ui.draw_deployment_zones()
-        
+
         # 4. Dibujar pantalla de selección ENCIMA de todo si es necesario
         if self.state == "SELECT_SIDE":
             self.ui.draw_side_selection()

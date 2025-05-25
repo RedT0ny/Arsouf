@@ -127,8 +127,8 @@ class GameUI:
                 self.log_scroll_dragging = True
                 self.drag_start_y = mouse_pos[1]
                 self.drag_start_position = self.log_scroll_position
-                if __debug__:
-                    print("DEBUG: Scroll - Arrastre iniciado")
+#                 if __debug__:
+#                     print("DEBUG: Scroll - Arrastre iniciado")
                 return True
         return False
 
@@ -136,8 +136,8 @@ class GameUI:
         """Finaliza el arrastre del scroll"""
         if self.log_scroll_dragging:
             self.log_scroll_dragging = False
-            if __debug__:
-                print("DEBUG: Scroll - Arrastre finalizado")
+#             if __debug__:
+#                 print("DEBUG: Scroll - Arrastre finalizado")
             return True
         return False
 
@@ -183,8 +183,8 @@ class GameUI:
         self.log_scroll_position = max(0, min(self.log_scroll_position - scroll_delta, max_scroll))
         
         # Debug opcional
-        if __debug__:
-            print(f"DEBUG: Wheel scroll - Delta: {wheel_delta}, Posición: {self.log_scroll_position}/{max_scroll}")
+#         if __debug__:
+#             print(f"DEBUG: Wheel scroll - Delta: {wheel_delta}, Posición: {self.log_scroll_position}/{max_scroll}")
 
     def add_log_message(self, message):
         """Añade un mensaje al log y ajusta el scroll."""
@@ -355,11 +355,11 @@ class GameUI:
         """Calcula las coordenadas de una zona de despliegue."""
         hex_width = self.game.grid.hex_width
         hex_height = self.game.grid.hex_height
-        
+
         # Calcular posición del tablero
         pos_x = 0 #(SCREEN_WIDTH - self.game.tablero_escalado.get_width()) // 2
         pos_y = 0 #(SCREEN_HEIGHT - self.game.tablero_escalado.get_height()) // 2
-        
+
         # Calcular esquina superior izquierda de la zona
         x, y = self.game.grid.hex_to_pixel(start_row, start_col)
         x += pos_x
