@@ -62,8 +62,18 @@ FORBIDDEN_HEXES = {
     *{(5,c) for c in range(16, 19)},
     *{(6,c) for c in range(15, 18)},
     *{(7,c) for c in range(16, 19)},
-    (8,17)  # de Birket-Ramadan
+    (5,20), (8,17)  # de Birket-Ramadan
 }
+
+# Barreras de río (pares de hexágonos entre los que no se puede mover directamente)
+RIVER_BARRIERS = {
+    frozenset({(0,17), (0,18)}),  # frozenset permite usarlo como clave en conjuntos
+    frozenset({(0,17), (1,18)}),
+    frozenset({(1,17), (1,18)})
+}
+
+# Vado (punto de cruce permitido)
+FORD_HEX = (2,17)  # Hexágono donde se puede cruzar el río
 
 # 6. Cálculo de ESCALA (centralizado aquí)
 ESCALA = min((SCREEN_WIDTH - PANEL_WIDTH) / TABLERO_REAL_WIDTH, (SCREEN_HEIGHT - LOG_PANEL_HEIGHT) / TABLERO_REAL_HEIGHT)

@@ -193,67 +193,104 @@ class Game:
     
     def _calculate_possible_moves(self, row, col, speed):
         self.possible_moves = []
+        unit = self.grid.grid[row][col]
         
+        # Ajustar velocidad si es unidad lenta empezando en carretera
+        effective_speed = speed
+        if hasattr(unit, 'slow') and (row, col) in ROAD_HEXES:
+            effective_speed += 1
+        
+        from collections import deque
+        visited = {}
+        queue = deque()
+        queue.append((row, col, 0.0, []))  # (row, col, accumulated_cost, path)
+        visited[(row, col)] = 0.0
+
+        while queue:
+            r, c, dist, path = queue.popleft()
+            
+            if dist > 0 and self.grid.grid[r][c] is None:
+                self.possible_moves.append((r, c))
+
+            for (nr, nc), cost in self._get_valid_neighbors(r, c, path):
+                new_dist = dist + cost
+                # Solo considerar si está dentro del límite y es mejor camino
+                if new_dist <= effective_speed and (nr, nc not in visited or new_dist < visited.get((nr, nc), float('inf'))):
+                    visited[(nr, nc)] = new_dist
+                    queue.append((nr, nc, new_dist, path + [(r, c)]))
+                
+        # Debug: Mostrar resultados ordenados
+        if __debug__:
+            print("\nMovimientos calculados para velocidad", speed)
+            print("Posición inicial:", (row, col))
+            print("Posibles movimientos (ordenados):")
+            for r in range(max(0, row-speed), min(self.grid.rows, row+speed+1)):
+                line = []
+                for c in range(max(0, col-speed), min(self.grid.cols, col+speed+1)):
+                    if (r, c) in self.possible_moves:
+                        line.append(f"({r},{c})")
+                    elif r == row and c == col:
+                        line.append("POS")
+                    else:
+                        line.append("    ")
+                # Alineación para mostrar estructura hexagonal
+                if r % 2 == 1:
+                    print("  " + "  ".join(line))
+                else:
+                    print("    " + "  ".join(line))
+
+    def _get_valid_neighbors(self, row, col, current_path):
+        """Devuelve vecinos válidos y costo de movimiento, considerando barreras"""
         # Direcciones para hex grid vertical (punto arriba)
         # Estructura: (dr, dc) donde dr = cambio en fila, dc = cambio en columna
         # Organizadas en anillos concéntricos
         directions = [
             # Primer anillo (distancia 1)
-            [(-1, 0), (-1, 1), (0, 1), (1, 0), (1, 1), (0, -1)],  # Filas pares
-            [(-1, -1), (-1, 0), (0, 1), (1, -1), (1, 0), (0, -1)]  # Filas impares
+            [(-1,0), (-1,1), (0,1), (1,0), (1,1), (0,-1)],  # Filas pares
+            [(-1,-1), (-1,0), (0,1), (1,-1), (1,0), (0,-1)]  # Filas impares
         ]
         
-        visited = set()
-        queue = [(row, col, 0)]
-        visited.add((row, col))
+        neighbors = []
+        dir_set = directions[row % 2]
         unit = self.grid.grid[row][col]
         
-        # Ajustar velocidad si es unidad lenta en carretera
-        effective_speed = speed
-        if hasattr(unit, 'slow') and (row, col) in ROAD_HEXES:
-            effective_speed += 1
-        
-        while queue:
-            r, c, dist = queue.pop(0)
+        for dr, dc in dir_set:
+            nr = row + dr
+            nc = col + dc
             
-            dir_set = directions[r % 2]
-            for dr, dc in dir_set:
-                nr = r + dr
-                nc = c + dc
+            # 1. Verificar límites y hexágonos prohibidos
+            if not (0 <= nr < self.grid.rows and 0 <= nc < self.grid.cols):
+                continue
+            if (nr, nc) in FORBIDDEN_HEXES:
+                continue
                 
-                # Verificar límites y hexágonos prohibidos
-                if (0 <= nr < self.grid.rows and 0 <= nc < self.grid.cols and 
-                    (nr, nc) not in FORBIDDEN_HEXES):
-                    
-                    if (nr, nc) not in visited and dist + 1 <= effective_speed:
-                        visited.add((nr, nc))
-                        if self.grid.grid[nr][nc] is None:  # Casilla vacía
-                            self.possible_moves.append((nr, nc))
-                            # Ajustar distancia si movemos a unidad lenta a carretera
-                            new_dist = dist + 1
-                            if hasattr(unit, 'slow') and (nr, nc) in ROAD_HEXES and new_dist == speed:
-                                new_dist -= 0.5  # Permite movimiento extra
-                            queue.append((nr, nc, new_dist))
-                        
-        # Debug: Mostrar resultados ordenados
-        print("\nMovimientos calculados para velocidad", speed)
-        print("Posición inicial:", (row, col))
-        print("Posibles movimientos (ordenados):")
-        for r in range(max(0, row-speed), min(self.grid.rows, row+speed+1)):
-            line = []
-            for c in range(max(0, col-speed), min(self.grid.cols, col+speed+1)):
-                if (r, c) in self.possible_moves:
-                    line.append(f"({r},{c})")
-                elif r == row and c == col:
-                    line.append("POS")
-                else:
-                    line.append("    ")
-            # Alineación para mostrar estructura hexagonal
-            if r % 2 == 1:
-                print("  " + "  ".join(line))
-            else:
-                print("    " + "  ".join(line))
+            # 2. Determinar costo base del movimiento
+            move_pair = frozenset({(row, col), (nr, nc)})
+            cost = 1  # Costo normal
             
+            # 3. Aplicar modificadores de terreno
+            # a) Barreras de río
+            if move_pair in RIVER_BARRIERS:
+                if FORD_HEX not in current_path and FORD_HEX != (row, col) and FORD_HEX != (nr, nc):
+                    continue  # Bloquear movimiento
+                cost = 2  # Penalización por cruzar río
+            
+            # b) Bonus en carretera para unidades slow
+            if hasattr(unit, 'slow'):
+                on_road_start = (row, col) in ROAD_HEXES
+                on_road_end = (nr, nc) in ROAD_HEXES
+                
+                # Bonus: movimiento más rápido EN carretera
+                if on_road_start and on_road_end:
+                    cost = 0.5  # Mitad de costo en carretera continua
+                # Penalización: salir de carretera
+                elif on_road_start and not on_road_end:
+                    cost = 1.5  # Costo extra por dejar carretera
+            
+            neighbors.append(((nr, nc), cost))
+        
+        return neighbors
+
     def _ai_deploy_units(self):
         if not self.units_to_deploy[self.ai_side]:
             self.state = "PLAYER_TURN"
