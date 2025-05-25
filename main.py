@@ -38,11 +38,13 @@ class Game:
         # Unidades por colocar
         self.units_to_deploy = self._get_initial_units()
         self.current_deploying_unit = None
-        
+
         # Movimiento
         self.selected_unit = None
         self.possible_moves = []
-    
+        self.moved_units = set()  # Unidades que ya han movido en este turno
+        self.current_turn_side = None  # Bandos del turno actual
+
     def _load_images(self):
         images = {}
         for key, path in IMAGE_PATHS.items():
@@ -84,14 +86,24 @@ class Game:
                              pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
                 if self.ui.handle_events(event):
                     continue  # Si el UI consumió el evento, no procesarlo más
-            
-            if self.state == "SELECT_SIDE":
-                self._handle_side_selection(event)
-            elif self.state == "DEPLOY_PLAYER":
-                self._handle_deployment(event)
-            elif self.state == "PLAYER_TURN":
-                self._handle_player_turn(event)
-    
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                
+                # Manejar botón de finalizar turno/confirmar despliegue
+                button_rect = self.ui.draw_panel()  # Obtener el rect del botón
+                if button_rect and button_rect.collidepoint(mouse_pos):
+                    self._end_player_turn()
+                    continue  # Importante para no procesar otros clicks
+                    
+                # Manejo específico por estado
+                if self.state == "SELECT_SIDE":
+                    self._handle_side_selection(event)
+                elif self.state == "DEPLOY_PLAYER":
+                    self._handle_deployment(event)
+                elif self.state == "PLAYER_TURN":
+                    self._handle_player_turn(event)
+                    
     def _handle_side_selection(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             cruzados_rect, sarracenos_rect = self.ui.draw_side_selection()
@@ -148,7 +160,20 @@ class Game:
             
             if tablero_rect.collidepoint(mouse_pos):
                 self._handle_board_click(mouse_pos)
-    
+
+    def _end_player_turn(self):
+        if self.state == "PLAYER_TURN":
+            self.state = "AI_TURN"
+            self.moved_units = set()  # Resetear unidades movidas
+            self.current_turn_side = self.ai_side
+            self.ui.add_log_message("Turno del jugador finalizado")
+        elif self.state == "DEPLOY_PLAYER" and not self.current_deploying_unit:
+            self.state = "DEPLOY_AI"
+            self.ui.add_log_message("Despliegue confirmado. El ordenador está desplegando")
+        
+        self.selected_unit = None
+        self.possible_moves = []
+        
     def _handle_board_click(self, mouse_pos):
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
@@ -169,14 +194,20 @@ class Game:
         unit = self.grid.grid[row][col]
         
         if not self.selected_unit and unit and self._is_player_unit(unit):
+            if (row, col) in self.moved_units:
+                print("Esta unidad ya ha movido este turno")
+                return
+                
             self.selected_unit = (row, col)
             self._calculate_possible_moves(row, col, unit.speed)
         elif self.selected_unit and (row, col) in self.possible_moves:
+            old_row, old_col = self.selected_unit
+            self.moved_units.add((old_row, old_col))  # Registrar unidad movida
             self._move_unit(row, col)
         else:
             self.selected_unit = None
             self.possible_moves = []
-    
+            
     def _move_unit(self, row, col):
         old_row, old_col = self.selected_unit
         moving_unit = self.grid.grid[old_row][old_col]
@@ -311,47 +342,63 @@ class Game:
         
         if not self.units_to_deploy[self.ai_side]:
             self.state = "PLAYER_TURN"
-    
+  
+
     def _ai_turn(self):
-        # Añadir mensaje solo al comenzar el turno de la IA
-        if not hasattr(self, '_ai_turn_started'):
+        # 1. Inicializar el turno de la IA si es nuevo
+        if not hasattr(self, '_ai_turn_initialized'):
             self.ui.add_log_message("Turno del ordenador")
-            self._ai_turn_started = True
-        
-        # Realizar movimientos de la IA
-        ai_units = []
-        for row in range(self.grid.rows):
-            for col in range(self.grid.cols):
-                unit = self.grid.grid[row][col]
-                if unit and not self._is_player_unit(unit):
-                    ai_units.append((row, col, unit))
-        
-        for row, col, unit in ai_units:
-            if random.random() < 0.7:
+            self._ai_turn_initialized = True
+            self._ai_moved_units_this_turn = set()
+            self._ai_units_to_consider = [
+                (r, c, u) for r in range(self.grid.rows)
+                for c in range(self.grid.cols)
+                if (u := self.grid.grid[r][c]) and not self._is_player_unit(u)
+            ]
+            random.shuffle(self._ai_units_to_consider)  # Orden aleatorio
+
+        # 2. Mover hasta 1 unidad por frame (para permitir renderizado)
+        if self._ai_units_to_consider:
+            row, col, unit = self._ai_units_to_consider.pop()
+            
+            # Decidir aleatoriamente si mover esta unidad (90% probabilidad)
+            if random.random() < 1 and (row, col) not in self._ai_moved_units_this_turn:
                 self._calculate_possible_moves(row, col, unit.speed)
                 if self.possible_moves:
                     new_row, new_col = random.choice(self.possible_moves)
                     self.grid.grid[row][col] = None
                     self.grid.add_unit(new_row, new_col, unit)
-                    self.ui.add_log_message(f"{type(unit).__name__} se mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
-        
-        # Finalizar turno de la IA
+                    self._ai_moved_units_this_turn.add((row, col))
+                    self.ui.add_log_message(f"[{type(unit).__name__}#{id(unit)}] se mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
+                            
+        # 3. Finalizar turno cuando no queden unidades o la IA decida parar
+        if not self._ai_units_to_consider: #or random.random() < 0.05:  # 5% chance de terminar temprano
+            self._end_ai_turn()
+
+    def _end_ai_turn(self):
         self.state = "PLAYER_TURN"
-        self.ui.add_log_message("Turno del ordenador finalizado")
-        delattr(self, '_ai_turn_started')  # Limpiar flag
-    
+        self.ui.add_log_message("Turno del ordenador finalizado. ¡Te toca!")
+        # Limpiar variables de estado del turno de la IA
+        if hasattr(self, '_ai_turn_initialized'):
+            del self._ai_turn_initialized
+            del self._ai_moved_units_this_turn
+            del self._ai_units_to_consider
+        self.selected_unit = None
+        self.possible_moves = []
+        
     def run(self):
         while self.running:
             self._handle_events()
             
+            # Restaurar la lógica original de despliegue
             if self.state == "DEPLOY_AI":
                 self._ai_deploy_units()
             elif self.state == "AI_TURN":
                 self._ai_turn()
-            
+                
             self._draw()
             self.clock.tick(FPS)
-        
+            
         pygame.quit()
         sys.exit()
     
@@ -380,18 +427,7 @@ class Game:
         # 4. Dibujar pantalla de selección ENCIMA de todo si es necesario
         if self.state == "SELECT_SIDE":
             self.ui.draw_side_selection()
-        
-        # Manejar clics en el botón del panel
-        if button_rect and pygame.mouse.get_pressed()[0]:
-            mouse_pos = pygame.mouse.get_pos()
-            if button_rect.collidepoint(mouse_pos):
-                if self.state == "PLAYER_TURN":
-                    self.state = "AI_TURN"
-                    self.ui.add_log_message("Turno pasado al ordenador")
-                elif self.state == "DEPLOY_PLAYER" and not self.current_deploying_unit:
-                    self.state = "DEPLOY_AI"
-                    self.ui.add_log_message("Despliegue confirmado. El ordenador está desplegando")
-        
+                
         pygame.display.flip()
     
     def _draw_possible_moves(self):

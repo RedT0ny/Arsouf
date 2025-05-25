@@ -226,22 +226,42 @@ class GameUI:
         """Dibuja el panel lateral con información del juego."""
         panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)
         pygame.draw.rect(self.game.screen, (50, 50, 70), panel_rect)
+        pygame.draw.rect(self.game.screen, (200, 200, 230), panel_rect, 5)
         
-        y_offset = 20
+        # Área de contenido con márgenes
+        content_rect = pygame.Rect(
+            panel_rect.x + 20,  # Margen izquierdo
+            20,                 # Margen superior
+            PANEL_WIDTH - 40,   # Ancho disponible
+            panel_rect.height - 40  # Altura disponible
+        )
         
-        # Estado del juego
+        y_offset = content_rect.y
+        
+        # 1. Estado del juego (con ajuste automático de texto)
         status_text = self._get_status_text()
-        self.game.screen.blit(status_text, (panel_rect.x + PANEL_WIDTH//2 - status_text.get_width()//2, y_offset))
+        text_width = min(status_text.get_width(), content_rect.width)  # Limitar ancho máximo
+        
+        # Centrar horizontalmente dentro del área segura
+        text_x = content_rect.x + (content_rect.width - text_width) // 2
+        self.game.screen.blit(status_text, (text_x, y_offset))
         y_offset += 40
         
-        # Información de la unidad actual (si aplica)
+        # 2. Información de la unidad actual (si aplica)
         if hasattr(self.game, 'current_deploying_unit') and self.game.current_deploying_unit:
-            unit_info = f"Coloca: {type(self.game.current_deploying_unit).__name__}"
+            unit_name = type(self.game.current_deploying_unit).__name__
+            unit_info = f"Coloca: {unit_name[:12]}" if len(unit_name) > 12 else f"Coloca: {unit_name}"
             unit_text = self.font.render(unit_info, True, COLOR_TEXTO)
-            self.game.screen.blit(unit_text, (panel_rect.x + 20, y_offset))
+            
+            # Ajustar texto si es muy largo
+            if unit_text.get_width() > content_rect.width:
+                small_font = pygame.font.SysFont('Arial', 18)
+                unit_text = small_font.render(unit_info, True, COLOR_TEXTO)
+            
+            self.game.screen.blit(unit_text, (content_rect.x, y_offset))
             y_offset += 30
         
-        # Dibujar botón según el estado del juego
+        # 3. Dibujar botón según el estado del juego (sin cambios)
         button_rect = None
         if self.game.state == "PLAYER_TURN":
             button_rect = self._draw_button(panel_rect, "Finalizar Turno", COLOR_BOTON_CANCELAR, SCREEN_HEIGHT - 80)
@@ -249,21 +269,58 @@ class GameUI:
             button_rect = self._draw_button(panel_rect, "Confirmar Despliegue", COLOR_BOTON, SCREEN_HEIGHT - 80)
         
         return button_rect
-    
+
     def _get_status_text(self):
         """Devuelve el texto de estado según el estado actual del juego."""
+        # Definir máximo ancho disponible (panel_width - márgenes)
+        max_width = PANEL_WIDTH - 10  # 10px de margen a cada lado
+        
         if self.game.state == "SELECT_SIDE":
-            return self.font.render("Selecciona tu bando", True, COLOR_TEXTO)
+            text = "Selecciona tu bando"
         elif self.game.state == "DEPLOY_PLAYER":
-            return self.font.render("Despliega tus unidades", True, COLOR_TEXTO)
+            text = "Despliega tus unidades"
         elif self.game.state == "DEPLOY_AI":
-            return self.font.render("El ordenador está desplegando", True, COLOR_TEXTO)
+            text = "Despliegue del ordenador"
         elif self.game.state == "PLAYER_TURN":
-            return self.font.render(f"Tu turno ({self.game.player_side})", True, COLOR_TEXTO)
+            text = f"Tu turno ({self.game.player_side})"
         elif self.game.state == "AI_TURN":
-            return self.font.render(f"Turno del ordenador ({self.game.ai_side})", True, COLOR_TEXTO)
-        return self.font.render("", True, COLOR_TEXTO)
-    
+            text = f"Turno del ordenador ({self.game.ai_side})"  # Eliminamos el bando para acortar
+        else:
+            text = ""
+ 
+        # Crear texto renderizado con ajuste de línea si es necesario
+        return self._render_fitted_text(text, max_width)
+        #return self._render_multiline_text(text, max_width)
+
+    def _render_fitted_text(self, text, max_width):
+        """Renderiza texto que se ajusta al ancho máximo"""
+        # Si el texto cabe normalmente
+        if self.font.size(text)[0] <= max_width:
+            return self.font.render(text, True, COLOR_TEXTO)
+        
+        # Si no cabe, reducimos el tamaño de fuente
+        small_font = pygame.font.SysFont('Arial', 18)  # Tamaño reducido
+        return small_font.render(text, True, COLOR_TEXTO)
+
+    def _render_multiline_text(self, text, max_width):
+        words = text.split()
+        lines = []
+        current_line = []
+        
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            if self.font.size(test_line)[0] <= max_width:
+                current_line.append(word)
+            else:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+        
+        lines.append(' '.join(current_line))
+        
+        # Renderizar cada línea
+        rendered_lines = [self.font.render(line, True, COLOR_TEXTO) for line in lines]
+        return rendered_lines
+
     def _draw_button(self, panel_rect, text, color, y_pos):
         """Dibuja un botón en el panel."""
         button_rect = pygame.Rect(panel_rect.x + (PANEL_WIDTH - BOTON_WIDTH)//2, y_pos, BOTON_WIDTH, BOTON_HEIGHT)
