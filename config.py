@@ -1,10 +1,10 @@
 # config.py (versión optimizada)
 import os
-import pygame
+#import pygame
 
 # 1. Configuración de pantalla
-SCREEN_WIDTH = 1837
-SCREEN_HEIGHT = 1193
+SCREEN_WIDTH = 1500 #1837
+SCREEN_HEIGHT = 974 #1193
 FPS = 60
 COLOR_BG = (0, 0, 0)
 
@@ -126,8 +126,8 @@ COLOR_SARRACENOS = (200, 100, 100)
 COLOR_BOTON = (50, 200, 50)
 COLOR_BOTON_CANCELAR = (200, 50, 50)
 COLOR_TEXTO = (255, 255, 255)
-COLOR_ZONA_JUGADOR = (100, 200, 100, 50)
-COLOR_ZONA_IA = (200, 100, 100, 50)
+COLOR_ZONA_JUGADOR = (100, 200, 100, 70)
+COLOR_ZONA_IA = (200, 100, 100, 70)
 
 
 # ------------------------------
@@ -145,7 +145,7 @@ COMBAT_COLORS = {
 # VALIDACIÓN DE CONFIG
 # ------------------------------
 if __name__ == "__main__":
-    print(f"Configuración cargada correctamente:")
+    print("Configuración cargada correctamente:")
     print(f"- Tamaño de ventana: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
     print(f"- Hexágonos: {HEX_ROWS}x{HEX_COLS} (size: {HEX_SIZE}px)")
     print(f"- Escala: {ESCALA:.2f}")

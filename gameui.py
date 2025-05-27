@@ -384,7 +384,7 @@ class GameUI:
         if self.game.state not in ["DEPLOY_PLAYER", "DEPLOY_AI"]:
             return
             
-        color = COLOR_ZONA_JUGADOR if self.game.state == "DEPLOY_PLAYER" else COLOR_ZONA_IA
+        #color = COLOR_ZONA_JUGADOR if self.game.state == "DEPLOY_PLAYER" else COLOR_ZONA_IA
         
         if self.game.player_side == "CRUZADOS":
             # Cruzados: últimas 4 columnas, primeras 4 filas
@@ -406,8 +406,8 @@ class GameUI:
         hex_height = self.game.grid.hex_height
 
         # Calcular posición del tablero
-        pos_x = 0 #(SCREEN_WIDTH - self.game.tablero_escalado.get_width()) // 2
-        pos_y = 0 #(SCREEN_HEIGHT - self.game.tablero_escalado.get_height()) // 2
+        pos_x = -hex_width/2 #(SCREEN_WIDTH - self.game.tablero_escalado.get_width()) // 2
+        pos_y = -hex_height/2 #(SCREEN_HEIGHT - self.game.tablero_escalado.get_height()) // 2
 
         # Calcular esquina superior izquierda de la zona
         x, y = self.game.grid.hex_to_pixel(start_row, start_col)
@@ -457,6 +457,13 @@ class GameUI:
             s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
             s.fill((255, 0, 0, 100))
             self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+
+    def mostrar_bonos_defensa(self, unidad_defensora, grid):
+        """Debug: Muestra bonificaciones de defensa para debugging"""
+        bono = unidad_defensora._calcular_bono_aliados(grid)
+        pos = grid.hex_to_pixel(unidad_defensora.row, unidad_defensora.col)
+        texto = self.font.render(f"Bono: +{bono:.1f}", True, (0, 255, 0))
+        self.screen.blit(texto, (pos[0] - 20, pos[1] - 30))
 
     def draw_game(self, game):
         """Dibuja todos los elementos del juego."""

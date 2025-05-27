@@ -1,7 +1,7 @@
 # units.py
 # import pygame
 import random
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 from config import *
 
 if TYPE_CHECKING:
@@ -12,10 +12,11 @@ class Unit:
     def __init__(self, image_key, side):
         self.image_key = image_key
         self.side = side  # "CRUZADOS" o "SARRACENOS"
+        self.power = 0
         self.row = None
         self.col = None
         self.health = 2  # 2 = sana, 1 = herida, 0 = muerta
-        self.original_speed = None  # Se establecerá en cada subclase
+        self.original_speed = 0  # Se establecerá en cada subclase
         self.wounded_mark = False  # Para mostrar cruz roja
         
     def set_position(self, row, col):
@@ -34,11 +35,9 @@ class Unit:
         if self._tiene_lider_adyacente(grid):
             ataque_power += 2
             
-        defensa_power = objetivo.power + random.randint(1, 6)
-        
-        # Bonus por unidades aliadas adyacentes
-        defensa_power += self._calcular_bono_aliados(objetivo, grid)
-        
+        # Cálculo del poder defensivo, incluyendo bonus
+        defensa_power = objetivo.power + random.randint(1, 6) + self._calcular_bono_aliados(objetivo, grid)
+
         if ataque_power > defensa_power:
             objetivo.recibir_herida(grid)
             return True
@@ -71,11 +70,40 @@ class Unit:
             if unit and type(unit).__name__ == lider:
                 return True
         return False
-    
-    def _calcular_bono_aliados(self, unidad, grid):
-        # Calcular bonus por unidades aliadas adyacentes
-        pass
-    
+        
+    def _calcular_bono_aliados(self, unidad_defensora: 'Unit', grid: 'HexGrid') -> float:
+        """Calcula el bono de defensa por unidades aliadas adyacentes a la unidad ATACANTE,
+        con bono adicional si el líder está adyacente al DEFENSOR.
+        
+        Reglas:
+        - Cada unidad aliada adyacente al ATACANTE aporta la MITAD de su poder
+        - Si el líder está adyacente al DEFENSOR, aporta +2 adicionales
+        - No hay límite máximo de bono
+        """
+        bono_total = 0.0
+        
+        # 1. Bono por aliados adyacentes al ATACANTE (self)
+        for r, c in grid.get_adjacent_positions(self.row, self.col):
+            unidad_adyacente = grid.get_unit(r, c)
+            if unidad_adyacente and unidad_adyacente.side == self.side:  # Aliados del atacante
+                bono_total += round(unidad_adyacente.power / 2, 1)
+        
+        # 2. Bono adicional si el líder está adyacente al DEFENSOR
+        for r, c in grid.get_adjacent_positions(unidad_defensora.row, unidad_defensora.col):
+            unidad_adyacente = grid.get_unit(r, c)
+            if unidad_adyacente and self._es_lider(unidad_adyacente) and unidad_adyacente.side == unidad_defensora.side:
+                bono_total += 2
+                break  # Solo se cuenta una vez aunque haya múltiples líderes (por seguridad)
+        
+        return bono_total
+
+    def _es_lider(self, unidad: 'Unit') -> bool:
+        """Determina si una unidad es el líder de su facción"""
+        if unidad.side == "CRUZADOS":
+            return isinstance(unidad, Ricardo)
+        else:
+            return isinstance(unidad, Saladino)
+        
     def _enemigos_cercanos(self, grid, radius=3):
         """Verifica si hay enemigos en un radio determinado"""
         enemies = grid.get_units_in_radius(self.row, self.col, radius)

@@ -64,7 +64,7 @@ class HexGrid:
         if current_path is None:
             current_path = []
         
-        possible_moves = []
+        possible_moves: List[Tuple[int, int]] = []
         unit = self.grid[row][col]
         
         if not unit or (row, col) in moved_units:
@@ -247,8 +247,8 @@ class HexGrid:
                 if unit:
                     x, y = self.hex_to_pixel(row, col)
                     # Aplicar offset del tablero centrado
-#                     x += tablero_x
-#                     y += tablero_y
+                    x += tablero_x
+                    y += tablero_y
 
                     img = images.get(unit.image_key)
                     if img:
