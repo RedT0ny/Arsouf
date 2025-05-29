@@ -10,7 +10,17 @@ from gameui import GameUI
 class Game:
     def __init__(self):
         pygame.init()
+ 
+        # Estados del juego
+        self.state = "SELECT_SIDE"
+        self.player_side = None
+        self.ai_side = None
         
+        # Fases del turno
+        self.turn_phase = "movimiento"  # "movimiento" o "combate"
+        self.combat_attacker = None  # Unidad seleccionada para atacar
+        self.combat_targets = []  # Posibles objetivos de ataque
+ 
         # Inicializar
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Batalla de Arsuf")
@@ -90,21 +100,81 @@ class Game:
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
+                button_rect = self.ui.get_button_rect()
                 
-                # Manejar botón de finalizar turno/confirmar despliegue
-                button_rect = self.ui.get_button_rect()  # Obtener el rect del botón
+                # Manejar botón de finalizar fase
                 if button_rect and button_rect.collidepoint(mouse_pos):
                     self._end_player_turn()
-                    continue  # Importante para no procesar otros clicks
-                    
-                # Manejo específico por estado
+                    continue
+                
+                # Manejo específico por estado y fase
                 if self.state == "SELECT_SIDE":
                     self._handle_side_selection(event)
                 elif self.state == "DEPLOY_PLAYER":
                     self._handle_deployment(event)
                 elif self.state == "PLAYER_TURN":
-                    self._handle_player_turn(event)
-                        
+                    if self.turn_phase == "movimiento":
+                        self._handle_movement_phase(event)
+                    elif self.turn_phase == "combate":
+                        self._handle_combat_phase(event)  # Asegurar que se llama aquí
+
+    def _handle_movement_phase(self, event):
+        """Maneja la fase de movimiento (existente)"""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            tablero_rect = pygame.Rect(0, 0, self.tablero_escalado.get_width(), 
+                                     self.tablero_escalado.get_height())
+            
+            if tablero_rect.collidepoint(mouse_pos):
+                self._handle_board_click(mouse_pos)
+
+    def _handle_combat_phase(self, event):
+        """Maneja los eventos durante la fase de combate"""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Primero verificar si se hizo clic en el botón de finalizar fase
+            button_rect = self.ui.get_button_rect()
+            if button_rect and button_rect.collidepoint(mouse_pos):
+                self._end_current_phase()
+                return
+            
+            # Verificar clic en el tablero
+            tablero_rect = pygame.Rect(0, 0, self.tablero_escalado.get_width(), 
+                                     self.tablero_escalado.get_height())
+            if tablero_rect.collidepoint(mouse_pos):
+                hex_pos = self._get_hex_under_mouse(mouse_pos)
+                if hex_pos:
+                    row, col = hex_pos
+                    self._process_combat_click(row, col)
+                    
+    def _end_current_phase(self):
+        """Finaliza la fase actual y pasa a la siguiente"""
+        if self.state == "PLAYER_TURN":
+            if self.turn_phase == "movimiento":
+                self.turn_phase = "combate"
+                self.ui.add_log_message("Fase de combate iniciada")
+                self.moved_units = set()  # Resetear unidades movidas
+            elif self.turn_phase == "combate":
+                self.turn_phase = "movimiento"
+                self.state = "AI_TURN"
+                self.ui.add_log_message("Turno del jugador finalizado")
+                self._check_unit_recovery()
+        
+        self.selected_unit = None
+        self.possible_moves = []
+        self.combat_attacker = None
+        self.combat_targets = []
+
+    def _get_hex_under_mouse(self, mouse_pos):
+        """Encuentra el hexágono bajo el cursor"""
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                x, y = self.grid.hex_to_pixel(row, col)
+                distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
+                if distance < HEX_SIZE / 2:
+                    return (row, col)
+
     def _start_game(self, player_side):
         self.player_side = player_side
         self.ai_side = "SARRACENOS" if player_side == "CRUZADOS" else "CRUZADOS"
@@ -152,18 +222,33 @@ class Game:
                 self._handle_board_click(mouse_pos)
 
     def _end_player_turn(self):
-        if self.state == "PLAYER_TURN":
-            self.moved_units = set()  # Resetear unidades movidas
-            self.state = "AI_TURN"
-            self.current_turn_side = self.ai_side
-            self.ui.add_log_message("Turno del jugador finalizado")
-        elif self.state == "DEPLOY_PLAYER" and not self.current_deploying_unit:
+        """Maneja la finalización del turno del jugador o fase de despliegue"""
+        if self.state == "DEPLOY_PLAYER" and not self.current_deploying_unit:
+            # Confirmar despliegue del jugador
             self.state = "DEPLOY_AI"
             self.ui.add_log_message("Despliegue confirmado. El ordenador está desplegando")
-        
-        self._check_unit_recovery()
-        self.selected_unit = None
-        self.possible_moves = []
+            
+            # Limpiar selecciones
+            self.selected_unit = None
+            self.possible_moves = []
+            
+            # Iniciar despliegue de la IA
+            self._ai_deploy_units()
+            
+        elif self.state == "PLAYER_TURN":
+            if self.turn_phase == "movimiento":
+                # Pasar a fase de combate
+                self.turn_phase = "combate"
+                self.ui.add_log_message("Fase de combate iniciada")
+                self.moved_units = set()  # Resetear unidades movidas
+                
+            elif self.turn_phase == "combate":
+                # Finalizar turno completo
+                self.turn_phase = "movimiento"
+                self.state = "AI_TURN"
+                self.current_turn_side = self.ai_side
+                self.ui.add_log_message("Turno del jugador finalizado")
+                self._check_unit_recovery()
         
     def _handle_board_click(self, mouse_pos):
         for row in range(self.grid.rows):
@@ -286,28 +371,49 @@ class Game:
         self.attacks_this_turn = set()
         self.attack_mode = False
         self.current_attacker = None
-    
-    def _handle_combat_phase(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            hex_pos = self._get_hex_under_mouse(pygame.mouse.get_pos())
-            if hex_pos:
-                self._process_combat_click(hex_pos)
-    
-    def _process_combat_click(self, hex_pos):
-        row, col = hex_pos
-        unit = self.grid.grid[row][col]
         
-        if not self.attack_mode:
-            if unit and unit.side == self.current_turn_side and unit.health == 2:
-                self.current_attacker = unit
-                self.attack_mode = True
-        else:
-            if unit and unit.side != self.current_turn_side:
-                # Realizar ataque
-                if self.current_attacker.atacar(unit, self.grid):
-                    self.ui.add_log_message(f"{type(self.current_attacker).__name__} atacó a {type(unit).__name__}!")
-                self.attack_mode = False
+    def _handle_combat_phase(self, event):
+        """Maneja los eventos durante la fase de combate"""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Verificar clic en el tablero
+            tablero_rect = pygame.Rect(0, 0, self.tablero_escalado.get_width(), 
+                                      self.tablero_escalado.get_height())
+            if tablero_rect.collidepoint(mouse_pos):
+                hex_pos = self._get_hex_under_mouse(mouse_pos)
+                if hex_pos:
+                    row, col = hex_pos  # Desempaquetamos la tupla aquí
+                    self._process_combat_click(row, col)  # Pasamos row y col por separado        
 
+    def _process_combat_click(self, row, col):
+        """Procesa clics durante la fase de combate"""
+        unit = self.grid.get_unit(row, col)
+        
+        # Si no hay atacante seleccionado
+        if not self.combat_attacker:
+            # Seleccionar atacante (debe ser unidad aliada sana)
+            if unit and unit.side == self.player_side and unit.health == 2:
+                self.combat_attacker = unit
+                self.combat_targets = self.grid.get_adjacent_enemies(row, col, self.player_side)
+                self.ui.add_log_message(f"{type(unit).__name__} seleccionado para ataque. Elige objetivo.")
+            else:
+                self.ui.add_log_message("Selecciona una unidad aliada sana para atacar")
+        else:
+            # Seleccionar objetivo (debe ser enemigo adyacente)
+            if unit and unit in self.combat_targets:
+                # Realizar ataque
+                if self.combat_attacker.atacar(unit, self.grid):
+                    self.ui.add_log_message(f"¡Ataque exitoso! {type(self.combat_attacker).__name__} hirió a {type(unit).__name__}")
+                else:
+                    self.ui.add_log_message(f"¡Ataque fallido! {type(unit).__name__} resistió el ataque")
+                
+                # Resetear selección después del ataque
+                self.combat_attacker = None
+                self.combat_targets = []
+            else:
+                self.ui.add_log_message("Objetivo no válido. Selecciona un enemigo adyacente")
+                
     def _draw(self):
        self.ui.draw_game(self)
        pygame.display.flip()

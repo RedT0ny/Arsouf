@@ -209,10 +209,10 @@ class GameUI:
                                   game.tablero_escalado.get_height())
         
         if tablero_rect.collidepoint(mouse_pos):
-            return self._find_hex_under_mouse(mouse_pos, game.grid)
+            return self._get_hex_under_mouse(mouse_pos, game.grid)
         return None
 
-    def _find_hex_under_mouse(self, mouse_pos, grid):
+    def _get_hex_under_mouse(self, mouse_pos, grid):
         """Encuentra el hexágono bajo el cursor."""
         for row in range(grid.rows):
             for col in range(grid.cols):
@@ -223,7 +223,7 @@ class GameUI:
         return None
 
     def get_button_rect(self):
-        """Devuelve el rect del botón actual si existe."""
+        """Devuelve el rect del botón actual si existe"""
         if self.game.state == "PLAYER_TURN":
             panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)
             return pygame.Rect(panel_rect.x + (PANEL_WIDTH - BOTON_WIDTH)//2, 
@@ -323,7 +323,7 @@ class GameUI:
         """Devuelve el texto de estado según el estado actual del juego."""
         # Definir máximo ancho disponible (panel_width - márgenes)
         max_width = PANEL_WIDTH - 10  # 10px de margen a cada lado
-        
+  
         if self.game.state == "SELECT_SIDE":
             text = "Selecciona tu bando"
         elif self.game.state == "DEPLOY_PLAYER":
@@ -331,7 +331,8 @@ class GameUI:
         elif self.game.state == "DEPLOY_AI":
             text = "Despliegue del ordenador"
         elif self.game.state == "PLAYER_TURN":
-            text = f"Tu turno ({self.game.player_side})"
+            phase = " Movimiento" if self.game.turn_phase == "movimiento" else " Combate"
+            text = f"{self.game.player_side}: Fase de {phase}"
         elif self.game.state == "AI_TURN":
             text = f"Turno del ordenador ({self.game.ai_side})"  # Eliminamos el bando para acortar
         else:
@@ -339,7 +340,6 @@ class GameUI:
  
         # Crear texto renderizado con ajuste de línea si es necesario
         return self._render_fitted_text(text, max_width)
-        #return self._render_multiline_text(text, max_width)
 
     def _render_fitted_text(self, text, max_width):
         """Renderiza texto que se ajusta al ancho máximo"""
@@ -348,27 +348,8 @@ class GameUI:
             return self.font.render(text, True, COLOR_TEXTO)
         
         # Si no cabe, reducimos el tamaño de fuente
-        small_font = pygame.font.SysFont('Arial', 18)  # Tamaño reducido
+        small_font = pygame.font.SysFont('Arial', 16)  # Tamaño reducido
         return small_font.render(text, True, COLOR_TEXTO)
-
-    def _render_multiline_text(self, text, max_width):
-        words = text.split()
-        lines = []
-        current_line = []
-        
-        for word in words:
-            test_line = ' '.join(current_line + [word])
-            if self.font.size(test_line)[0] <= max_width:
-                current_line.append(word)
-            else:
-                lines.append(' '.join(current_line))
-                current_line = [word]
-        
-        lines.append(' '.join(current_line))
-        
-        # Renderizar cada línea
-        rendered_lines = [self.font.render(line, True, COLOR_TEXTO) for line in lines]
-        return rendered_lines
 
     def _draw_button(self, panel_rect, text, color, y_pos):
         """Dibuja un botón en el panel."""
@@ -383,9 +364,7 @@ class GameUI:
         """Dibuja las zonas de despliegue para cada bando."""
         if self.game.state not in ["DEPLOY_PLAYER", "DEPLOY_AI"]:
             return
-            
-        #color = COLOR_ZONA_JUGADOR if self.game.state == "DEPLOY_PLAYER" else COLOR_ZONA_IA
-        
+                    
         if self.game.player_side == "CRUZADOS":
             # Cruzados: últimas 4 columnas, primeras 4 filas
             player_zone = self._calculate_zone(HEX_COLS - 4, 0, 4, 4)
@@ -440,6 +419,25 @@ class GameUI:
             pygame.draw.circle(s, (100, 200, 255, 150), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
             self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
 
+    def draw_combat_targets(self):
+        """Resalta los objetivos de ataque posibles con mejor visibilidad"""
+        if self.game.combat_attacker and self.game.combat_targets:
+            for target in self.game.combat_targets:
+                x, y = self.game.grid.hex_to_pixel(target.row, target.col)
+                
+                # Aplicar offset del tablero centrado
+                pos_x, pos_y = self._calculate_board_position(self.game.tablero_escalado)
+                x += pos_x
+                y += pos_y
+                
+                # Dibujar círculo rojo semitransparente más visible
+                s = pygame.Surface((HEX_SIZE*1.5, HEX_SIZE*1.5), pygame.SRCALPHA)
+                pygame.draw.circle(s, (255, 0, 0, 150), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
+                self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+                
+                # Dibujar borde rojo más grueso
+                pygame.draw.circle(self.game.screen, (255, 0, 0), (x, y), HEX_SIZE//2 + 5, 3)
+
     def draw_combat_indicators(self):
         # Dibujar marcadores de heridas y rangos de ataque
         for row in range(self.game.grid.rows):
@@ -449,21 +447,12 @@ class GameUI:
                     x, y = self.game.grid.hex_to_pixel(row, col)
                     pygame.draw.circle(self.game.screen, COMBAT_COLORS['wounded'], (x, y), 10, 2)
     
-    def draw_attack_options(self, attacker, targets):
-        # Resaltar unidades que pueden ser atacadas
-        for target in targets:
-            row, col = target.row, target.col
-            x, y = self.game.grid.hex_to_pixel(row, col)
-            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
-            s.fill((255, 0, 0, 100))
-            self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
-
     def mostrar_bonos_defensa(self, unidad_defensora, grid):
         """Debug: Muestra bonificaciones de defensa para debugging"""
         bono = unidad_defensora._calcular_bono_aliados(grid)
         pos = grid.hex_to_pixel(unidad_defensora.row, unidad_defensora.col)
         texto = self.font.render(f"Bono: +{bono:.1f}", True, (0, 255, 0))
-        self.screen.blit(texto, (pos[0] - 20, pos[1] - 30))
+        self.game.screen.blit(texto, (pos[0] - 20, pos[1] - 30))
 
     def draw_game(self, game):
         """Dibuja todos los elementos del juego."""
@@ -492,11 +481,15 @@ class GameUI:
         # 5. Dibujar unidades
         game.grid.draw(game.screen, game.images, pos_x, pos_y)
         
-        # 6. Dibujar movimientos posibles
+        # 6. Dibujar movimientos posibles si estamos en fase de movimiento
         if game.selected_unit and game.possible_moves:
             self.draw_possible_moves(game.possible_moves, game.grid, pos_x, pos_y)
-        
-        # 7. Dibujar UI
+
+        # 7. Dibujar objetivos de combate si estamos en fase de combate
+        if game.state == "PLAYER_TURN" and game.turn_phase == "combate":
+            self.draw_combat_targets()
+
+        # 8. Dibujar UI
         self.draw_log_panel()
         self.draw_panel()
         self.draw_deployment_zones()

@@ -171,17 +171,18 @@ class HexGrid:
         else:
             return col < 8 and row >= HEX_ROWS - 2
 
+    # En hexgrid.py
     def get_adjacent_enemies(self, row, col, side):
         """Devuelve unidades enemigas adyacentes"""
         enemies = []
-        for (r, c), _ in self._get_valid_neighbors(row, col, []):
-            unit = self.grid[r][c]
+        for r, c in self.get_adjacent_positions(row, col):
+            unit = self.get_unit(r, c)
             if unit and unit.side != side:
                 enemies.append(unit)
         return enemies
 
-    def get_adjacent_positions(self, row: int, col: int) -> List[tuple]:
-        """Nuevo método: devuelve posiciones adyacentes sin validar"""
+    def get_adjacent_positions(self, row, col):
+        """Devuelve posiciones adyacentes"""
         directions = [
             [(-1,0), (-1,1), (0,1), (1,0), (1,1), (0,-1)],  # Filas pares
             [(-1,-1), (-1,0), (0,1), (1,-1), (1,0), (0,-1)]  # Filas impares
