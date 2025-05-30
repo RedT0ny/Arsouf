@@ -23,6 +23,15 @@ class Game:
         self.combat_attacker = None  # Unidad seleccionada para atacar
         self.combat_targets = []  # Posibles objetivos de ataque
 
+        # Objetivos del juego
+        self.arsouf_hexes = [(1, 0), (1, 1)]  # Hexágonos de Arsouf
+        self.units_in_arsouf = {
+            "bagaje": 0,  # Contador de unidades de bagaje en Arsouf
+            "other": 0    # Contador de otras unidades en Arsouf
+        }
+        self.game_over = False
+        self.winner = None
+
         # Inicializar
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Batalla de Arsuf")
@@ -96,6 +105,10 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.running = False
+
+            # Si el juego ha terminado, solo procesar eventos de salida
+            if self.game_over:
+                continue
 
             # Primero manejar eventos de UI (scroll)
             if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
@@ -280,12 +293,25 @@ class Game:
             self.possible_moves = self.grid.get_possible_moves(row, col, unit.speed, self.moved_units)
         elif self.selected_unit and (row, col) in self.possible_moves:
             old_row, old_col = self.selected_unit
-            # Corregir llamada a move_unit (pasar ambas posiciones)
-            if self.grid.move_unit(old_row, old_col, row, col):  # Cambiado aquí
-                self.moved_units.add((row, col))
-                self.last_move_debug_pos = (old_row, old_col)
-                self.selected_unit = None
-                self.possible_moves = []
+            moved_unit = self.grid.grid[old_row][old_col]
+
+            # Verificar si es una unidad cruzada llegando a Arsouf
+            if moved_unit.side == "CRUZADOS" and (row, col) in self.arsouf_hexes:
+                # Unidad llega a Arsouf
+                self._unit_reaches_arsouf(moved_unit)
+                # Eliminar la unidad del tablero original
+                self.grid.grid[old_row][old_col] = None
+                self.ui.add_log_message(f"{type(moved_unit).__name__} ha llegado a Arsouf!")
+                # Verificar condición de victoria
+                self._check_win_condition()
+            else:
+                # Movimiento normal
+                if self.grid.move_unit(old_row, old_col, row, col):
+                    self.moved_units.add((row, col))
+                    self.last_move_debug_pos = (old_row, old_col)
+
+            self.selected_unit = None
+            self.possible_moves = []
         else:
             self.selected_unit = None
             self.possible_moves = []
@@ -298,18 +324,130 @@ class Game:
             self.state = "PLAYER_TURN"
             return
 
-        unit = random.choice(self.units_to_deploy[self.ai_side])
-        self.units_to_deploy[self.ai_side].remove(unit)
-
+        # Obtener todas las posiciones válidas de despliegue
         valid_positions = []
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
                 if self.grid.grid[row][col] is None and self.grid.is_in_deployment_zone(row, col, self.ai_side):
                     valid_positions.append((row, col))
 
-        if valid_positions:
-            row, col = random.choice(valid_positions)
-            self.grid.add_unit(row, col, unit)
+        if not valid_positions:
+            return
+
+        # Estrategia específica según el bando de la IA
+        if self.ai_side == "CRUZADOS":
+            # Estrategia para Cruzados: proteger bagajes cerca del borde derecho
+
+            # Buscar unidades de bagaje para desplegar primero
+            bagaje_units = [u for u in self.units_to_deploy[self.ai_side] if isinstance(u, Bagaje)]
+            if bagaje_units:
+                unit = bagaje_units[0]
+                self.units_to_deploy[self.ai_side].remove(unit)
+
+                # Posicionar bagajes en el borde derecho (columnas altas)
+                right_edge_positions = [pos for pos in valid_positions if pos[1] >= HEX_COLS - 3]
+                if right_edge_positions:
+                    row, col = random.choice(right_edge_positions)
+                else:
+                    row, col = random.choice(valid_positions)
+            else:
+                # Buscar unidades de infantería para formar un muro protector
+                infantry_units = [u for u in self.units_to_deploy[self.ai_side] if isinstance(u, Infanteria)]
+                if infantry_units:
+                    unit = infantry_units[0]
+                    self.units_to_deploy[self.ai_side].remove(unit)
+
+                    # Posicionar infantería delante de los bagajes
+                    middle_positions = [pos for pos in valid_positions if pos[1] >= HEX_COLS - 4 and pos[1] < HEX_COLS - 2]
+                    if middle_positions:
+                        row, col = random.choice(middle_positions)
+                    else:
+                        row, col = random.choice(valid_positions)
+                else:
+                    # Buscar a Ricardo para mantenerlo cerca de unidades fuertes
+                    ricardo_units = [u for u in self.units_to_deploy[self.ai_side] if isinstance(u, Ricardo)]
+                    if ricardo_units:
+                        unit = ricardo_units[0]
+                        self.units_to_deploy[self.ai_side].remove(unit)
+
+                        # Posicionar a Ricardo en el centro del despliegue
+                        center_positions = [pos for pos in valid_positions if pos[1] >= HEX_COLS - 3 and pos[1] < HEX_COLS - 1]
+                        if center_positions:
+                            row, col = random.choice(center_positions)
+                        else:
+                            row, col = random.choice(valid_positions)
+                    else:
+                        # Desplegar caballeros y otras unidades en el frente
+                        unit = random.choice(self.units_to_deploy[self.ai_side])
+                        self.units_to_deploy[self.ai_side].remove(unit)
+
+                        # Posicionar caballeros en el frente
+                        front_positions = [pos for pos in valid_positions if pos[1] < HEX_COLS - 2]
+                        if front_positions and (isinstance(unit, Caballero) or isinstance(unit, Templario) or isinstance(unit, Hospitalario)):
+                            row, col = random.choice(front_positions)
+                        else:
+                            row, col = random.choice(valid_positions)
+        else:  # SARRACENOS
+            # Estrategia para Sarracenos: rodear a los cruzados
+
+            # Buscar a Saladino para mantenerlo cerca de unidades fuertes
+            saladino_units = [u for u in self.units_to_deploy[self.ai_side] if isinstance(u, Saladino)]
+            if saladino_units:
+                unit = saladino_units[0]
+                self.units_to_deploy[self.ai_side].remove(unit)
+
+                # Posicionar a Saladino en el centro del despliegue
+                center_positions = [pos for pos in valid_positions if 3 <= pos[1] <= 6]
+                if center_positions:
+                    row, col = random.choice(center_positions)
+                else:
+                    row, col = random.choice(valid_positions)
+            else:
+                # Buscar unidades fuertes (Mamelucos) para el centro
+                mameluco_units = [u for u in self.units_to_deploy[self.ai_side] if isinstance(u, Mameluco)]
+                if mameluco_units:
+                    unit = mameluco_units[0]
+                    self.units_to_deploy[self.ai_side].remove(unit)
+
+                    # Posicionar Mamelucos en el centro
+                    center_positions = [pos for pos in valid_positions if 2 <= pos[1] <= 7]
+                    if center_positions:
+                        row, col = random.choice(center_positions)
+                    else:
+                        row, col = random.choice(valid_positions)
+                else:
+                    # Buscar arqueros para posicionarlos en los flancos
+                    arquero_units = [u for u in self.units_to_deploy[self.ai_side] if isinstance(u, Arquero)]
+                    if arquero_units:
+                        unit = arquero_units[0]
+                        self.units_to_deploy[self.ai_side].remove(unit)
+
+                        # Posicionar arqueros en los flancos
+                        flank_positions = [pos for pos in valid_positions if pos[1] <= 2 or pos[1] >= 6]
+                        if flank_positions:
+                            row, col = random.choice(flank_positions)
+                        else:
+                            row, col = random.choice(valid_positions)
+                    else:
+                        # Desplegar exploradores en posiciones avanzadas
+                        unit = random.choice(self.units_to_deploy[self.ai_side])
+                        self.units_to_deploy[self.ai_side].remove(unit)
+
+                        if isinstance(unit, Explorador):
+                            # Posicionar exploradores en posiciones avanzadas
+                            advanced_positions = [pos for pos in valid_positions if pos[0] < HEX_ROWS - 1]
+                            if advanced_positions:
+                                row, col = random.choice(advanced_positions)
+                            else:
+                                row, col = random.choice(valid_positions)
+                        else:
+                            row, col = random.choice(valid_positions)
+
+        # Añadir la unidad al tablero
+        self.grid.add_unit(row, col, unit)
+
+        # Mensaje de log para depuración
+        self.ui.add_log_message(f"IA despliega {type(unit).__name__} en ({row},{col})")
 
         if not self.units_to_deploy[self.ai_side]:
             self.state = "PLAYER_TURN"
@@ -320,31 +458,716 @@ class Game:
             self.ui.add_log_message("Turno del ordenador")
             self._ai_turn_initialized = True
             self._ai_moved_units_this_turn = set()
-            self._ai_units_to_consider = [
+
+            # Obtener todas las unidades de la IA
+            all_ai_units = [
                 (r, c, u) for r in range(self.grid.rows)
                 for c in range(self.grid.cols)
                 if (u := self.grid.grid[r][c]) and not self._is_player_unit(u)
             ]
-            random.shuffle(self._ai_units_to_consider)  # Orden aleatorio
+
+            # Ordenar unidades según prioridad estratégica
+            if self.ai_side == "CRUZADOS":
+                # Para Cruzados: primero mover Ricardo y unidades fuertes, luego infantería, bagajes al final
+                leaders = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Ricardo)]
+                strong_units = [(r, c, u) for r, c, u in all_ai_units 
+                               if isinstance(u, Templario) or isinstance(u, Hospitalario) or isinstance(u, Caballero)]
+                infantry = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Infanteria)]
+                baggage = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Bagaje)]
+
+                # Ordenar por prioridad
+                self._ai_units_to_consider = leaders + strong_units + infantry + baggage
+            else:  # SARRACENOS
+                # Para Sarracenos: primero mover exploradores, luego arqueros, mamelucos y Saladino
+                leaders = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Saladino)]
+                explorers = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Explorador)]
+                archers = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Arquero)]
+                mamelucos = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Mameluco)]
+
+                # Ordenar por prioridad
+                self._ai_units_to_consider = explorers + archers + mamelucos + leaders
 
         # 2. Mover hasta 1 unidad por frame (para permitir renderizado)
         if self._ai_units_to_consider:
             row, col, unit = self._ai_units_to_consider.pop()
 
-            # Decidir aleatoriamente si mover esta unidad (90% probabilidad)
-            if random.random() < 1 and (row, col) not in self._ai_moved_units_this_turn:
+            if (row, col) not in self._ai_moved_units_this_turn:
                 self.possible_moves = self.grid.get_possible_moves(row, col, unit.speed)
-                if self.possible_moves:
-                    new_row, new_col = random.choice(self.possible_moves)
-                    self.grid.grid[row][col] = None
-                    self.grid.add_unit(new_row, new_col, unit)
-                    self._ai_moved_units_this_turn.add((row, col))
-                    self.ui.add_log_message(
-                        f"[{type(unit).__name__}#{id(unit)}] se mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
 
-        # 3. Finalizar turno cuando no queden unidades o la IA decida parar
-        if not self._ai_units_to_consider:  #or random.random() < 0.05:  # 5% chance de terminar temprano
+                if self.possible_moves:
+                    # Elegir movimiento según estrategia
+                    new_row, new_col = self._choose_strategic_move(row, col, unit, self.possible_moves)
+
+                    # Verificar si es una unidad cruzada llegando a Arsouf
+                    if unit.side == "CRUZADOS" and (new_row, new_col) in self.arsouf_hexes:
+                        # Unidad llega a Arsouf
+                        self._unit_reaches_arsouf(unit)
+                        # Eliminar la unidad del tablero original
+                        self.grid.grid[row][col] = None
+                        self.ui.add_log_message(f"{type(unit).__name__} ha llegado a Arsouf!")
+                        # Verificar condición de victoria
+                        self._check_win_condition()
+                    else:
+                        # Realizar el movimiento normal
+                        self.grid.grid[row][col] = None
+                        self.grid.add_unit(new_row, new_col, unit)
+                        self._ai_moved_units_this_turn.add((row, col))
+                        self.ui.add_log_message(
+                            f"[{type(unit).__name__}#{id(unit)}] se mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
+
+        # 3. Finalizar turno cuando no queden unidades
+        if not self._ai_units_to_consider:
             self._end_ai_turn()
+
+    def _choose_strategic_move(self, row, col, unit, possible_moves):
+        """Elige un movimiento estratégico según el tipo de unidad y el bando."""
+        if self.ai_side == "CRUZADOS":
+            # Estrategia para Cruzados
+            if isinstance(unit, Bagaje):
+                # Bagajes: Priorizar movimiento hacia Arsouf
+                # Verificar si hay un camino directo hacia Arsouf
+                path_to_arsouf = self._find_path_to_arsouf(row, col, possible_moves)
+                if path_to_arsouf:
+                    return path_to_arsouf
+
+                # Si no hay camino directo, mantenerse cerca del borde derecho y alejados de enemigos
+                right_edge_moves = [(r, c) for r, c in possible_moves if c >= HEX_COLS - 3]
+                if right_edge_moves:
+                    # Evaluar seguridad: preferir posiciones con menos enemigos cercanos
+                    safest_move = self._find_safest_position(right_edge_moves, unit)
+                    return safest_move
+
+                # Si no hay movimientos hacia el borde derecho, buscar el más seguro
+                return self._find_safest_position(possible_moves, unit)
+
+            elif isinstance(unit, Ricardo):
+                # Ricardo: Priorizar protección de bagajes en camino a Arsouf
+                baggage_positions = self._find_unit_positions(Bagaje)
+                if baggage_positions:
+                    # Verificar si hay bagajes en camino a Arsouf que necesitan protección
+                    baggage_to_protect = self._find_baggage_en_route_to_arsouf(baggage_positions)
+                    if baggage_to_protect:
+                        return self._find_position_to_protect(baggage_to_protect, possible_moves)
+
+                # Si no hay bagajes que proteger, mantenerse cerca de unidades fuertes
+                return self._find_position_near_strong_allies(row, col, possible_moves)
+
+            elif isinstance(unit, Infanteria):
+                # Infantería: Priorizar formación de corredor seguro hacia Arsouf
+                # Verificar si hay un camino hacia Arsouf que necesita protección
+                arsouf_corridor = self._find_corridor_to_arsouf()
+                if arsouf_corridor:
+                    # Posicionarse en el corredor para protegerlo
+                    corridor_positions = self._find_position_in_corridor(arsouf_corridor, possible_moves)
+                    if corridor_positions:
+                        return corridor_positions
+
+                # Si no hay corredor o no podemos posicionarnos en él, proteger bagajes
+                baggage_positions = self._find_unit_positions(Bagaje)
+                if baggage_positions:
+                    # Moverse para proteger bagajes
+                    return self._find_position_to_protect(baggage_positions, possible_moves)
+                else:
+                    # Si no hay bagajes, moverse hacia el frente
+                    return self._find_position_towards_enemy(row, col, possible_moves)
+
+            else:  # Caballeros, Templarios, Hospitalarios
+                # Unidades fuertes: Priorizar escolta de bagajes hacia Arsouf
+                baggage_positions = self._find_unit_positions(Bagaje)
+                if baggage_positions and random.random() < 0.6:  # 60% de probabilidad de proteger bagajes
+                    return self._find_position_to_protect(baggage_positions, possible_moves)
+
+                # Si no hay bagajes o decidimos no protegerlos, proteger a Ricardo
+                ricardo_positions = self._find_unit_positions(Ricardo)
+                if ricardo_positions and random.random() < 0.4:  # 40% de probabilidad de proteger a Ricardo
+                    return self._find_position_near_positions(ricardo_positions, possible_moves)
+                else:
+                    # Avanzar hacia el enemigo
+                    return self._find_position_towards_enemy(row, col, possible_moves)
+        else:  # SARRACENOS
+            # Estrategia para Sarracenos: impedir que los Cruzados lleguen a Arsouf
+
+            # Identificar bagajes cruzados (objetivos prioritarios)
+            crusader_baggage = self._find_enemy_baggage()
+
+            # Identificar el corredor hacia Arsouf que debemos bloquear
+            arsouf_corridor = self._find_path_to_block_to_arsouf()
+
+            if isinstance(unit, Saladino):
+                # Saladino: Coordinar el bloqueo del camino a Arsouf
+                if arsouf_corridor and random.random() < 0.7:  # 70% de probabilidad de bloquear el camino
+                    blocking_position = self._find_position_to_block_arsouf(arsouf_corridor, possible_moves)
+                    if blocking_position:
+                        return blocking_position
+
+                # Si no bloqueamos el camino, mantenerse cerca de unidades fuertes (Mamelucos)
+                mameluco_positions = self._find_unit_positions(Mameluco)
+                if mameluco_positions:
+                    return self._find_position_near_positions(mameluco_positions, possible_moves)
+                else:
+                    # Si no hay mamelucos, moverse hacia el centro
+                    return self._find_position_towards_center(possible_moves)
+
+            elif isinstance(unit, Explorador):
+                # Exploradores: Priorizar interceptar bagajes cruzados
+                if crusader_baggage:
+                    intercept_position = self._find_position_to_intercept(crusader_baggage, possible_moves)
+                    if intercept_position:
+                        return intercept_position
+
+                # Si no hay bagajes para interceptar, rodear al enemigo por los flancos
+                return self._find_position_to_flank(row, col, possible_moves)
+
+            elif isinstance(unit, Arquero):
+                # Arqueros: Posicionarse para atacar bagajes o bloquear el camino a Arsouf
+                if crusader_baggage and random.random() < 0.6:  # 60% de probabilidad de atacar bagajes
+                    attack_position = self._find_position_to_attack_baggage(crusader_baggage, possible_moves)
+                    if attack_position:
+                        return attack_position
+
+                # Si no atacamos bagajes, bloquear el camino a Arsouf
+                if arsouf_corridor:
+                    blocking_position = self._find_position_to_block_arsouf(arsouf_corridor, possible_moves)
+                    if blocking_position:
+                        return blocking_position
+
+                # Si no podemos hacer ninguna de las anteriores, mantener distancia media
+                return self._find_position_at_medium_range(row, col, possible_moves)
+
+            else:  # Mamelucos
+                # Mamelucos: Priorizar atacar bagajes cruzados
+                if crusader_baggage:
+                    attack_position = self._find_position_to_attack_baggage(crusader_baggage, possible_moves)
+                    if attack_position:
+                        return attack_position
+
+                # Si no hay bagajes para atacar, bloquear el camino a Arsouf
+                if arsouf_corridor:
+                    blocking_position = self._find_position_to_block_arsouf(arsouf_corridor, possible_moves)
+                    if blocking_position:
+                        return blocking_position
+
+                # Si no podemos hacer ninguna de las anteriores, avanzar hacia el enemigo
+                return self._find_position_towards_enemy(row, col, possible_moves)
+
+        # Si no se pudo aplicar ninguna estrategia específica, elegir al azar
+        return random.choice(possible_moves)
+
+    def _find_safest_position(self, positions, unit):
+        """Encuentra la posición más segura (con menos enemigos cercanos)."""
+        if not positions:
+            return None
+
+        # Evaluar cada posición por la cantidad de enemigos cercanos
+        position_safety = {}
+        for pos in positions:
+            r, c = pos
+            enemies_nearby = len(self.grid.get_units_in_radius(r, c, 2))
+            position_safety[pos] = -enemies_nearby  # Negativo para ordenar de menos a más enemigos
+
+        # Ordenar por seguridad (menos enemigos primero)
+        sorted_positions = sorted(positions, key=lambda pos: position_safety[pos], reverse=True)
+
+        # Devolver la posición más segura, o una aleatoria entre las más seguras
+        safest_positions = [pos for pos in sorted_positions 
+                           if position_safety[pos] == position_safety[sorted_positions[0]]]
+        return random.choice(safest_positions)
+
+    def _find_position_near_strong_allies(self, row, col, possible_moves):
+        """Encuentra una posición cerca de aliados fuertes."""
+        # Buscar unidades fuertes aliadas
+        strong_allies = []
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                unit = self.grid.grid[r][c]
+                if unit and not self._is_player_unit(unit):
+                    if (isinstance(unit, Templario) or isinstance(unit, Hospitalario) 
+                        or isinstance(unit, Caballero) or isinstance(unit, Mameluco)):
+                        strong_allies.append((r, c))
+
+        if not strong_allies:
+            return random.choice(possible_moves)
+
+        # Calcular distancia a unidades fuertes
+        move_scores = {}
+        for move in possible_moves:
+            r, c = move
+            # Menor distancia a cualquier unidad fuerte
+            min_distance = min(abs(r - ally_r) + abs(c - ally_c) for ally_r, ally_c in strong_allies)
+            move_scores[move] = -min_distance  # Negativo para ordenar de menor a mayor distancia
+
+        # Ordenar por cercanía a unidades fuertes
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver una de las mejores opciones
+        best_moves = [move for move in sorted_moves[:3]]
+        return random.choice(best_moves if best_moves else possible_moves)
+
+    def _find_unit_positions(self, unit_class):
+        """Encuentra las posiciones de todas las unidades de un tipo específico."""
+        positions = []
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                unit = self.grid.grid[r][c]
+                if unit and isinstance(unit, unit_class) and not self._is_player_unit(unit):
+                    positions.append((r, c))
+        return positions
+
+    def _find_position_to_protect(self, positions_to_protect, possible_moves):
+        """Encuentra una posición que ayude a proteger otras unidades."""
+        if not positions_to_protect or not possible_moves:
+            return random.choice(possible_moves)
+
+        # Calcular posición promedio de las unidades a proteger
+        avg_r = sum(r for r, _ in positions_to_protect) / len(positions_to_protect)
+        avg_c = sum(c for _, c in positions_to_protect) / len(positions_to_protect)
+
+        # Calcular posiciones que están entre el enemigo y las unidades a proteger
+        move_scores = {}
+        for move in possible_moves:
+            r, c = move
+            # Distancia a la posición promedio
+            dist_to_protect = ((r - avg_r) ** 2 + (c - avg_c) ** 2) ** 0.5
+
+            # Posición relativa respecto al enemigo (preferir posiciones que estén entre el enemigo y las unidades a proteger)
+            enemy_direction = -1 if self.ai_side == "CRUZADOS" else 1  # Dirección aproximada del enemigo
+            relative_position = c * enemy_direction  # Valor más alto = más cerca del enemigo
+
+            # Combinar factores: queremos estar cerca pero no demasiado
+            move_scores[move] = relative_position - 0.5 * dist_to_protect
+
+        # Ordenar por puntuación
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver una de las mejores opciones
+        best_moves = [move for move in sorted_moves[:3]]
+        return random.choice(best_moves if best_moves else possible_moves)
+
+    def _find_position_towards_enemy(self, row, col, possible_moves):
+        """Encuentra una posición que avance hacia el enemigo."""
+        if not possible_moves:
+            return None
+
+        # Determinar dirección hacia el enemigo
+        enemy_col_direction = -1 if self.ai_side == "CRUZADOS" else 1  # Izquierda para Cruzados, Derecha para Sarracenos
+
+        # Evaluar movimientos por avance hacia el enemigo
+        move_scores = {}
+        for r, c in possible_moves:
+            # Avance en la dirección del enemigo
+            col_advance = (c - col) * enemy_col_direction
+
+            # Bonus por acercarse a unidades enemigas
+            enemy_proximity = 0
+            nearby_enemies = self.grid.get_units_in_radius(r, c, 3)
+            enemy_proximity = sum(1 for unit in nearby_enemies if self._is_player_unit(unit))
+
+            move_scores[(r, c)] = col_advance + 0.2 * enemy_proximity
+
+        # Ordenar por puntuación
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver una de las mejores opciones (con algo de aleatoriedad)
+        best_moves = sorted_moves[:max(1, len(sorted_moves) // 3)]
+        return random.choice(best_moves)
+
+    def _find_position_near_positions(self, target_positions, possible_moves):
+        """Encuentra una posición cercana a las posiciones objetivo."""
+        if not target_positions or not possible_moves:
+            return random.choice(possible_moves)
+
+        # Calcular distancia a las posiciones objetivo
+        move_scores = {}
+        for move in possible_moves:
+            r, c = move
+            # Menor distancia a cualquier posición objetivo
+            min_distance = min(abs(r - target_r) + abs(c - target_c) 
+                              for target_r, target_c in target_positions)
+            move_scores[move] = -min_distance  # Negativo para ordenar de menor a mayor distancia
+
+        # Ordenar por cercanía
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver una de las mejores opciones
+        best_moves = [move for move in sorted_moves[:3]]
+        return random.choice(best_moves if best_moves else possible_moves)
+
+    def _find_position_to_flank(self, row, col, possible_moves):
+        """Encuentra una posición que permita flanquear al enemigo."""
+        if not possible_moves:
+            return None
+
+        # Para flanquear, preferimos movernos hacia los lados y avanzar
+        move_scores = {}
+        for r, c in possible_moves:
+            # Avance hacia el enemigo
+            forward_score = (r - row) if self.ai_side == "SARRACENOS" else (row - r)
+
+            # Movimiento lateral (flanqueo)
+            lateral_movement = abs(c - col)
+
+            # Combinar factores
+            move_scores[(r, c)] = forward_score + 0.5 * lateral_movement
+
+        # Ordenar por puntuación
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver una de las mejores opciones
+        best_moves = sorted_moves[:max(1, len(sorted_moves) // 3)]
+        return random.choice(best_moves)
+
+    def _find_position_at_medium_range(self, row, col, possible_moves):
+        """Encuentra una posición a distancia media del enemigo (para arqueros)."""
+        if not possible_moves:
+            return None
+
+        # Buscar unidades enemigas
+        enemy_positions = []
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                unit = self.grid.grid[r][c]
+                if unit and self._is_player_unit(unit):
+                    enemy_positions.append((r, c))
+
+        if not enemy_positions:
+            return random.choice(possible_moves)
+
+        # Calcular distancia óptima (queremos estar a distancia media, ni muy cerca ni muy lejos)
+        optimal_distance = 3  # Distancia ideal para arqueros
+
+        move_scores = {}
+        for move in possible_moves:
+            r, c = move
+            if enemy_positions:
+                # Calcular distancia al enemigo más cercano
+                min_distance = min(abs(r - enemy_r) + abs(c - enemy_c) 
+                                  for enemy_r, enemy_c in enemy_positions)
+
+                # Penalizar desviaciones de la distancia óptima
+                distance_score = -abs(min_distance - optimal_distance)
+
+                move_scores[move] = distance_score
+            else:
+                move_scores[move] = 0
+
+        # Ordenar por puntuación
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver una de las mejores opciones
+        best_moves = sorted_moves[:max(1, len(sorted_moves) // 3)]
+        return random.choice(best_moves)
+
+    def _find_position_towards_center(self, possible_moves):
+        """Encuentra una posición hacia el centro del tablero."""
+        if not possible_moves:
+            return None
+
+        # Calcular centro del tablero
+        center_r = self.grid.rows // 2
+        center_c = self.grid.cols // 2
+
+        # Evaluar movimientos por cercanía al centro
+        move_scores = {}
+        for r, c in possible_moves:
+            distance_to_center = abs(r - center_r) + abs(c - center_c)
+            move_scores[(r, c)] = -distance_to_center  # Negativo para ordenar de menor a mayor distancia
+
+        # Ordenar por puntuación
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver una de las mejores opciones
+        best_moves = sorted_moves[:max(1, len(sorted_moves) // 3)]
+        return random.choice(best_moves)
+
+    def _find_path_to_arsouf(self, row, col, possible_moves):
+        """Encuentra el mejor movimiento para acercarse a Arsouf."""
+        if not possible_moves:
+            return None
+
+        # Calcular distancia a Arsouf para cada movimiento posible
+        move_scores = {}
+        for r, c in possible_moves:
+            # Calcular distancia mínima a cualquiera de los hexágonos de Arsouf
+            min_distance = min(abs(r - arsouf_r) + abs(c - arsouf_c) 
+                              for arsouf_r, arsouf_c in self.arsouf_hexes)
+
+            # Evaluar seguridad (menos enemigos cercanos es mejor)
+            enemies_nearby = len([u for u in self.grid.get_units_in_radius(r, c, 2) 
+                                 if u.side != self.ai_side])
+
+            # Combinar factores: distancia a Arsouf (más importante) y seguridad
+            move_scores[(r, c)] = -min_distance * 2 - enemies_nearby
+
+        # Ordenar por puntuación (mejor primero)
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver el mejor movimiento, o uno aleatorio entre los mejores
+        best_moves = sorted_moves[:max(1, len(sorted_moves) // 4)]
+        return random.choice(best_moves)
+
+    def _find_baggage_en_route_to_arsouf(self, baggage_positions):
+        """Identifica bagajes que están en camino hacia Arsouf y necesitan protección."""
+        if not baggage_positions:
+            return []
+
+        # Filtrar bagajes que están en camino a Arsouf (más cerca que la media)
+        baggage_en_route = []
+
+        # Calcular distancia media de todos los bagajes a Arsouf
+        total_distance = 0
+        for r, c in baggage_positions:
+            min_distance = min(abs(r - arsouf_r) + abs(c - arsouf_c) 
+                              for arsouf_r, arsouf_c in self.arsouf_hexes)
+            total_distance += min_distance
+
+        avg_distance = total_distance / len(baggage_positions) if baggage_positions else float('inf')
+
+        # Seleccionar bagajes que están más cerca de Arsouf que la media
+        for r, c in baggage_positions:
+            min_distance = min(abs(r - arsouf_r) + abs(c - arsouf_c) 
+                              for arsouf_r, arsouf_c in self.arsouf_hexes)
+            if min_distance <= avg_distance:
+                baggage_en_route.append((r, c))
+
+        return baggage_en_route
+
+    def _find_corridor_to_arsouf(self):
+        """Identifica un corredor estratégico hacia Arsouf."""
+        # Definir un corredor aproximado hacia Arsouf
+        # Este corredor es una lista de hexágonos que forman un camino seguro
+
+        # Simplificación: definir un corredor desde el centro del despliegue hacia Arsouf
+        corridor = []
+
+        # Encontrar el centro aproximado del despliegue de los Cruzados
+        crusader_units = []
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                unit = self.grid.grid[r][c]
+                if unit and unit.side == "CRUZADOS":
+                    crusader_units.append((r, c))
+
+        if not crusader_units:
+            return []
+
+        # Calcular centro de las unidades cruzadas
+        avg_r = sum(r for r, _ in crusader_units) / len(crusader_units)
+        avg_c = sum(c for _, c in crusader_units) / len(crusader_units)
+
+        # Definir un corredor desde el centro hacia Arsouf
+        # Simplificación: usar una línea recta
+        for i in range(10):  # Limitar a 10 hexágonos
+            # Interpolar entre el centro y Arsouf
+            t = i / 10.0
+            r = int(avg_r * (1 - t) + self.arsouf_hexes[0][0] * t)
+            c = int(avg_c * (1 - t) + self.arsouf_hexes[0][1] * t)
+
+            # Verificar que el hexágono es válido
+            if 0 <= r < self.grid.rows and 0 <= c < self.grid.cols:
+                corridor.append((r, c))
+
+        return corridor
+
+    def _find_position_in_corridor(self, corridor, possible_moves):
+        """Encuentra la mejor posición dentro del corredor hacia Arsouf."""
+        if not corridor or not possible_moves:
+            return None
+
+        # Encontrar movimientos que están en el corredor
+        corridor_moves = [move for move in possible_moves if move in corridor]
+
+        if corridor_moves:
+            # Preferir posiciones más cercanas a Arsouf
+            move_scores = {}
+            for r, c in corridor_moves:
+                min_distance = min(abs(r - arsouf_r) + abs(c - arsouf_c) 
+                                  for arsouf_r, arsouf_c in self.arsouf_hexes)
+                move_scores[(r, c)] = -min_distance
+
+            # Ordenar por cercanía a Arsouf
+            sorted_moves = sorted(corridor_moves, key=lambda move: move_scores[move], reverse=True)
+            return sorted_moves[0] if sorted_moves else None
+
+        # Si no hay movimientos en el corredor, encontrar el más cercano al corredor
+        closest_to_corridor = None
+        min_corridor_distance = float('inf')
+
+        for move_r, move_c in possible_moves:
+            for corr_r, corr_c in corridor:
+                dist = abs(move_r - corr_r) + abs(move_c - corr_c)
+                if dist < min_corridor_distance:
+                    min_corridor_distance = dist
+                    closest_to_corridor = (move_r, move_c)
+
+        return closest_to_corridor
+
+    def _find_enemy_baggage(self):
+        """Encuentra las posiciones de los bagajes enemigos (Cruzados)."""
+        baggage_positions = []
+
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                unit = self.grid.grid[r][c]
+                if unit and unit.side == "CRUZADOS" and isinstance(unit, Bagaje):
+                    baggage_positions.append((r, c))
+
+        return baggage_positions
+
+    def _find_path_to_block_to_arsouf(self):
+        """Identifica el camino más probable que los Cruzados usarán para llegar a Arsouf."""
+        # Encontrar todas las unidades cruzadas
+        crusader_units = []
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                unit = self.grid.grid[r][c]
+                if unit and unit.side == "CRUZADOS":
+                    crusader_units.append((r, c))
+
+        if not crusader_units:
+            return []
+
+        # Dar prioridad a los bagajes
+        baggage_units = [(r, c) for r, c in crusader_units 
+                         if isinstance(self.grid.grid[r][c], Bagaje)]
+
+        # Si hay bagajes, usar su posición como punto de partida
+        if baggage_units:
+            # Calcular el centro de los bagajes
+            avg_r = sum(r for r, _ in baggage_units) / len(baggage_units)
+            avg_c = sum(c for _, c in baggage_units) / len(baggage_units)
+        else:
+            # Si no hay bagajes, usar el centro de todas las unidades cruzadas
+            avg_r = sum(r for r, _ in crusader_units) / len(crusader_units)
+            avg_c = sum(c for _, c in crusader_units) / len(crusader_units)
+
+        # Crear un camino desde el punto de partida hasta Arsouf
+        path = []
+
+        # Simplificación: usar una línea recta
+        for i in range(15):  # Limitar a 15 hexágonos
+            # Interpolar entre el punto de partida y Arsouf
+            t = i / 15.0
+            r = int(avg_r * (1 - t) + self.arsouf_hexes[0][0] * t)
+            c = int(avg_c * (1 - t) + self.arsouf_hexes[0][1] * t)
+
+            # Verificar que el hexágono es válido
+            if 0 <= r < self.grid.rows and 0 <= c < self.grid.cols:
+                path.append((r, c))
+
+        return path
+
+    def _find_position_to_block_arsouf(self, path_to_block, possible_moves):
+        """Encuentra la mejor posición para bloquear el camino a Arsouf."""
+        if not path_to_block or not possible_moves:
+            return None
+
+        # Calcular la distancia de cada posición a Arsouf
+        arsouf_distances = {}
+        for r, c in path_to_block:
+            min_distance = min(abs(r - arsouf_r) + abs(c - arsouf_c) 
+                              for arsouf_r, arsouf_c in self.arsouf_hexes)
+            arsouf_distances[(r, c)] = min_distance
+
+        # Ordenar el camino por distancia a Arsouf (más cercano primero)
+        sorted_path = sorted(path_to_block, key=lambda pos: arsouf_distances[pos])
+
+        # Intentar bloquear el camino lo más cerca posible de Arsouf
+        for path_r, path_c in sorted_path:
+            # Buscar movimientos cercanos a este punto del camino
+            for move_r, move_c in possible_moves:
+                dist = abs(move_r - path_r) + abs(move_c - path_c)
+                if dist <= 1:  # Adyacente o en el mismo hexágono
+                    return (move_r, move_c)
+
+        # Si no podemos bloquear directamente, encontrar el movimiento más cercano al camino
+        best_move = None
+        min_dist = float('inf')
+
+        for move_r, move_c in possible_moves:
+            for path_r, path_c in sorted_path[:5]:  # Considerar solo los 5 hexágonos más cercanos a Arsouf
+                dist = abs(move_r - path_r) + abs(move_c - path_c)
+                if dist < min_dist:
+                    min_dist = dist
+                    best_move = (move_r, move_c)
+
+        return best_move
+
+    def _find_position_to_intercept(self, baggage_positions, possible_moves):
+        """Encuentra la mejor posición para interceptar bagajes enemigos."""
+        if not baggage_positions or not possible_moves:
+            return None
+
+        # Calcular la distancia de cada bagaje a Arsouf
+        baggage_to_arsouf = {}
+        for r, c in baggage_positions:
+            min_distance = min(abs(r - arsouf_r) + abs(c - arsouf_c) 
+                              for arsouf_r, arsouf_c in self.arsouf_hexes)
+            baggage_to_arsouf[(r, c)] = min_distance
+
+        # Ordenar bagajes por cercanía a Arsouf (más cercano primero)
+        sorted_baggage = sorted(baggage_positions, key=lambda pos: baggage_to_arsouf[pos])
+
+        # Priorizar interceptar los bagajes más cercanos a Arsouf
+        priority_baggage = sorted_baggage[:2]  # Los 2 más cercanos
+
+        # Encontrar posiciones que intercepten el camino entre los bagajes y Arsouf
+        best_move = None
+        best_score = float('-inf')
+
+        for move_r, move_c in possible_moves:
+            score = 0
+
+            for bag_r, bag_c in priority_baggage:
+                # Verificar si estamos en el camino entre el bagaje y Arsouf
+                for arsouf_r, arsouf_c in self.arsouf_hexes:
+                    # Calcular si el movimiento está en la línea entre el bagaje y Arsouf
+                    # Simplificación: usar distancia Manhattan
+                    dist_bag_to_arsouf = abs(bag_r - arsouf_r) + abs(bag_c - arsouf_c)
+                    dist_bag_to_move = abs(bag_r - move_r) + abs(bag_c - move_c)
+                    dist_move_to_arsouf = abs(move_r - arsouf_r) + abs(move_c - arsouf_c)
+
+                    # Si estamos aproximadamente en el camino
+                    if abs(dist_bag_to_arsouf - (dist_bag_to_move + dist_move_to_arsouf)) <= 2:
+                        # Mejor puntuación si estamos más cerca del bagaje
+                        score += 10 - dist_bag_to_move
+
+            if score > best_score:
+                best_score = score
+                best_move = (move_r, move_c)
+
+        # Si no encontramos una buena posición de intercepción, movernos hacia el bagaje más cercano
+        if best_move is None and priority_baggage:
+            best_move = self._find_position_near_positions(priority_baggage, possible_moves)
+
+        return best_move
+
+    def _find_position_to_attack_baggage(self, baggage_positions, possible_moves):
+        """Encuentra la mejor posición para atacar bagajes enemigos."""
+        if not baggage_positions or not possible_moves:
+            return None
+
+        # Calcular la distancia de cada movimiento a cada bagaje
+        move_scores = {}
+        for move_r, move_c in possible_moves:
+            # Inicializar puntuación
+            move_scores[(move_r, move_c)] = 0
+
+            for bag_r, bag_c in baggage_positions:
+                dist = abs(move_r - bag_r) + abs(move_c - bag_c)
+
+                # Puntuación más alta para posiciones adyacentes a bagajes
+                if dist <= 1:
+                    move_scores[(move_r, move_c)] += 10
+                # Puntuación decreciente con la distancia
+                else:
+                    move_scores[(move_r, move_c)] += max(0, 5 - dist)
+
+        # Ordenar por puntuación
+        sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+
+        # Devolver el mejor movimiento, o uno aleatorio entre los mejores
+        best_moves = sorted_moves[:max(1, len(sorted_moves) // 4)]
+        return random.choice(best_moves)
 
     def _end_ai_turn(self):
         self.state = "PLAYER_TURN"
@@ -357,6 +1180,49 @@ class Game:
         self._check_unit_recovery()
         self.selected_unit = None
         self.possible_moves = []
+
+    def _unit_reaches_arsouf(self, unit):
+        """Registra una unidad que ha llegado a Arsouf"""
+        if isinstance(unit, Bagaje):
+            self.units_in_arsouf["bagaje"] += 1
+            self.ui.add_log_message(f"¡Bagaje ha llegado a Arsouf! ({self.units_in_arsouf['bagaje']}/2)")
+        else:
+            self.units_in_arsouf["other"] += 1
+            self.ui.add_log_message(f"¡{type(unit).__name__} ha llegado a Arsouf! ({self.units_in_arsouf['other']}/2)")
+
+    def _check_win_condition(self):
+        """Verifica si se ha cumplido la condición de victoria"""
+        # Victoria de los Cruzados: 2 bagajes y 2 otras unidades en Arsouf
+        if self.units_in_arsouf["bagaje"] >= 2 and self.units_in_arsouf["other"] >= 2:
+            self.game_over = True
+            self.winner = "CRUZADOS"
+            self.ui.add_log_message("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf.")
+
+        # Victoria de los Sarracenos: imposibilidad de que los Cruzados ganen
+        # Esto se verificaría si no quedan suficientes unidades cruzadas en el tablero
+        crusader_units = self._count_remaining_crusader_units()
+        remaining_bagaje = crusader_units["bagaje"]
+        remaining_other = crusader_units["other"]
+
+        if remaining_bagaje + self.units_in_arsouf["bagaje"] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
+            self.game_over = True
+            self.winner = "SARRACENOS"
+            self.ui.add_log_message("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf.")
+
+    def _count_remaining_crusader_units(self):
+        """Cuenta las unidades cruzadas restantes en el tablero"""
+        remaining = {"bagaje": 0, "other": 0}
+
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                unit = self.grid.grid[row][col]
+                if unit and unit.side == "CRUZADOS":
+                    if isinstance(unit, Bagaje):
+                        remaining["bagaje"] += 1
+                    else:
+                        remaining["other"] += 1
+
+        return remaining
 
     def _check_unit_recovery(self):
         """Verifica recuperación de todas las unidades heridas"""
@@ -374,13 +1240,18 @@ class Game:
         if not self.combat_attacker:
             # Seleccionar atacante (debe ser unidad aliada sana)
             if unit and unit.side == self.player_side and unit.health == 2:
-                self.combat_attacker = unit
+                # Obtener enemigos adyacentes primero
                 self.combat_targets = self.grid.get_adjacent_enemies(row, col, self.player_side)
-                self.ui.add_log_message(f"{type(unit).__name__} seleccionado para ataque. Elige objetivo.")
 
-                # Mostrar objetivos visualmente
+                # Verificar si hay enemigos adyacentes
                 if not self.combat_targets:
-                    self.ui.add_log_message("No hay enemigos adyacentes para atacar")
+                    self.ui.add_log_message(f"No hay enemigos adyacentes para que {type(unit).__name__} ataque")
+                    # No seleccionar la unidad si no hay objetivos
+                    self.combat_attacker = None
+                else:
+                    # Solo seleccionar la unidad si hay objetivos válidos
+                    self.combat_attacker = unit
+                    self.ui.add_log_message(f"{type(unit).__name__} seleccionado para ataque. Elige objetivo.")
             else:
                 self.ui.add_log_message("Selecciona una unidad aliada sana para atacar")
         else:
@@ -407,17 +1278,28 @@ class Game:
         while self.running:
             self._handle_events()
 
-            # Restaurar la lógica original de despliegue
-            if self.state == "DEPLOY_AI":
-                self._ai_deploy_units()
-            elif self.state == "AI_TURN":
-                self._ai_turn()
+            # Verificar si el juego ha terminado
+            if self.game_over:
+                self._handle_game_over()
+            else:
+                # Restaurar la lógica original de despliegue
+                if self.state == "DEPLOY_AI":
+                    self._ai_deploy_units()
+                elif self.state == "AI_TURN":
+                    self._ai_turn()
 
             self._draw()
             self.clock.tick(FPS)
 
         pygame.quit()
         sys.exit()
+
+    def _handle_game_over(self):
+        """Maneja el estado de juego terminado"""
+        # Este método se llama cuando el juego ha terminado
+        # Aquí podríamos mostrar una pantalla de victoria/derrota
+        # Por ahora, solo mostramos un mensaje en el log
+        pass
 
 
 if __name__ == "__main__":

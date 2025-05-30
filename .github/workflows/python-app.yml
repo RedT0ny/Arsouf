@@ -25,6 +25,11 @@ jobs:
         python-version: "3.10"
     - name: Install dependencies
       run: |
+        # Install system dependencies for pygame
+        sudo apt-get update
+        sudo apt-get install -y python3-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libfreetype6-dev libportmidi-dev
+
+        # Install Python dependencies
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
@@ -34,6 +39,11 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+    - name: Test with pytest (if tests exist)
       run: |
-        pytest
+        # Only run pytest if test files exist
+        if [ -d "tests" ] || [ -n "$(find . -name 'test_*.py')" ]; then
+          pytest
+        else
+          echo "No test files found. Skipping pytest."
+        fi

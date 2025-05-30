@@ -459,6 +459,94 @@ class GameUI:
                     x, y = self.game.grid.hex_to_pixel(row, col)
                     pygame.draw.circle(self.game.screen, COMBAT_COLORS['wounded'], (x, y), 10, 2)
 
+    def draw_arsouf_hexes(self, game, pos_x, pos_y):
+        """Dibuja los hexágonos de Arsouf con un indicador visual"""
+        for row, col in game.arsouf_hexes:
+            x, y = game.grid.hex_to_pixel(row, col)
+            x += pos_x
+            y += pos_y
+
+            # Dibujar un círculo dorado para indicar Arsouf
+            s = pygame.Surface((HEX_SIZE*1.2, HEX_SIZE*1.2), pygame.SRCALPHA)
+            pygame.draw.circle(s, (255, 215, 0, 100), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
+            game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+
+            # Dibujar un borde dorado
+            pygame.draw.circle(game.screen, (255, 215, 0), (x, y), HEX_SIZE//2 + 2, 3)
+
+            # Añadir texto "ARSOUF"
+            font = pygame.font.SysFont('Arial', 14, bold=True)
+            text = font.render("ARSOUF", True, (255, 215, 0))
+            game.screen.blit(text, (x - text.get_width()//2, y - text.get_height()//2))
+
+    def draw_victory_progress(self, game):
+        """Dibuja el progreso hacia la victoria"""
+        if game.state == "SELECT_SIDE" or game.state == "DEPLOY_PLAYER" or game.state == "DEPLOY_AI":
+            return  # No mostrar durante la selección de bando o despliegue
+
+        # Crear un panel para mostrar el progreso
+        panel_width = 200
+        panel_height = 80
+        panel_x = SCREEN_WIDTH - PANEL_WIDTH - 20
+        panel_y = 20
+
+        # Dibujar panel
+        s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        s.fill((0, 0, 0, 180))
+        game.screen.blit(s, (panel_x, panel_y))
+
+        # Dibujar título
+        font_title = pygame.font.SysFont('Arial', 16, bold=True)
+        text_title = font_title.render("Progreso hacia Arsouf", True, (255, 255, 255))
+        game.screen.blit(text_title, (panel_x + 10, panel_y + 10))
+
+        # Dibujar progreso de bagajes
+        font = pygame.font.SysFont('Arial', 14)
+        text_bagaje = font.render(f"Bagajes: {game.units_in_arsouf['bagaje']}/2", True, (255, 255, 255))
+        game.screen.blit(text_bagaje, (panel_x + 10, panel_y + 35))
+
+        # Dibujar progreso de otras unidades
+        text_other = font.render(f"Otras unidades: {game.units_in_arsouf['other']}/2", True, (255, 255, 255))
+        game.screen.blit(text_other, (panel_x + 10, panel_y + 55))
+
+    def draw_game_over(self, game):
+        """Dibuja la pantalla de fin de juego"""
+        # Crear un panel semitransparente para el mensaje de fin de juego
+        panel_width = 400
+        panel_height = 200
+        panel_x = (SCREEN_WIDTH - panel_width) // 2
+        panel_y = (SCREEN_HEIGHT - panel_height) // 2
+
+        # Dibujar panel
+        s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        s.fill((0, 0, 0, 220))
+        game.screen.blit(s, (panel_x, panel_y))
+
+        # Dibujar borde
+        pygame.draw.rect(game.screen, (255, 215, 0), (panel_x, panel_y, panel_width, panel_height), 3)
+
+        # Dibujar título
+        font_title = pygame.font.SysFont('Arial', 30, bold=True)
+        text_title = font_title.render("FIN DEL JUEGO", True, (255, 215, 0))
+        game.screen.blit(text_title, (panel_x + (panel_width - text_title.get_width())//2, panel_y + 30))
+
+        # Dibujar mensaje de victoria
+        font = pygame.font.SysFont('Arial', 20)
+        if game.winner == "CRUZADOS":
+            text_winner = font.render("¡Victoria de los Cruzados!", True, (255, 255, 255))
+            text_reason = font.render("Han llegado suficientes unidades a Arsouf", True, (255, 255, 255))
+        else:
+            text_winner = font.render("¡Victoria de los Sarracenos!", True, (255, 255, 255))
+            text_reason = font.render("Han impedido que los Cruzados lleguen a Arsouf", True, (255, 255, 255))
+
+        game.screen.blit(text_winner, (panel_x + (panel_width - text_winner.get_width())//2, panel_y + 80))
+        game.screen.blit(text_reason, (panel_x + (panel_width - text_reason.get_width())//2, panel_y + 120))
+
+        # Dibujar instrucción para salir
+        font_exit = pygame.font.SysFont('Arial', 16)
+        text_exit = font_exit.render("Presiona ESC para salir", True, (200, 200, 200))
+        game.screen.blit(text_exit, (panel_x + (panel_width - text_exit.get_width())//2, panel_y + 160))
+
 
     def draw_game(self, game):
         """Dibuja todos los elementos del juego."""
@@ -469,7 +557,10 @@ class GameUI:
         pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
         game.screen.blit(game.tablero_escalado, (pos_x, pos_y))
 
-        # 3. Dibujar debug de movimiento si existe
+        # 3. Dibujar hexágonos de Arsouf
+        self.draw_arsouf_hexes(game, pos_x, pos_y)
+
+        # 4. Dibujar debug de movimiento si existe
         if __debug__ and hasattr(game, 'last_move_debug_pos') and game.last_move_debug_pos:
             row, col = game.last_move_debug_pos
             x, y = game.grid.hex_to_pixel(row, col)
@@ -480,26 +571,33 @@ class GameUI:
             pygame.draw.circle(s, (255, 0, 0, 180), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//3)
             game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
 
-        # 4. Debug hex grid (opcional)
+        # 5. Debug hex grid (opcional)
         if __debug__: 
             game.grid.draw_hex_debug(game.screen)
 
-        # 5. Dibujar unidades
+        # 6. Dibujar unidades
         game.grid.draw(game.screen, game.images, pos_x, pos_y)
 
-        # 6. Dibujar movimientos posibles si estamos en fase de movimiento
+        # 7. Dibujar movimientos posibles si estamos en fase de movimiento
         if game.selected_unit and game.possible_moves:
             self.draw_possible_moves(game.possible_moves, game.grid, pos_x, pos_y)
 
-        # 7. Dibujar objetivos de combate si estamos en fase de combate
+        # 8. Dibujar objetivos de combate si estamos en fase de combate
         if game.state == "PLAYER_TURN" and game.turn_phase == "combate":
             self.draw_combat_targets()
 
-        # 8. Dibujar UI
+        # 9. Dibujar UI
         self.draw_log_panel()
         self.draw_panel()
         self.draw_deployment_zones()
 
-        # 8. Dibujar pantalla de selección si es necesario
+        # 10. Dibujar información de progreso hacia la victoria
+        self.draw_victory_progress(game)
+
+        # 11. Dibujar pantalla de selección si es necesario
         if game.state == "SELECT_SIDE":
             self.draw_side_selection()
+
+        # 12. Dibujar pantalla de fin de juego si es necesario
+        if game.game_over:
+            self.draw_game_over(game)
