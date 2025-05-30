@@ -16,6 +16,7 @@ class Unit:
         self.row = None
         self.col = None
         self.health = 2  # 2 = sana, 1 = herida, 0 = muerta
+        self.speed = 0  # Velocidad actual (se establecerá en cada subclase)
         self.original_speed = 0  # Se establecerá en cada subclase
         self.wounded_mark = False  # Para mostrar cruz roja
         
@@ -46,7 +47,7 @@ class Unit:
     def recibir_herida(self, grid):
         if self.health == 2:  # Primera herida
             self.health = 1
-            self.speed = 1  # Reducir velocidad
+            self.speed = 1
             self.wounded_mark = True
         else:  # Segunda herida
             self.health = 0
@@ -121,7 +122,8 @@ class Ricardo(Unit):
     def __init__(self):
         super().__init__("ricardo","CRUZADOS")
         self.power = 2
-        self.speed = 2
+        self.original_speed = 2
+        self.speed = self.original_speed
         self.bonus = 2
 
 class Templario(Unit):
@@ -129,28 +131,32 @@ class Templario(Unit):
     def __init__(self):
         super().__init__("templario","CRUZADOS")
         self.power = 4
-        self.speed = 2
-        
+        self.original_speed = 2
+        self.speed = self.original_speed
+
 class Hospitalario(Unit):
     """Caballeros Hospitalarios (élite)."""
     def __init__(self):
         super().__init__("hospitalario","CRUZADOS")
         self.power = 4
-        self.speed = 2
+        self.original_speed = 2
+        self.speed = self.original_speed
         
 class Caballero(Unit):
     """Caballeros estándar."""
     def __init__(self):
         super().__init__("caballero","CRUZADOS")
         self.power = 3
-        self.speed = 2
+        self.original_speed = 2
+        self.speed = self.original_speed
 
 class Infanteria(Unit):
     """Soldados de infantería básicos."""
     def __init__(self):
         super().__init__("infanteria","CRUZADOS")
         self.power = 2
-        self.speed = 1
+        self.original_speed = 1
+        self.speed = self.original_speed
         self.slow = 1
         
 class Bagaje(Unit):
@@ -158,7 +164,8 @@ class Bagaje(Unit):
     def __init__(self):
         super().__init__("bagaje","CRUZADOS")
         self.power = 1
-        self.speed = 1
+        self.original_speed = 1
+        self.speed = self.original_speed
         self.slow = 1
 
 # ------------------------------
@@ -170,7 +177,8 @@ class Saladino(Unit):
     def __init__(self):
         super().__init__("saladino","SARRACENOS")
         self.power = 2
-        self.speed = 3
+        self.original_speed = 3
+        self.speed = self.original_speed
         self.bonus = 2
         
 class Mameluco(Unit):
@@ -178,18 +186,21 @@ class Mameluco(Unit):
     def __init__(self):
         super().__init__("mameluco","SARRACENOS")
         self.power = 3
-        self.speed = 3
+        self.original_speed = 3
+        self.speed = self.original_speed
         
 class Arquero(Unit):
     """Arqueros a caballo."""
     def __init__(self):
         super().__init__("arquero","SARRACENOS")
         self.power = 2
-        self.speed = 3
+        self.original_speed = 3
+        self.speed = self.original_speed
         
 class Explorador(Unit):
     """Unidades rápidas de reconocimiento."""
     def __init__(self):
         super().__init__("explorador","SARRACENOS")
         self.power = 1
-        self.speed = 3
+        self.original_speed = 3
+        self.speed = self.original_speed

@@ -1,12 +1,13 @@
 # hexgrid.py
+from collections import deque
+
 import pygame
 import math
 from typing import List, Tuple, Optional  # Añadir estas importaciones
-from config import *
-from units import Unit
+from units import *
 
 class HexGrid:
-    def __init__(self):
+    def __init__(self) -> None:
         self.rows = HEX_ROWS
         self.cols = HEX_COLS
         self.hex_size = HEX_SIZE  # Usamos el valor ya escalado de config.py
@@ -21,7 +22,7 @@ class HexGrid:
         self.offset_x = MARGENES_ESCALADOS["izquierdo"] + int(self.hex_width * 0.5)
         self.offset_y = MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)        
         
-    def hex_to_pixel(self, row, col):
+    def hex_to_pixel(self, row, col) -> tuple[int, int]:
         # Ajuste horizontal: filas impares indentadas
         indentacion = self.hex_width * 0.5 if not row % 2 else 0  # Cambiado a row % 2 != 0
         x = col * self.hex_width * 1.025 + indentacion
@@ -29,9 +30,9 @@ class HexGrid:
         # Ajuste vertical
         y = row * self.hex_height * 0.79
         
-        return (int(x + self.offset_x), int(y + self.offset_y))
+        return int(x + self.offset_x), int(y + self.offset_y)
 
-    def add_unit(self, row, col, unit):
+    def add_unit(self, row: int, col: int, unit: Unit) -> None:
         """
         Añade una unidad al grid hexagonal y actualiza su posición.
         
@@ -41,7 +42,7 @@ class HexGrid:
             unit (Unit): Instancia de la unidad (Ricardo, Templario, etc.)
         
         Ejemplo:
-            grid.add_unit(0, 21, Ricardo())  # Añade Ricardo en esquina superior derecha
+            grid.add_unit(0, 21, Ricardo()) # Añade Ricardo en esquina superior derecha
         """
         # 1. Validar coordenadas
         if not (0 <= row < self.rows and 0 <= col < self.cols):
@@ -197,7 +198,7 @@ class HexGrid:
 
     def eliminar_unidad(self, row, col):
         self.grid[row][col] = None
-        
+
     def get_units_in_radius(self, row, col, radius, side=None):
         """Obtiene unidades en un radio, filtrando por bando si se especifica"""
         units = []
@@ -205,26 +206,32 @@ class HexGrid:
         queue = deque()
         queue.append((row, col, 0))
         visited.add((row, col))
-        
+
+        # Definir direcciones para hex grid (igual que en otros métodos)
+        directions = [
+            [(-1, 0), (-1, 1), (0, 1), (1, 0), (1, 1), (0, -1)],  # Filas pares
+            [(-1, -1), (-1, 0), (0, 1), (1, -1), (1, 0), (0, -1)]  # Filas impares
+        ]
+
         while queue:
             r, c, dist = queue.popleft()
-            
+
             if 0 < dist <= radius:
                 unit = self.grid[r][c]
                 if unit and (side is None or unit.side == side):
                     units.append(unit)
-            
+
             if dist < radius:
                 dir_set = directions[r % 2]
                 for dr, dc in dir_set:
                     nr, nc = r + dr, c + dc
-                    if (0 <= nr < self.rows and 0 <= nc < self.cols and 
-                        (nr, nc) not in visited):
+                    if (0 <= nr < self.rows and 0 <= nc < self.cols and
+                            (nr, nc) not in visited):
                         visited.add((nr, nc))
                         queue.append((nr, nc, dist + 1))
-        
+
         return units
-    
+
     def calculate_zone_rect(self, start_col, start_row, cols, rows):
         """Calcula el rectángulo que engloba una zona del grid."""
         x, y = self.hex_to_pixel(start_row, start_col)

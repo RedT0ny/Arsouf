@@ -16,8 +16,15 @@ class GameUI:
         self.debug_drawn = False # Control mensajes DEBUG
 
     def _get_visible_lines(self):
-        """Calcula cuántas líneas son visibles en el panel"""
-        return (LOG_PANEL_HEIGHT - 2*LOG_MARGIN) // LOG_LINE_HEIGHT
+        """Calcula cuántas líneas son visibles en el panel con mayor precisión"""
+        line_height = LOG_LINE_HEIGHT
+        panel_height = LOG_PANEL_HEIGHT - 2 * LOG_MARGIN  # Altura disponible
+
+        # Calcular número exacto de líneas que caben
+        visible_lines = panel_height // line_height
+
+        # Asegurar al menos 1 línea visible
+        return max(1, visible_lines)
 
     def _calculate_board_position(self, tablero_surface):
         """Calcula la posición centrada del tablero."""
@@ -193,15 +200,20 @@ class GameUI:
 #             print(f"DEBUG: Wheel scroll - Delta: {wheel_delta}, Posición: {self.log_scroll_position}/{max_scroll}")
 
     def add_log_message(self, message):
-        """Añade un mensaje al log y ajusta el scroll."""
+        """Añade un mensaje al log y ajusta el scroll al final."""
         self.log_messages.append(message)
+
+        # Limitar el número máximo de mensajes almacenados
         if len(self.log_messages) > LOG_MAX_MESSAGES:
             self.log_messages.pop(0)
-        
-        # Auto-scroll al final si está cerca del final
-        visible_lines = (SCREEN_HEIGHT - LOG_PANEL_HEIGHT) // LOG_LINE_HEIGHT
-        if len(self.log_messages) - self.log_scroll_position <= visible_lines + 5:
-            self.log_scroll_position = max(0, len(self.log_messages) - visible_lines)
+
+        # Calcular la posición máxima del scroll
+        visible_lines = self._get_visible_lines()
+        total_lines = len(self.log_messages)
+        max_scroll_position: int = max(0, total_lines - visible_lines)
+
+        # Forzar el scroll al final
+        self.log_scroll_position = max_scroll_position
 
     def handle_deployment_click(self, mouse_pos, game):
         """Maneja el clic durante el despliegue."""
@@ -219,7 +231,7 @@ class GameUI:
                 x, y = grid.hex_to_pixel(row, col)
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
                 if distance < HEX_SIZE / 2:
-                    return (row, col)
+                    return row, col
         return None
 
     def get_button_rect(self):
