@@ -3,8 +3,9 @@ import sys
 
 import pygame
 
-from gameui import GameUI
+# pylint: disable=unused-import
 from hexgrid import HexGrid
+from gameui import GameUI
 from units import *
 from config import *
 
@@ -219,13 +220,6 @@ class Game:
         else:
             self.ui.add_log_message("Posición inválida para despliegue")
 
-    def _handle_player_turn(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            tablero_rect = pygame.Rect(0, 0, self.tablero_escalado.get_width(), self.tablero_escalado.get_height())
-
-            if tablero_rect.collidepoint(mouse_pos):
-                self._handle_board_click(mouse_pos)
 
     def _end_player_turn(self):
         """Maneja la finalización del turno del jugador o fase de despliegue"""
@@ -268,10 +262,10 @@ class Game:
                     print(f"Posición en píxeles: {self.grid.hex_to_pixel(row, col)}")
 
                     self._process_hex_click(row, col)
-                    break
+                    return
 
-    # DEBUG: Si no se encontró ningún hexágono
-    print("Click fuera del tablero o entre hexágonos")
+        # DEBUG: Si no se encontró ningún hexágono
+        print("Click fuera del tablero o entre hexágonos")
 
     def _process_hex_click(self, row, col):
         unit = self.grid.grid[row][col]
@@ -297,10 +291,7 @@ class Game:
             self.possible_moves = []
 
     def _is_player_unit(self, unit):
-        if self.player_side == "CRUZADOS":
-            return isinstance(unit, (Ricardo, Templario, Hospitalario, Caballero, Infanteria, Bagaje))
-        else:
-            return isinstance(unit, (Saladino, Mameluco, Arquero, Explorador))
+        return unit.side == self.player_side
 
     def _ai_deploy_units(self):
         if not self.units_to_deploy[self.ai_side]:

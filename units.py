@@ -19,23 +19,24 @@ class Unit:
         self.speed = 0  # Velocidad actual (se establecerá en cada subclase)
         self.original_speed = 0  # Se establecerá en cada subclase
         self.wounded_mark = False  # Para mostrar cruz roja
-        
+        self.leader = False  # Indica si la unidad es un líder (Ricardo o Saladino)
+
     def set_position(self, row, col):
         """Establece la posición en el grid."""
         self.row = row
         self.col = col
-    
+
     def atacar(self, objetivo, grid):
         """Devuelve True si el ataque fue exitoso"""
         if self.health != 2:  # Solo unidades sanas pueden atacar
             return False
-            
+
         ataque_power = self.power + random.randint(1, 6)
-        
+
         # Bonus por líder adyacente
         if self._tiene_lider_adyacente(grid):
             ataque_power += 2
-            
+
         # Cálculo del poder defensivo, incluyendo bonus
         defensa_power = objetivo.power + random.randint(1, 6) + self._calcular_bono_aliados(objetivo, grid)
 
@@ -43,7 +44,7 @@ class Unit:
             objetivo.recibir_herida(grid)
             return True
         return False
-        
+
     def recibir_herida(self, grid):
         if self.health == 2:  # Primera herida
             self.health = 1
@@ -64,52 +65,48 @@ class Unit:
         return False
 
     def _tiene_lider_adyacente(self, grid):
-        # Implementar lógica para detectar líder aliado adyacente
-        lider = "Ricardo" if self.side == "CRUZADOS" else "Saladino"
+        # Detectar líder aliado adyacente usando el atributo leader
         for r, c in grid.get_adjacent_positions(self.row, self.col):
             unit = grid.get_unit(r, c)
-            if unit and type(unit).__name__ == lider:
+            if unit and unit.leader and unit.side == self.side:
                 return True
         return False
-        
+
     def _calcular_bono_aliados(self, unidad_defensora: 'Unit', grid: 'HexGrid') -> float:
         """Calcula el bono de defensa por unidades aliadas adyacentes a la unidad ATACANTE,
         con bono adicional si el líder está adyacente al DEFENSOR.
-        
+
         Reglas:
         - Cada unidad aliada adyacente al ATACANTE aporta la MITAD de su poder
         - Si el líder está adyacente al DEFENSOR, aporta +2 adicionales
         - No hay límite máximo de bono
         """
         bono_total = 0.0
-        
+
         # 1. Bono por aliados adyacentes al ATACANTE (self)
         for r, c in grid.get_adjacent_positions(self.row, self.col):
             unidad_adyacente = grid.get_unit(r, c)
             if unidad_adyacente and unidad_adyacente.side == self.side:  # Aliados del atacante
                 bono_total += round(unidad_adyacente.power / 2, 1)
-        
+
         # 2. Bono adicional si el líder está adyacente al DEFENSOR
         for r, c in grid.get_adjacent_positions(unidad_defensora.row, unidad_defensora.col):
             unidad_adyacente = grid.get_unit(r, c)
             if unidad_adyacente and self._es_lider(unidad_adyacente) and unidad_adyacente.side == unidad_defensora.side:
                 bono_total += 2
                 break  # Solo se cuenta una vez aunque haya múltiples líderes (por seguridad)
-        
+
         return bono_total
 
     def _es_lider(self, unidad: 'Unit') -> bool:
         """Determina si una unidad es el líder de su facción"""
-        if unidad.side == "CRUZADOS":
-            return isinstance(unidad, Ricardo)
-        else:
-            return isinstance(unidad, Saladino)
-        
+        return unidad.leader
+
     def _enemigos_cercanos(self, grid, radius=3):
         """Verifica si hay enemigos en un radio determinado"""
         enemies = grid.get_units_in_radius(self.row, self.col, radius)
         return any(unit.side != self.side for unit in enemies)
-    
+
     def __repr__(self):
         return f"{self.__class__.__name__}(row={self.row}, col={self.col})"
 
@@ -125,6 +122,7 @@ class Ricardo(Unit):
         self.original_speed = 2
         self.speed = self.original_speed
         self.bonus = 2
+        self.leader = True
 
 class Templario(Unit):
     """Caballeros Templarios (élite)."""
@@ -141,7 +139,7 @@ class Hospitalario(Unit):
         self.power = 4
         self.original_speed = 2
         self.speed = self.original_speed
-        
+
 class Caballero(Unit):
     """Caballeros estándar."""
     def __init__(self):
@@ -158,7 +156,7 @@ class Infanteria(Unit):
         self.original_speed = 1
         self.speed = self.original_speed
         self.slow = 1
-        
+
 class Bagaje(Unit):
     """Carros de suministros (no combaten)."""
     def __init__(self):
@@ -180,7 +178,8 @@ class Saladino(Unit):
         self.original_speed = 3
         self.speed = self.original_speed
         self.bonus = 2
-        
+        self.leader = True
+
 class Mameluco(Unit):
     """Caballería pesada sarracena."""
     def __init__(self):
@@ -188,7 +187,7 @@ class Mameluco(Unit):
         self.power = 3
         self.original_speed = 3
         self.speed = self.original_speed
-        
+
 class Arquero(Unit):
     """Arqueros a caballo."""
     def __init__(self):
@@ -196,7 +195,7 @@ class Arquero(Unit):
         self.power = 2
         self.original_speed = 3
         self.speed = self.original_speed
-        
+
 class Explorador(Unit):
     """Unidades rápidas de reconocimiento."""
     def __init__(self):
