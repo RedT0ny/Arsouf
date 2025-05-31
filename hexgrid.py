@@ -5,6 +5,7 @@ import pygame
 import math
 from typing import List, Tuple, Optional  # Añadir estas importaciones
 from units import *
+from config import COMBAT_COLORS  # Importar explícitamente para el aspa roja
 
 class HexGrid:
     def __init__(self) -> None:
@@ -118,6 +119,11 @@ class HexGrid:
                 continue
             if (nr, nc) in FORBIDDEN_HEXES:
                 continue
+
+            # Verificar si hay una unidad enemiga en la casilla (no se puede saltar sobre enemigos)
+            neighbor_unit = self.grid[nr][nc]
+            if neighbor_unit and neighbor_unit.side != unit.side:
+                continue  # No se puede mover a través de unidades enemigas
 
             # 2. Determinar costo base del movimiento
             move_pair = frozenset({(row, col), (nr, nc)})
@@ -255,7 +261,23 @@ class HexGrid:
                     img = images.get(unit.image_key)
                     if img:
                         # Centrar la imagen en el hexágono
-                        screen.blit(img, (x - img.get_width() // 2, y - img.get_height() // 2))
+                        img_x = x - img.get_width() // 2
+                        img_y = y - img.get_height() // 2
+                        screen.blit(img, (img_x, img_y))
+
+                        # Dibujar aspa roja si la unidad está herida
+                        if unit.wounded_mark:
+                            # Calcular las coordenadas para el aspa
+                            img_width = img.get_width()
+                            img_height = img.get_height()
+
+                            # Dibujar líneas diagonales (aspa)
+                            pygame.draw.line(screen, COMBAT_COLORS['wounded'], 
+                                           (img_x, img_y), 
+                                           (img_x + img_width, img_y + img_height), 3)
+                            pygame.draw.line(screen, COMBAT_COLORS['wounded'], 
+                                           (img_x + img_width, img_y), 
+                                           (img_x, img_y + img_height), 3)
 
     def draw_hex_debug(self, screen):
         """Debug visual mejorado"""

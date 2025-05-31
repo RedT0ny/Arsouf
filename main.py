@@ -61,6 +61,7 @@ class Game:
         self.selected_unit = None
         self.possible_moves = []
         self.moved_units = set()  # Unidades que ya han movido en este turno
+        self.attacked_units = set()  # Unidades que ya han atacado en este turno
         self.current_turn_side = None  # Bandos del turno actual
         self.last_move_debug_pos = None  # Para debug visual
 
@@ -176,6 +177,7 @@ class Game:
                 self.turn_phase = TURN_PHASES["COMBAT"]
                 self.ui.add_log_message("Fase de combate iniciada")
                 self.moved_units = set()  # Resetear unidades movidas
+                self.attacked_units = set()  # Resetear unidades atacantes
             elif self.turn_phase == TURN_PHASES["COMBAT"]:
                 self.turn_phase = TURN_PHASES["MOVEMENT"]
                 self.state = GAME_STATES["AI_TURN"]
@@ -257,6 +259,7 @@ class Game:
                 self.turn_phase = TURN_PHASES["COMBAT"]
                 self.ui.add_log_message("Fase de combate iniciada")
                 self.moved_units = set()  # Resetear unidades movidas
+                self.attacked_units = set()  # Resetear unidades atacantes
 
             elif self.turn_phase == TURN_PHASES["COMBAT"]:
                 # Finalizar turno completo
@@ -1428,6 +1431,11 @@ class Game:
         if not self.combat_attacker:
             # Seleccionar atacante (debe ser unidad aliada sana)
             if unit and unit.side == self.player_side and unit.health == 2:
+                # Verificar si la unidad ya atacó este turno
+                if (row, col) in self.attacked_units:
+                    self.ui.add_log_message(f"{type(unit).__name__} ya ha atacado este turno")
+                    return
+
                 # Obtener enemigos adyacentes primero
                 self.combat_targets = self.grid.get_adjacent_enemies(row, col, self.player_side)
 
@@ -1451,6 +1459,9 @@ class Game:
                         f"¡Ataque exitoso! {type(self.combat_attacker).__name__} hirió a {type(unit).__name__}")
                 else:
                     self.ui.add_log_message(f"¡Ataque fallido! {type(unit).__name__} resistió el ataque")
+
+                # Marcar la unidad como ya atacó este turno
+                self.attacked_units.add((self.combat_attacker.row, self.combat_attacker.col))
 
                 # Resetear selección después del ataque
                 self.combat_attacker = None

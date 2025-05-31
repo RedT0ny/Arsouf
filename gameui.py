@@ -403,8 +403,8 @@ class GameUI:
         # Dibujar imagen de la unidad
         if hasattr(unit, 'image_key') and unit.image_key in self.game.images:
             img = self.game.images[unit.image_key]
-            img_size = min(max_width, 80)  # Limitar tamaño de imagen
-            img_scaled = pygame.transform.smoothscale(img, (img_size, img_size))
+            img_size = min(max_width, 120)  # Limitar tamaño de imagen (aumentado un 50%)
+            img_scaled = pygame.transform.scale(img, (img_size, img_size))
 
             # Centrar imagen
             img_x = content_rect.x + (max_width - img_size) // 2
@@ -568,7 +568,7 @@ class GameUI:
         panel_width = 200
         panel_height = 80
         panel_x = SCREEN_WIDTH - PANEL_WIDTH - 20
-        panel_y = 20
+        panel_y = SCREEN_HEIGHT - 170  # Posicionado ligeramente sobre el botón de finalizar turno
 
         # Dibujar panel
         s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
