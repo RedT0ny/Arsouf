@@ -3,8 +3,8 @@ import os
 #import pygame
 
 # 1. Configuración de pantalla
-SCREEN_WIDTH = 1500 #1837
-SCREEN_HEIGHT = 974 #1193
+SCREEN_WIDTH = 1500
+SCREEN_HEIGHT = 974
 FPS = 60
 COLOR_BG = (0, 0, 0)
 
@@ -140,6 +140,18 @@ COMBAT_COLORS = {
     'wounded': (255, 0, 0)
 }
 
+GAME_STATES = {
+    'SELECT_SIDE': 'SELECT_SIDE',
+    'DEPLOY_PLAYER': 'DEPLOY_PLAYER',
+    'DEPLOY_AI': 'DEPLOY_AI',
+    'PLAYER_TURN': 'PLAYER_TURN',
+    'AI_TURN': 'AI_TURN'
+}
+
+TURN_PHASES = {
+    'MOVEMENT': 'movimiento',
+    'COMBAT': 'combate'
+}
 
 # ------------------------------
 # VALIDACIÓN DE CONFIG
@@ -147,5 +159,7 @@ COMBAT_COLORS = {
 if __name__ == "__main__":
     print("Configuración cargada correctamente:")
     print(f"- Tamaño de ventana: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
-    print(f"- Hexágonos: {HEX_ROWS}x{HEX_COLS} (size: {HEX_SIZE}px)")
+    print(f"- Tamaño del tablero: {TABLERO_REAL_WIDTH}x{TABLERO_REAL_HEIGHT} (Utilizable: {HEX_AREA_REAL_WIDTH}x{HEX_AREA_REAL_HEIGHT} px)")
+    print(f"- Tamaño escalado: {SCREEN_WIDTH - PANEL_WIDTH}x{SCREEN_HEIGHT - LOG_PANEL_HEIGHT}")
     print(f"- Escala: {ESCALA:.2f}")
+    print(f"- Hexágonos: {HEX_ROWS}x{HEX_COLS} (size: {HEX_SIZE}px)")

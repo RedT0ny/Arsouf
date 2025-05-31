@@ -1,4 +1,6 @@
 # main.py
+#TODO: Mostrar información en panel lateral cuando se selecciona una unidad, ya sea para movimiento o para combate.
+
 import sys
 
 import pygame
@@ -14,12 +16,12 @@ class Game:
         pygame.init()
 
         # Estados del juego
-        self.state = "SELECT_SIDE"
+        self.state = GAME_STATES["SELECT_SIDE"]
         self.player_side = None
         self.ai_side = None
 
         # Fases del turno
-        self.turn_phase = "movimiento"  # "movimiento" o "combate"
+        self.turn_phase = TURN_PHASES["MOVEMENT"]  # Fase actual del turno (movimiento o combate)
         self.combat_attacker = None  # Unidad seleccionada para atacar
         self.combat_targets = []  # Posibles objetivos de ataque
 
@@ -50,11 +52,6 @@ class Game:
 
         # Cargar imágenes de unidades
         self.images = self._load_images()
-
-        # Estados del juego
-        self.state = "SELECT_SIDE"
-        self.player_side = None
-        self.ai_side = None
 
         # Unidades por colocar
         self.units_to_deploy = self._get_initial_units()
@@ -101,6 +98,12 @@ class Game:
             ]
         }
 
+    def get_current_turn(self):
+        return self.state
+
+    def get_current_turn_phase(self):
+        return self.turn_phase
+
     def _handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -126,14 +129,14 @@ class Game:
                     continue
 
                 # Manejo específico por estado y fase
-                if self.state == "SELECT_SIDE":
+                if self.state == GAME_STATES["SELECT_SIDE"]:
                     self._handle_side_selection(event)
-                elif self.state == "DEPLOY_PLAYER":
+                elif self.state == GAME_STATES["DEPLOY_PLAYER"]:
                     self._handle_deployment(event)
-                elif self.state == "PLAYER_TURN":
-                    if self.turn_phase == "movimiento":
+                elif self.state == GAME_STATES["PLAYER_TURN"]:
+                    if self.turn_phase == TURN_PHASES["MOVEMENT"]:
                         self._handle_movement_phase(event)
-                    elif self.turn_phase == "combate":
+                    elif self.turn_phase == TURN_PHASES["COMBAT"]:
                         self._handle_combat_phase(event)  # Asegurar que se llama aquí
 
     def _handle_movement_phase(self, event):
@@ -168,14 +171,14 @@ class Game:
 
     def _end_current_phase(self):
         """Finaliza la fase actual y pasa a la siguiente"""
-        if self.state == "PLAYER_TURN":
-            if self.turn_phase == "movimiento":
-                self.turn_phase = "combate"
+        if self.state == GAME_STATES["PLAYER_TURN"]:
+            if self.turn_phase == TURN_PHASES["MOVEMENT"]:
+                self.turn_phase = TURN_PHASES["COMBAT"]
                 self.ui.add_log_message("Fase de combate iniciada")
                 self.moved_units = set()  # Resetear unidades movidas
-            elif self.turn_phase == "combate":
-                self.turn_phase = "movimiento"
-                self.state = "AI_TURN"
+            elif self.turn_phase == TURN_PHASES["COMBAT"]:
+                self.turn_phase = TURN_PHASES["MOVEMENT"]
+                self.state = GAME_STATES["AI_TURN"]
                 self.ui.add_log_message("Turno del jugador finalizado")
                 self._check_unit_recovery()
 
@@ -197,7 +200,7 @@ class Game:
     def _start_game(self, player_side):
         self.player_side = player_side
         self.ai_side = "SARRACENOS" if player_side == "CRUZADOS" else "CRUZADOS"
-        self.state = "DEPLOY_PLAYER"
+        self.state = GAME_STATES["DEPLOY_PLAYER"]
         self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
         self.ui.add_log_message(f"Jugando como {player_side}. Comienza el despliegue.")
 
@@ -236,9 +239,9 @@ class Game:
 
     def _end_player_turn(self):
         """Maneja la finalización del turno del jugador o fase de despliegue"""
-        if self.state == "DEPLOY_PLAYER" and not self.current_deploying_unit:
+        if self.state == GAME_STATES["DEPLOY_PLAYER"] and not self.current_deploying_unit:
             # Confirmar despliegue del jugador
-            self.state = "DEPLOY_AI"
+            self.state = GAME_STATES["DEPLOY_AI"]
             self.ui.add_log_message("Despliegue confirmado. El ordenador está desplegando")
 
             # Limpiar selecciones
@@ -248,17 +251,17 @@ class Game:
             # Iniciar despliegue de la IA
             self._ai_deploy_units()
 
-        elif self.state == "PLAYER_TURN":
-            if self.turn_phase == "movimiento":
+        elif self.state == GAME_STATES["PLAYER_TURN"]:
+            if self.turn_phase == TURN_PHASES["MOVEMENT"]:
                 # Pasar a fase de combate
-                self.turn_phase = "combate"
+                self.turn_phase = TURN_PHASES["COMBAT"]
                 self.ui.add_log_message("Fase de combate iniciada")
                 self.moved_units = set()  # Resetear unidades movidas
 
-            elif self.turn_phase == "combate":
+            elif self.turn_phase == TURN_PHASES["COMBAT"]:
                 # Finalizar turno completo
-                self.turn_phase = "movimiento"
-                self.state = "AI_TURN"
+                self.turn_phase = TURN_PHASES["MOVEMENT"]
+                self.state = GAME_STATES["AI_TURN"]
                 self.current_turn_side = self.ai_side
                 self.ui.add_log_message("Turno del jugador finalizado")
                 self._check_unit_recovery()
@@ -321,7 +324,7 @@ class Game:
 
     def _ai_deploy_units(self):
         if not self.units_to_deploy[self.ai_side]:
-            self.state = "PLAYER_TURN"
+            self.state = GAME_STATES["PLAYER_TURN"]
             return
 
         # Obtener todas las posiciones válidas de despliegue
@@ -455,9 +458,10 @@ class Game:
     def _ai_turn(self):
         # 1. Inicializar el turno de la IA si es nuevo
         if not hasattr(self, '_ai_turn_initialized'):
-            self.ui.add_log_message("Turno del ordenador")
+            self.ui.add_log_message("Turno del ordenador - Fase de movimiento")
             self._ai_turn_initialized = True
             self._ai_moved_units_this_turn = set()
+            self.turn_phase = TURN_PHASES["MOVEMENT"]  # Usar la variable global turn_phase
 
             # Obtener todas las unidades de la IA
             all_ai_units = [
@@ -470,7 +474,7 @@ class Game:
             if self.ai_side == "CRUZADOS":
                 # Para Cruzados: primero mover Ricardo y unidades fuertes, luego infantería, bagajes al final
                 leaders = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Ricardo)]
-                strong_units = [(r, c, u) for r, c, u in all_ai_units 
+                strong_units = [(r, c, u) for r, c, u in all_ai_units
                                if isinstance(u, Templario) or isinstance(u, Hospitalario) or isinstance(u, Caballero)]
                 infantry = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Infanteria)]
                 baggage = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Bagaje)]
@@ -487,37 +491,74 @@ class Game:
                 # Ordenar por prioridad
                 self._ai_units_to_consider = explorers + archers + mamelucos + leaders
 
-        # 2. Mover hasta 1 unidad por frame (para permitir renderizado)
-        if self._ai_units_to_consider:
-            row, col, unit = self._ai_units_to_consider.pop()
+        # 2. Fase de movimiento
+        if self.turn_phase == TURN_PHASES["MOVEMENT"]:
+            if hasattr(self, '_ai_units_to_consider') and self._ai_units_to_consider:
+                row, col, unit = self._ai_units_to_consider.pop()
 
-            if (row, col) not in self._ai_moved_units_this_turn:
-                self.possible_moves = self.grid.get_possible_moves(row, col, unit.speed)
+                if hasattr(self, '_ai_moved_units_this_turn') and (row, col) not in self._ai_moved_units_this_turn:
+                    self.possible_moves = self.grid.get_possible_moves(row, col, unit.speed)
 
-                if self.possible_moves:
-                    # Elegir movimiento según estrategia
-                    new_row, new_col = self._choose_strategic_move(row, col, unit, self.possible_moves)
+                    if self.possible_moves:
+                        # Elegir movimiento según estrategia
+                        new_row, new_col = self._choose_strategic_move(row, col, unit, self.possible_moves)
 
-                    # Verificar si es una unidad cruzada llegando a Arsouf
-                    if unit.side == "CRUZADOS" and (new_row, new_col) in self.arsouf_hexes:
-                        # Unidad llega a Arsouf
-                        self._unit_reaches_arsouf(unit)
-                        # Eliminar la unidad del tablero original
-                        self.grid.grid[row][col] = None
-                        self.ui.add_log_message(f"{type(unit).__name__} ha llegado a Arsouf!")
-                        # Verificar condición de victoria
-                        self._check_win_condition()
-                    else:
-                        # Realizar el movimiento normal
-                        self.grid.grid[row][col] = None
-                        self.grid.add_unit(new_row, new_col, unit)
-                        self._ai_moved_units_this_turn.add((row, col))
-                        self.ui.add_log_message(
-                            f"[{type(unit).__name__}#{id(unit)}] se mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
+                        # Verificar si es una unidad cruzada llegando a Arsouf
+                        if unit.side == "CRUZADOS" and (new_row, new_col) in self.arsouf_hexes:
+                            # Unidad llega a Arsouf
+                            self._unit_reaches_arsouf(unit)
+                            # Eliminar la unidad del tablero original
+                            self.grid.grid[row][col] = None
+                            self.ui.add_log_message(f"{type(unit).__name__} ha llegado a Arsouf!")
+                            # Verificar condición de victoria
+                            self._check_win_condition()
+                        else:
+                            # Realizar el movimiento normal
+                            self.grid.grid[row][col] = None
+                            self.grid.add_unit(new_row, new_col, unit)
+                            if hasattr(self, '_ai_moved_units_this_turn'):
+                                self._ai_moved_units_this_turn.add((row, col))
+                            self.ui.add_log_message(
+                                f"[{type(unit).__name__}#{id(unit)}] se mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
+            else:
+                # Cuando se completa la fase de movimiento, pasar a la fase de combate
+                self.turn_phase = TURN_PHASES["COMBAT"]
+                self.ui.add_log_message("Turno del ordenador - Fase de combate")
+                self._ai_attacked_units_this_turn = set()  # Inicializar conjunto de unidades que ya atacaron
 
-        # 3. Finalizar turno cuando no queden unidades
-        if not self._ai_units_to_consider:
-            self._end_ai_turn()
+                # Obtener todas las unidades de la IA para la fase de combate
+                all_ai_units = [
+                    (r, c, u) for r in range(self.grid.rows)
+                    for c in range(self.grid.cols)
+                    if (u := self.grid.grid[r][c]) and not self._is_player_unit(u)
+                ]
+
+                # Ordenar unidades según prioridad estratégica para combate
+                self._ai_combat_units = self._prioritize_units_for_combat(all_ai_units)
+
+        # 3. Fase de combate
+        elif self.turn_phase == TURN_PHASES["COMBAT"]:
+            if hasattr(self, '_ai_combat_units') and self._ai_combat_units:
+                self._execute_ai_combat()
+            else:
+                # Cuando se completa la fase de combate, finalizar el turno
+                self._end_ai_turn()
+
+        # 4. Finalizar turno si no quedan unidades y estamos en fase de movimiento
+        if self.turn_phase == TURN_PHASES["MOVEMENT"] and hasattr(self, '_ai_units_to_consider') and not self._ai_units_to_consider:
+            self.turn_phase = TURN_PHASES["COMBAT"]
+            self.ui.add_log_message("Turno del ordenador - Fase de combate")
+            self._ai_attacked_units_this_turn = set()  # Inicializar conjunto de unidades que ya atacaron
+
+            # Obtener todas las unidades de la IA para la fase de combate
+            all_ai_units = [
+                (r, c, u) for r in range(self.grid.rows)
+                for c in range(self.grid.cols)
+                if (u := self.grid.grid[r][c]) and not self._is_player_unit(u)
+            ]
+
+            # Ordenar unidades según prioridad estratégica para combate
+            self._ai_combat_units = self._prioritize_units_for_combat(all_ai_units)
 
     def _choose_strategic_move(self, row, col, unit, possible_moves):
         """Elige un movimiento estratégico según el tipo de unidad y el bando."""
@@ -1169,14 +1210,161 @@ class Game:
         best_moves = sorted_moves[:max(1, len(sorted_moves) // 4)]
         return random.choice(best_moves)
 
+    def _prioritize_units_for_combat(self, all_ai_units):
+        """Prioriza las unidades para el combate según estrategias específicas."""
+        # Filtrar unidades que pueden atacar (salud completa)
+        combat_ready_units = [(r, c, u) for r, c, u in all_ai_units if u.health == 2]
+
+        # Si no hay unidades listas para combate, retornar lista vacía
+        if not combat_ready_units:
+            return []
+
+        # Ordenar unidades según prioridad estratégica para combate
+        if self.ai_side == "CRUZADOS":
+            # Para Cruzados: priorizar unidades fuertes y proteger bagajes
+            # 1. Caballeros y unidades de élite
+            strong_units = [(r, c, u) for r, c, u in combat_ready_units
+                           if isinstance(u, Templario) or isinstance(u, Hospitalario) or isinstance(u, Caballero)]
+            # 2. Ricardo (si está en posición de atacar)
+            leaders = [(r, c, u) for r, c, u in combat_ready_units if isinstance(u, Ricardo)]
+            # 3. Infantería
+            infantry = [(r, c, u) for r, c, u in combat_ready_units if isinstance(u, Infanteria)]
+            # 4. Bagajes (normalmente no atacan, pero por si acaso)
+            baggage = [(r, c, u) for r, c, u in combat_ready_units if isinstance(u, Bagaje)]
+
+            # Ordenar por prioridad
+            return strong_units + leaders + infantry + baggage
+        else:  # SARRACENOS
+            # Para Sarracenos: priorizar atacar bagajes y unidades débiles
+            # 1. Mamelucos (unidades fuertes)
+            mamelucos = [(r, c, u) for r, c, u in combat_ready_units if isinstance(u, Mameluco)]
+            # 2. Arqueros
+            archers = [(r, c, u) for r, c, u in combat_ready_units if isinstance(u, Arquero)]
+            # 3. Exploradores
+            explorers = [(r, c, u) for r, c, u in combat_ready_units if isinstance(u, Explorador)]
+            # 4. Saladino (si está en posición de atacar)
+            leaders = [(r, c, u) for r, c, u in combat_ready_units if isinstance(u, Saladino)]
+
+            # Ordenar por prioridad
+            return mamelucos + archers + explorers + leaders
+
+    def _execute_ai_combat(self):
+        """Ejecuta un ataque de la IA según prioridades estratégicas."""
+        if not hasattr(self, '_ai_combat_units') or not self._ai_combat_units:
+            return
+
+        # Obtener la siguiente unidad para atacar
+        row, col, unit = self._ai_combat_units.pop(0)
+
+        # Verificar si la unidad ya atacó este turno
+        if hasattr(self, '_ai_attacked_units_this_turn') and (row, col) in self._ai_attacked_units_this_turn:
+            return
+
+        # Verificar si la unidad sigue existiendo y está sana
+        current_unit = self.grid.get_unit(row, col)
+        if not current_unit or current_unit.health != 2 or current_unit != unit:
+            return
+
+        # Obtener enemigos adyacentes
+        adjacent_enemies = self.grid.get_adjacent_enemies(row, col, self.ai_side)
+
+        # Si no hay enemigos adyacentes, pasar a la siguiente unidad
+        if not adjacent_enemies:
+            return
+
+        # Seleccionar objetivo según prioridad estratégica
+        target = self._select_combat_target(unit, adjacent_enemies)
+
+        # Realizar ataque
+        if target:
+            if unit.atacar(target, self.grid):
+                self.ui.add_log_message(
+                    f"¡IA ataca! {type(unit).__name__} hirió a {type(target).__name__}")
+            else:
+                self.ui.add_log_message(
+                    f"¡Ataque fallido de IA! {type(target).__name__} resistió el ataque de {type(unit).__name__}")
+
+            # Marcar la unidad como ya atacó este turno
+            if hasattr(self, '_ai_attacked_units_this_turn'):
+                self._ai_attacked_units_this_turn.add((row, col))
+
+    def _select_combat_target(self, attacker, possible_targets):
+        """Selecciona el mejor objetivo para atacar según prioridades estratégicas."""
+        if not possible_targets:
+            return None
+
+        # Calcular puntuación para cada objetivo
+        target_scores = {}
+
+        for target in possible_targets:
+            score = 0
+
+            # Prioridad base según tipo de unidad objetivo
+            if isinstance(target, Bagaje):
+                score += 10  # Máxima prioridad a los bagajes
+            elif isinstance(target, Ricardo) or isinstance(target, Saladino):
+                score += 8   # Alta prioridad a los líderes
+            elif isinstance(target, Templario) or isinstance(target, Hospitalario):
+                score += 7   # Alta prioridad a unidades de élite
+            elif isinstance(target, Caballero) or isinstance(target, Mameluco):
+                score += 6   # Prioridad a unidades fuertes
+            elif isinstance(target, Infanteria):
+                score += 4   # Prioridad media a infantería
+            elif isinstance(target, Arquero):
+                score += 3   # Prioridad media-baja a arqueros
+            elif isinstance(target, Explorador):
+                score += 2   # Baja prioridad a exploradores
+
+            # Bonus por unidades heridas (más fáciles de eliminar)
+            if target.health == 1:
+                score += 5
+
+            # Estrategias específicas según el bando
+            if self.ai_side == "CRUZADOS":
+                # Priorizar unidades que amenazan a los bagajes
+                if isinstance(target, Explorador) or isinstance(target, Mameluco):
+                    score += 3
+            else:  # SARRACENOS
+                # Priorizar bagajes y unidades que protegen el camino a Arsouf
+                if isinstance(target, Bagaje):
+                    score += 5
+                elif isinstance(target, Infanteria) and self._is_unit_protecting_baggage(target):
+                    score += 4
+
+            target_scores[target] = score
+
+        # Seleccionar el objetivo con mayor puntuación
+        if target_scores:
+            return max(target_scores.items(), key=lambda x: x[1])[0]
+        return random.choice(possible_targets)  # Fallback a selección aleatoria
+
+    def _is_unit_protecting_baggage(self, unit):
+        """Determina si una unidad está protegiendo bagajes."""
+        # Buscar bagajes cercanos
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                baggage_unit = self.grid.get_unit(r, c)
+                if baggage_unit and isinstance(baggage_unit, Bagaje) and baggage_unit.side == unit.side:
+                    # Calcular distancia Manhattan
+                    distance = abs(unit.row - r) + abs(unit.col - c)
+                    if distance <= 2:  # Si está a 2 o menos hexágonos de distancia
+                        return True
+        return False
+
     def _end_ai_turn(self):
-        self.state = "PLAYER_TURN"
+        self.state = GAME_STATES["PLAYER_TURN"]
+        self.turn_phase = TURN_PHASES["MOVEMENT"]  # Reset to movement phase for player's turn
         self.ui.add_log_message("Turno del ordenador finalizado. ¡Te toca!")
         # Limpiar variables de estado del turno de la IA
         if hasattr(self, '_ai_turn_initialized'):
             del self._ai_turn_initialized
             del self._ai_moved_units_this_turn
             del self._ai_units_to_consider
+            if hasattr(self, '_ai_combat_units'):
+                del self._ai_combat_units
+            if hasattr(self, '_ai_attacked_units_this_turn'):
+                del self._ai_attacked_units_this_turn
+            # No need to delete turn_phase as it's a shared variable
         self._check_unit_recovery()
         self.selected_unit = None
         self.possible_moves = []
@@ -1283,9 +1471,9 @@ class Game:
                 self._handle_game_over()
             else:
                 # Restaurar la lógica original de despliegue
-                if self.state == "DEPLOY_AI":
+                if self.state == GAME_STATES["DEPLOY_AI"]:
                     self._ai_deploy_units()
-                elif self.state == "AI_TURN":
+                elif self.state == GAME_STATES["AI_TURN"]:
                     self._ai_turn()
 
             self._draw()

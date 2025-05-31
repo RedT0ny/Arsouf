@@ -283,6 +283,19 @@ class GameUI:
         pygame.display.flip()
         return cruzados_rect, sarracenos_rect
 
+    def _get_selected_unit(self):
+        """Obtiene la unidad actualmente seleccionada (movimiento o combate)."""
+        # Caso 1: Unidad seleccionada para movimiento
+        if hasattr(self.game, 'selected_unit') and self.game.selected_unit:
+            row, col = self.game.selected_unit
+            return self.game.grid.grid[row][col]
+
+        # Caso 2: Unidad seleccionada para combate
+        if hasattr(self.game, 'combat_attacker') and self.game.combat_attacker:
+            return self.game.combat_attacker
+
+        return None
+
     def draw_panel(self):
         """Dibuja el panel lateral con información del juego."""
         panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)
@@ -308,7 +321,7 @@ class GameUI:
         self.game.screen.blit(status_text, (text_x, y_offset))
         y_offset += 40
 
-        # 2. Información de la unidad actual (si aplica)
+        # 2. Información de la unidad actual para despliegue
         if hasattr(self.game, 'current_deploying_unit') and self.game.current_deploying_unit:
             unit_name = type(self.game.current_deploying_unit).__name__
             unit_info = f"Coloca: {unit_name[:12]}" if len(unit_name) > 12 else f"Coloca: {unit_name}"
@@ -322,7 +335,13 @@ class GameUI:
             self.game.screen.blit(unit_text, (content_rect.x, y_offset))
             y_offset += 30
 
-        # 3. Dibujar botón según el estado del juego (sin cambios)
+        # 3. Información de la unidad seleccionada (movimiento o combate)
+        selected_unit = self._get_selected_unit()
+        if selected_unit:
+            self._draw_unit_info(selected_unit, content_rect, y_offset)
+            y_offset += 150  # Espacio para la información de la unidad
+
+        # 4. Dibujar botón según el estado del juego
         button_rect = None
         if self.game.state == "PLAYER_TURN":
             button_rect = self._draw_button(panel_rect, "Finalizar Turno", COLOR_BOTON_CANCELAR, SCREEN_HEIGHT - 80)
@@ -353,15 +372,76 @@ class GameUI:
         # Crear texto renderizado con ajuste de línea si es necesario
         return self._render_fitted_text(text, max_width)
 
-    def _render_fitted_text(self, text, max_width):
+    def _render_fitted_text(self, text, max_width, color=COLOR_TEXTO, font_size=24):
         """Renderiza texto que se ajusta al ancho máximo"""
+        # Usar el tamaño de fuente especificado
+        font = pygame.font.SysFont('Arial', font_size)
+
         # Si el texto cabe normalmente
-        if self.font.size(text)[0] <= max_width:
-            return self.font.render(text, True, COLOR_TEXTO)
+        if font.size(text)[0] <= max_width:
+            return font.render(text, True, color)
 
         # Si no cabe, reducimos el tamaño de fuente
-        small_font = pygame.font.SysFont('Arial', 16)  # Tamaño reducido
-        return small_font.render(text, True, COLOR_TEXTO)
+        small_font = pygame.font.SysFont('Arial', max(12, font_size - 6))  # Tamaño reducido
+        return small_font.render(text, True, color)
+
+    def _draw_unit_info(self, unit, content_rect, y_offset):
+        """Dibuja la información detallada de una unidad en el panel lateral."""
+        # Obtener el ancho disponible para el texto
+        max_width = content_rect.width
+
+        # Título: Tipo de unidad
+        unit_name = type(unit).__name__
+        title_font = pygame.font.SysFont('Arial', 20, bold=True)
+        title_text = title_font.render(unit_name, True, COLOR_TEXTO)
+
+        # Centrar el título
+        title_x = content_rect.x + (max_width - title_text.get_width()) // 2
+        self.game.screen.blit(title_text, (title_x, y_offset))
+        y_offset += 30
+
+        # Dibujar imagen de la unidad
+        if hasattr(unit, 'image_key') and unit.image_key in self.game.images:
+            img = self.game.images[unit.image_key]
+            img_size = min(max_width, 80)  # Limitar tamaño de imagen
+            img_scaled = pygame.transform.smoothscale(img, (img_size, img_size))
+
+            # Centrar imagen
+            img_x = content_rect.x + (max_width - img_size) // 2
+            self.game.screen.blit(img_scaled, (img_x, y_offset))
+            y_offset += img_size + 10
+
+        # Información de la unidad (con ajuste de texto)
+        info_font_size = 16
+        line_height = info_font_size + 4
+
+        # Bando
+        side_color = COLOR_CRUZADOS if unit.side == "CRUZADOS" else COLOR_SARRACENOS
+        side_text = self._render_fitted_text(f"Bando: {unit.side}", max_width, side_color, info_font_size)
+        self.game.screen.blit(side_text, (content_rect.x, y_offset))
+        y_offset += line_height
+
+        # Fuerza de combate
+        power_text = self._render_fitted_text(f"Fuerza: {unit.power}", max_width, COLOR_TEXTO, info_font_size)
+        self.game.screen.blit(power_text, (content_rect.x, y_offset))
+        y_offset += line_height
+
+        # Velocidad
+        speed_text = self._render_fitted_text(f"Velocidad: {unit.speed}/{unit.original_speed}", max_width, COLOR_TEXTO, info_font_size)
+        self.game.screen.blit(speed_text, (content_rect.x, y_offset))
+        y_offset += line_height
+
+        # Líder (si aplica)
+        if unit.leader:
+            leader_text = self._render_fitted_text("Líder: Sí", max_width, (255, 215, 0), info_font_size)
+            self.game.screen.blit(leader_text, (content_rect.x, y_offset))
+            y_offset += line_height
+
+        # Estado de salud
+        health_status = "Sana" if unit.health == 2 else "Herida"
+        health_color = (50, 200, 50) if unit.health == 2 else COMBAT_COLORS['wounded']
+        health_text = self._render_fitted_text(f"Estado: {health_status}", max_width, health_color, info_font_size)
+        self.game.screen.blit(health_text, (content_rect.x, y_offset))
 
     def _draw_button(self, panel_rect, text, color, y_pos):
         """Dibuja un botón en el panel."""
