@@ -220,7 +220,8 @@ class GameUI:
 
     def handle_deployment_click(self, mouse_pos, game):
         """Maneja el clic durante el despliegue."""
-        tablero_rect = pygame.Rect(0, 0, game.tablero_escalado.get_width(), 
+        pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
+        tablero_rect = pygame.Rect(pos_x, pos_y, game.tablero_escalado.get_width(), 
                                   game.tablero_escalado.get_height())
 
         if tablero_rect.collidepoint(mouse_pos):

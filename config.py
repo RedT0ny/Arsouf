@@ -2,13 +2,30 @@
 import os
 #import pygame
 
-# 1. Configuración de pantalla
-SCREEN_WIDTH = 2295
-SCREEN_HEIGHT = 1379
+# 1. Dimensiones ORIGINALES del tablero (píxeles físicos)
+TABLERO_REAL_WIDTH = 2340
+TABLERO_REAL_HEIGHT = 1470
+
+# 2. Márgenes REALES (de tu imagen JPG)
+MARGENES = {
+    "superior": 90,  #118,
+    "inferior": 0,  #60,
+    "izquierdo": 0, #45,
+    "derecho": 0    #40
+}
+
+# 3. Área hexagonal REAL (píxeles en tu imagen)
+HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["derecho"]
+HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
+
+# 4. Configuración de pantalla
+DISPLAY_SCALING = 0.75
+SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
+SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 196
 FPS = 60
 COLOR_BG = (0, 0, 0)
 
-# TAMAÑOS UI
+# 5. TAMAÑOS UI
 PANEL_WIDTH = 300
 BOTON_WIDTH = 250
 BOTON_HEIGHT = 50
@@ -16,7 +33,7 @@ TITULO_Y = 200
 OPCIONES_Y = 300
 OPCIONES_ESPACIADO = 100
 
-# PANEL LOG
+# 5.1 PANEL LOG
 LOG_PANEL_HEIGHT = 196
 LOG_PANEL_WIDTH = SCREEN_WIDTH - PANEL_WIDTH
 LOG_PANEL_COLOR = (30, 30, 40)
@@ -28,22 +45,6 @@ LOG_SCROLLBAR_WIDTH = 14
 LOG_SCROLLBAR_COLOR = (60, 60, 80)
 LOG_SCROLLBAR_HANDLE_COLOR = (130, 130, 160)
 LOG_MAX_MESSAGES = 500  # Máximo de mensajes almacenados
-
-# 2. Dimensiones ORIGINALES del tablero (píxeles físicos)
-TABLERO_REAL_WIDTH = 2295
-TABLERO_REAL_HEIGHT = 1469
-
-# 3. Márgenes REALES (de tu imagen JPG)
-MARGENES = {
-    "superior": 90,  #118,
-    "inferior": 0,  #60,
-    "izquierdo": 0, #45,
-    "derecho": 0    #40
-}
-
-# 4. Área hexagonal REAL (píxeles en tu imagen)
-HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["derecho"]
-HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 5. Grid hexagonal
 HEX_ROWS = 15
@@ -79,11 +80,11 @@ FORD_HEX = (2,17)  # Hexágono donde se puede cruzar el río
 # Calculamos el factor de escala basado en el espacio disponible
 AVAILABLE_WIDTH = SCREEN_WIDTH - PANEL_WIDTH
 AVAILABLE_HEIGHT = SCREEN_HEIGHT - LOG_PANEL_HEIGHT
-ESCALA = min(AVAILABLE_WIDTH / HEX_AREA_REAL_WIDTH, AVAILABLE_HEIGHT / HEX_AREA_REAL_HEIGHT)
+ESCALA = min(AVAILABLE_WIDTH / TABLERO_REAL_WIDTH, AVAILABLE_HEIGHT / TABLERO_REAL_HEIGHT)
 
 # 7. Dimensiones originales del hexágono (según especificación)
 HEX_REAL_HEIGHT = 120  # Altura original del hexágono en píxeles
-HEX_REAL_WIDTH = 102   # Ancho original del hexágono en píxeles
+HEX_REAL_WIDTH = 104   # Ancho original del hexágono en píxeles
 
 # 8. Dimensiones escaladas del hexágono (para pantalla)
 HEX_HEIGHT = int(HEX_REAL_HEIGHT * ESCALA)

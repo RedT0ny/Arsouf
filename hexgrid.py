@@ -15,12 +15,12 @@ class HexGrid:
         self.grid = [[None for _ in range(HEX_COLS)] for _ in range(HEX_ROWS)]
 
         # Geometría hexagonal (usando dimensiones reales)
-        self.hex_width = HEX_WIDTH   # Ancho del hexágono (102px escalado)
+        self.hex_width = HEX_WIDTH   # Ancho del hexágono (104px escalado)
         self.hex_height = HEX_HEIGHT  # Altura del hexágono (120px escalado)
 
         # Offsets para alineación visual (ajustar según necesidad)
         self.offset_x = MARGENES_ESCALADOS["izquierdo"] + int(self.hex_width * 0.5)
-        self.offset_y = MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)        
+        self.offset_y = MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)
 
     def hex_to_pixel(self, row, col) -> tuple[int, int]:
         """
@@ -246,7 +246,7 @@ class HexGrid:
 
         # Para hexágonos verticales, la altura total es el número de filas por 3/4 de la altura del hexágono
         # (debido a la superposición vertical)
-        height = rows * (self.hex_height * 0.765)
+        height = rows * (self.hex_height * 0.75)
 
         return pygame.Rect(x, y, width, height)
 
