@@ -20,7 +20,7 @@ class HexGrid:
 
         # Offsets para alineación visual (ajustar según necesidad)
         self.offset_x = MARGENES_ESCALADOS["izquierdo"] + int(self.hex_width * 0.5)
-        self.offset_y = MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)        
+        self.offset_y = MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)
 
     def hex_to_pixel(self, row, col) -> tuple[int, int]:
         """

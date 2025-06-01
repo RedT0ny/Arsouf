@@ -151,7 +151,9 @@ class Game:
         """Maneja la fase de movimiento (existente)"""
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            tablero_rect = pygame.Rect(0, 0, self.tablero_escalado.get_width(),
+            pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
+            pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
+            tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
                                        self.tablero_escalado.get_height())
 
             if tablero_rect.collidepoint(mouse_pos):
@@ -169,7 +171,9 @@ class Game:
                 return
 
             # Verificar clic en el tablero
-            tablero_rect = pygame.Rect(0, 0, self.tablero_escalado.get_width(),
+            pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
+            pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
+            tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
                                        self.tablero_escalado.get_height())
             if tablero_rect.collidepoint(mouse_pos):
                 hex_pos = self._get_hex_under_mouse(mouse_pos)
