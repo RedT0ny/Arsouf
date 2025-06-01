@@ -3,8 +3,8 @@ import os
 #import pygame
 
 # 1. Configuración de pantalla
-SCREEN_WIDTH = 1500
-SCREEN_HEIGHT = 974
+SCREEN_WIDTH = 2295
+SCREEN_HEIGHT = 1379
 FPS = 60
 COLOR_BG = (0, 0, 0)
 
@@ -30,12 +30,12 @@ LOG_SCROLLBAR_HANDLE_COLOR = (130, 130, 160)
 LOG_MAX_MESSAGES = 500  # Máximo de mensajes almacenados
 
 # 2. Dimensiones ORIGINALES del tablero (píxeles físicos)
-TABLERO_REAL_WIDTH = 2400
-TABLERO_REAL_HEIGHT = 1558
+TABLERO_REAL_WIDTH = 2295
+TABLERO_REAL_HEIGHT = 1469
 
 # 3. Márgenes REALES (de tu imagen JPG)
 MARGENES = {
-    "superior": 120,  #118,
+    "superior": 90,  #118,
     "inferior": 0,  #60,
     "izquierdo": 0, #45,
     "derecho": 0    #40
@@ -76,14 +76,21 @@ RIVER_BARRIERS = {
 FORD_HEX = (2,17)  # Hexágono donde se puede cruzar el río
 
 # 6. Cálculo de ESCALA (centralizado aquí)
-ESCALA = min((SCREEN_WIDTH - PANEL_WIDTH) / TABLERO_REAL_WIDTH, (SCREEN_HEIGHT - LOG_PANEL_HEIGHT) / TABLERO_REAL_HEIGHT)
-FACTOR_ALTURA = 0.97
+# Calculamos el factor de escala basado en el espacio disponible
+AVAILABLE_WIDTH = SCREEN_WIDTH - PANEL_WIDTH
+AVAILABLE_HEIGHT = SCREEN_HEIGHT - LOG_PANEL_HEIGHT
+ESCALA = min(AVAILABLE_WIDTH / HEX_AREA_REAL_WIDTH, AVAILABLE_HEIGHT / HEX_AREA_REAL_HEIGHT)
 
-# 7. Tamaño de hexágono REAL (calculado una sola vez)
-HEX_REAL_SIZE = int((HEX_AREA_REAL_WIDTH / HEX_COLS) * FACTOR_ALTURA)  # Factor ajustable
+# 7. Dimensiones originales del hexágono (según especificación)
+HEX_REAL_HEIGHT = 120  # Altura original del hexágono en píxeles
+HEX_REAL_WIDTH = 102   # Ancho original del hexágono en píxeles
 
-# 8. Tamaño de hexágono ESCALADO (para pantalla)
-HEX_SIZE = int(HEX_REAL_SIZE * ESCALA)
+# 8. Dimensiones escaladas del hexágono (para pantalla)
+HEX_HEIGHT = int(HEX_REAL_HEIGHT * ESCALA)
+HEX_WIDTH = int(HEX_REAL_WIDTH * ESCALA)
+
+# Para compatibilidad con código existente (usar HEX_WIDTH y HEX_HEIGHT en nuevo código)
+HEX_SIZE = HEX_WIDTH  # Mantenemos HEX_SIZE para compatibilidad
 
 # 9. Márgenes escalados (calculados una vez)
 MARGENES_ESCALADOS = {

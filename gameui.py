@@ -2,6 +2,9 @@
 import pygame
 from config import *
 
+# Para mejor ajuste visual, usar el tamaño más pequeño entre ancho y alto
+HEX_MIN_SIZE = min(HEX_WIDTH, HEX_HEIGHT)
+
 class GameUI:
     def __init__(self, game):
         self.game = game
@@ -226,11 +229,17 @@ class GameUI:
 
     def _get_hex_under_mouse(self, mouse_pos, grid):
         """Encuentra el hexágono bajo el cursor."""
+        # Calcular la posición del tablero
+        pos_x, pos_y = self._calculate_board_position(self.game.tablero_escalado)
+
         for row in range(grid.rows):
             for col in range(grid.cols):
                 x, y = grid.hex_to_pixel(row, col)
+                # Aplicar offset del tablero
+                x += pos_x
+                y += pos_y
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
-                if distance < HEX_SIZE / 2:
+                if distance < HEX_MIN_SIZE / 2:
                     return row, col
         return None
 
@@ -507,9 +516,9 @@ class GameUI:
             x += offset_x
             y += offset_y
 
-            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
-            pygame.draw.circle(s, (100, 200, 255, 150), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
-            self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+            s = pygame.Surface((HEX_MIN_SIZE, HEX_MIN_SIZE), pygame.SRCALPHA)
+            pygame.draw.circle(s, (100, 200, 255, 150), (HEX_MIN_SIZE//2, HEX_MIN_SIZE//2), HEX_MIN_SIZE//2)
+            self.game.screen.blit(s, (x - HEX_MIN_SIZE//2, y - HEX_MIN_SIZE//2))
 
     def draw_combat_targets(self):
         """Resalta los objetivos de ataque posibles con mejor visibilidad"""
@@ -523,12 +532,12 @@ class GameUI:
                 y += pos_y
 
                 # Dibujar círculo rojo semitransparente más visible
-                s = pygame.Surface((HEX_SIZE*1.5, HEX_SIZE*1.5), pygame.SRCALPHA)
-                pygame.draw.circle(s, (255, 0, 0, 150), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
-                self.game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+                s = pygame.Surface((HEX_MIN_SIZE*1.5, HEX_MIN_SIZE*1.5), pygame.SRCALPHA)
+                pygame.draw.circle(s, (255, 0, 0, 150), (HEX_MIN_SIZE//2, HEX_MIN_SIZE//2), HEX_MIN_SIZE//2)
+                self.game.screen.blit(s, (x - HEX_MIN_SIZE//2, y - HEX_MIN_SIZE//2))
 
                 # Dibujar borde rojo más grueso
-                pygame.draw.circle(self.game.screen, (255, 0, 0), (x, y), HEX_SIZE//2 + 5, 3)
+                pygame.draw.circle(self.game.screen, (255, 0, 0), (x, y), HEX_MIN_SIZE//2 + 5, 3)
 
     def draw_combat_indicators(self):
         # Dibujar marcadores de heridas y rangos de ataque
@@ -538,26 +547,6 @@ class GameUI:
                 if unit and unit.wounded_mark:
                     x, y = self.game.grid.hex_to_pixel(row, col)
                     pygame.draw.circle(self.game.screen, COMBAT_COLORS['wounded'], (x, y), 10, 2)
-
-    def draw_arsouf_hexes(self, game, pos_x, pos_y):
-        """Dibuja los hexágonos de Arsouf con un indicador visual"""
-        for row, col in game.arsouf_hexes:
-            x, y = game.grid.hex_to_pixel(row, col)
-            x += pos_x
-            y += pos_y
-
-            # Dibujar un círculo dorado para indicar Arsouf
-            s = pygame.Surface((HEX_SIZE*1.2, HEX_SIZE*1.2), pygame.SRCALPHA)
-            pygame.draw.circle(s, (255, 215, 0, 100), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//2)
-            game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
-
-            # Dibujar un borde dorado
-            pygame.draw.circle(game.screen, (255, 215, 0), (x, y), HEX_SIZE//2 + 2, 3)
-
-            # Añadir texto "ARSOUF"
-            font = pygame.font.SysFont('Arial', 14, bold=True)
-            text = font.render("ARSOUF", True, (255, 215, 0))
-            game.screen.blit(text, (x - text.get_width()//2, y - text.get_height()//2))
 
     def draw_victory_progress(self, game):
         """Dibuja el progreso hacia la victoria"""
@@ -637,47 +626,44 @@ class GameUI:
         pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
         game.screen.blit(game.tablero_escalado, (pos_x, pos_y))
 
-        # 3. Dibujar hexágonos de Arsouf
-        self.draw_arsouf_hexes(game, pos_x, pos_y)
-
-        # 4. Dibujar debug de movimiento si existe
+        # 3. Dibujar debug de movimiento si existe
         if __debug__ and hasattr(game, 'last_move_debug_pos') and game.last_move_debug_pos:
             row, col = game.last_move_debug_pos
             x, y = game.grid.hex_to_pixel(row, col)
             x += pos_x
             y += pos_y
 
-            s = pygame.Surface((HEX_SIZE, HEX_SIZE), pygame.SRCALPHA)
-            pygame.draw.circle(s, (255, 0, 0, 180), (HEX_SIZE//2, HEX_SIZE//2), HEX_SIZE//3)
-            game.screen.blit(s, (x - HEX_SIZE//2, y - HEX_SIZE//2))
+            s = pygame.Surface((HEX_MIN_SIZE, HEX_MIN_SIZE), pygame.SRCALPHA)
+            pygame.draw.circle(s, (255, 0, 0, 180), (HEX_MIN_SIZE//2, HEX_MIN_SIZE//2), HEX_MIN_SIZE//3)
+            game.screen.blit(s, (x - HEX_MIN_SIZE//2, y - HEX_MIN_SIZE//2))
 
-        # 5. Debug hex grid (opcional)
+        # 4. Debug hex grid (opcional)
         if __debug__: 
-            game.grid.draw_hex_debug(game.screen)
+            game.grid.draw_hex_debug(game.screen, pos_x, pos_y)
 
-        # 6. Dibujar unidades
+        # 5. Dibujar unidades
         game.grid.draw(game.screen, game.images, pos_x, pos_y)
 
-        # 7. Dibujar movimientos posibles si estamos en fase de movimiento
+        # 6. Dibujar movimientos posibles si estamos en fase de movimiento
         if game.selected_unit and game.possible_moves:
             self.draw_possible_moves(game.possible_moves, game.grid, pos_x, pos_y)
 
-        # 8. Dibujar objetivos de combate si estamos en fase de combate
+        # 7. Dibujar objetivos de combate si estamos en fase de combate
         if game.state == "PLAYER_TURN" and game.turn_phase == "combate":
             self.draw_combat_targets()
 
-        # 9. Dibujar UI
+        # 8. Dibujar UI
         self.draw_log_panel()
         self.draw_panel()
         self.draw_deployment_zones()
 
-        # 10. Dibujar información de progreso hacia la victoria
+        # 9. Dibujar información de progreso hacia la victoria
         self.draw_victory_progress(game)
 
-        # 11. Dibujar pantalla de selección si es necesario
+        # 10. Dibujar pantalla de selección si es necesario
         if game.state == "SELECT_SIDE":
             self.draw_side_selection()
 
-        # 12. Dibujar pantalla de fin de juego si es necesario
+        # 11. Dibujar pantalla de fin de juego si es necesario
         if game.game_over:
             self.draw_game_over(game)

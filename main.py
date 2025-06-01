@@ -11,6 +11,9 @@ from gameui import GameUI
 from units import *
 from config import *
 
+# Para mejor ajuste visual, usar el tamaño más pequeño entre ancho y alto
+HEX_MIN_SIZE = min(HEX_WIDTH, HEX_HEIGHT)
+
 class Game:
     def __init__(self):
         pygame.init()
@@ -39,8 +42,11 @@ class Game:
         pygame.display.set_caption("Batalla de Arsuf")
 
         # Cargar y escalar tablero
+        board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
+
+        # Usar ESCALA de config.py para mantener consistencia con el tamaño de los hexágonos
         self.tablero_escalado = pygame.transform.smoothscale(
-            pygame.image.load(IMAGE_PATHS["board"]).convert_alpha(),
+            board_img,
             (int(TABLERO_REAL_WIDTH * ESCALA), int(TABLERO_REAL_HEIGHT * ESCALA))
         )
 
@@ -73,7 +79,8 @@ class Game:
             if key == "board": continue
             try:
                 img = pygame.image.load(path).convert_alpha()
-                size = int(HEX_SIZE * 0.95)
+                # Usar el tamaño más pequeño entre ancho y alto para que las unidades quepan bien en los hexágonos
+                size = int(min(HEX_WIDTH, HEX_HEIGHT) * 0.85)
                 images[key] = pygame.transform.smoothscale(img, (size, size))
             except Exception as e:
                 print(f"Error cargando {path}: {e}")
@@ -191,11 +198,18 @@ class Game:
 
     def _get_hex_under_mouse(self, mouse_pos):
         """Encuentra el hexágono bajo el cursor"""
+        # Calcular la posición del tablero
+        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
+        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
+
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
                 x, y = self.grid.hex_to_pixel(row, col)
+                # Aplicar offset del tablero
+                x += pos_x
+                y += pos_y
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
-                if distance < HEX_SIZE / 2:
+                if distance < HEX_MIN_SIZE / 2:
                     return row, col
         return None
 
@@ -270,15 +284,22 @@ class Game:
                 self._check_unit_recovery()
 
     def _handle_board_click(self, mouse_pos):
+        # Calcular la posición del tablero
+        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
+        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
+
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
                 x, y = self.grid.hex_to_pixel(row, col)
+                # Aplicar offset del tablero
+                x += pos_x
+                y += pos_y
 
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
-                if distance < HEX_SIZE / 2:
+                if distance < HEX_MIN_SIZE / 2:
                     # Mensaje de debug para verificar coordenadas
                     print(f"Has hecho click en coordenadas del grid: ({row}, {col})")
-                    print(f"Posición en píxeles: {self.grid.hex_to_pixel(row, col)}")
+                    print(f"Posición en píxeles: ({x}, {y})")
 
                     self._process_hex_click(row, col)
                     return

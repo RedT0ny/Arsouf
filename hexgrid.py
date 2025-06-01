@@ -5,31 +5,37 @@ import pygame
 import math
 from typing import List, Tuple, Optional  # Añadir estas importaciones
 from units import *
-from config import COMBAT_COLORS  # Importar explícitamente para el aspa roja
+from config import COMBAT_COLORS, HEX_WIDTH, HEX_HEIGHT, HEX_ROWS, HEX_COLS, MARGENES_ESCALADOS, ROAD_HEXES, FORBIDDEN_HEXES, RIVER_BARRIERS, FORD_HEX
 
 class HexGrid:
     def __init__(self) -> None:
         self.rows = HEX_ROWS
         self.cols = HEX_COLS
-        self.hex_size = HEX_SIZE  # Usamos el valor ya escalado de config.py
 
         self.grid = [[None for _ in range(HEX_COLS)] for _ in range(HEX_ROWS)]
 
-        # Geometría hexagonal (precalculada)
-        self.hex_width = HEX_SIZE
-        self.hex_height = int(2* HEX_SIZE / math.sqrt(3))
+        # Geometría hexagonal (usando dimensiones reales)
+        self.hex_width = HEX_WIDTH   # Ancho del hexágono (102px escalado)
+        self.hex_height = HEX_HEIGHT  # Altura del hexágono (120px escalado)
 
         # Offsets para alineación visual (ajustar según necesidad)
         self.offset_x = MARGENES_ESCALADOS["izquierdo"] + int(self.hex_width * 0.5)
         self.offset_y = MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)        
 
     def hex_to_pixel(self, row, col) -> tuple[int, int]:
-        # Ajuste horizontal: filas impares indentadas
-        indentacion = self.hex_width * 0.5 if not row % 2 else 0  # Cambiado a row % 2 != 0
-        x = col * self.hex_width * 1.025 + indentacion
+        """
+        Convierte coordenadas de grid a píxeles en pantalla.
+        Para hexágonos verticales (vértices arriba/abajo), el espaciado horizontal
+        es igual al ancho del hexágono, y el espaciado vertical es 3/4 de la altura.
+        """
+        # Para hexágonos verticales, las filas pares están indentadas
+        indentacion = self.hex_width * 0.5 if row % 2 == 0 else 0
 
-        # Ajuste vertical
-        y = row * self.hex_height * 0.79
+        # Espaciado horizontal: ancho del hexágono
+        x = col * self.hex_width + indentacion
+
+        # Espaciado vertical: 3/4 de la altura para que se superpongan correctamente
+        y = row * (self.hex_height * 0.75)
 
         return int(x + self.offset_x), int(y + self.offset_y)
 
@@ -99,11 +105,10 @@ class HexGrid:
 
     def _get_valid_neighbors(self, row, col, current_path, unit):
         """Devuelve vecinos válidos y costo de movimiento, considerando barreras"""
-        # Direcciones para hex grid vertical (punto arriba)
+        # Direcciones para hex grid vertical (vértices arriba/abajo)
         # Estructura: (dr, dc) donde dr = cambio en fila, dc = cambio en columna
-        # Organizadas en anillos concéntricos
         directions = [
-            [(-1,0), (-1,1), (0,1), (1,0), (1,1), (0,-1)],  # Filas pares
+            [(-1,0), (-1,1), (0,1), (1,0), (1,1), (0,-1)],  # Filas pares (indentadas)
             [(-1,-1), (-1,0), (0,1), (1,-1), (1,0), (0,-1)]  # Filas impares
         ]
 
@@ -185,7 +190,7 @@ class HexGrid:
     def get_adjacent_positions(self, row, col):
         """Devuelve posiciones adyacentes"""
         directions = [
-            [(-1,0), (-1,1), (0,1), (1,0), (1,1), (0,-1)],  # Filas pares
+            [(-1,0), (-1,1), (0,1), (1,0), (1,1), (0,-1)],  # Filas pares (indentadas)
             [(-1,-1), (-1,0), (0,1), (1,-1), (1,0), (0,-1)]  # Filas impares
         ]
         return [(row + dr, col + dc) for dr, dc in directions[row % 2]]
@@ -207,9 +212,9 @@ class HexGrid:
         queue.append((row, col, 0))
         visited.add((row, col))
 
-        # Definir direcciones para hex grid (igual que en otros métodos)
+        # Definir direcciones para hex grid vertical (vértices arriba/abajo)
         directions = [
-            [(-1, 0), (-1, 1), (0, 1), (1, 0), (1, 1), (0, -1)],  # Filas pares
+            [(-1, 0), (-1, 1), (0, 1), (1, 0), (1, 1), (0, -1)],  # Filas pares (indentadas)
             [(-1, -1), (-1, 0), (0, 1), (1, -1), (1, 0), (0, -1)]  # Filas impares
         ]
 
@@ -235,8 +240,14 @@ class HexGrid:
     def calculate_zone_rect(self, start_col, start_row, cols, rows):
         """Calcula el rectángulo que engloba una zona del grid."""
         x, y = self.hex_to_pixel(start_row, start_col)
-        width = cols * self.hex_width * 1.025
-        height = rows * self.hex_height * 0.79
+
+        # Para hexágonos verticales, el ancho total es el número de columnas por el ancho del hexágono
+        width = (cols * self.hex_width) + self.hex_width * 0.5
+
+        # Para hexágonos verticales, la altura total es el número de filas por 3/4 de la altura del hexágono
+        # (debido a la superposición vertical)
+        height = rows * (self.hex_height * 0.765)
+
         return pygame.Rect(x, y, width, height)
 
     def draw(self, screen, images, tablero_x=0, tablero_y=0):
@@ -279,9 +290,26 @@ class HexGrid:
                                            (img_x + img_width, img_y), 
                                            (img_x, img_y + img_height), 3)
 
-    def draw_hex_debug(self, screen):
-        """Debug visual mejorado"""
+    def draw_hex_debug(self, screen, tablero_x=0, tablero_y=0):
+        """
+        Debug visual mejorado - Dibuja círculos centrados en cada hexágono
+        para visualizar la posición exacta del centro de cada celda.
+
+        Parámetros:
+            screen: Superficie de Pygame donde dibujar
+            tablero_x: Offset horizontal del tablero (opcional)
+            tablero_y: Offset vertical del tablero (opcional)
+        """
         for row in range(self.rows):
             for col in range(self.cols):
+                # Obtener el centro del hexágono
                 x, y = self.hex_to_pixel(row, col)
-                pygame.draw.circle(screen, (0, 255, 255, 0.2), (x, y), self.hex_width * 0.5, 1)  # círculos cian
+
+                # Aplicar offset del tablero centrado
+                x += tablero_x
+                y += tablero_y
+
+                # Dibujar círculo centrado en el hexágono
+                # El radio es proporcional al tamaño del hexágono para mejor visualización
+                radius = min(self.hex_width, self.hex_height) * 0.5
+                pygame.draw.circle(screen, (0, 255, 255, 128), (x, y), radius, 1)  # círculos cian semi-transparentes
