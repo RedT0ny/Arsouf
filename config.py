@@ -35,10 +35,10 @@ TABLERO_REAL_HEIGHT = 1558
 
 # 3. Márgenes REALES (de tu imagen JPG)
 MARGENES = {
-    "superior": 118,
-    "inferior": 60,
-    "izquierdo": 45,
-    "derecho": 40
+    "superior": 120,  #118,
+    "inferior": 0,  #60,
+    "izquierdo": 0, #45,
+    "derecho": 0    #40
 }
 
 # 4. Área hexagonal REAL (píxeles en tu imagen)
@@ -98,7 +98,7 @@ ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 # Imágenes (SVG/PNG)
 IMAGE_PATHS = {
-    "board": os.path.join(ASSETS_DIR, "tablero.jpg"),
+    "board": os.path.join(ASSETS_DIR, "board.png"),
     # Cruzados
     "ricardo": os.path.join(ASSETS_DIR, "ricardo.svg"),
     "templario": os.path.join(ASSETS_DIR, "templario.svg"),
