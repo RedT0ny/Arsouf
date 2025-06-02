@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
@@ -24,10 +24,10 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          pyinstaller --onefile --add-data "assets;assets" main.py
+          pyinstaller --onefile --name arsouf --icon=arsouf.ico --add-data "assets;assets" main.py
 
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
         with:
-          name: my-game-exe
-          path: dist/*.exe
+          name: arsouf-exe
+          path: dist/arsouf.exe
