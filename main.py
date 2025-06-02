@@ -198,7 +198,7 @@ class Game:
                     try:
                         os.startfile(IMAGE_PATHS["rules"])  # En Windows
                     except AttributeError:  # Para otros sistemas operativos
-                        print(f"Error cargando archivo de reglas {IMAGE_PATHS["rules"]}")
+                        print(f"Error cargando archivo de reglas {IMAGE_PATHS['rules']}")
                     continue
 
                 # Manejar botón de finalizar fase
