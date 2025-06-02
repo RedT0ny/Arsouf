@@ -579,6 +579,19 @@ class GameUI:
         text_other = font.render(f"Otras unidades: {game.units_in_arsouf['other']}/2", True, (255, 255, 255))
         game.screen.blit(text_other, (panel_x + 10, panel_y + 55))
 
+    def draw_intro(self, game):
+        """Dibuja la pantalla de introducción"""
+        # Dibujar la imagen de portada a pantalla completa
+        game.screen.blit(game.images["cover"], (0, 0))
+
+        # Verificar si han pasado los 5 segundos
+        current_time = pygame.time.get_ticks()
+        if current_time - game.intro_start_time >= game.intro_duration:
+            game._end_intro()
+
+        # Actualizar la pantalla
+        pygame.display.flip()
+
     def draw_game_over(self, game):
         """Dibuja la pantalla de fin de juego"""
         # Crear un panel semitransparente para el mensaje de fin de juego
@@ -665,6 +678,10 @@ class GameUI:
         if game.state == "SELECT_SIDE":
             self.draw_side_selection()
 
-        # 11. Dibujar pantalla de fin de juego si es necesario
+        # 11. Dibujar pantalla de introducción si es necesario
+        if game.state == GAME_STATES["INTRO"]:
+            self.draw_intro(game)
+
+        # 12. Dibujar pantalla de fin de juego si es necesario
         if game.game_over:
             self.draw_game_over(game)

@@ -17,11 +17,19 @@ HEX_MIN_SIZE = min(HEX_WIDTH, HEX_HEIGHT)
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()  # Inicializar el sistema de audio
 
         # Estados del juego
-        self.state = GAME_STATES["SELECT_SIDE"]
+        self.state = GAME_STATES["INTRO"]  # Comenzar con la pantalla de introducción
         self.player_side = None
         self.ai_side = None
+
+        # Variables para la pantalla de introducción
+        self.intro_start_time = pygame.time.get_ticks()
+        self.intro_duration = 5000  # 5 segundos en milisegundos
+
+        # Cargar sonidos
+        self.sounds = self._load_sounds()
 
         # Fases del turno
         self.turn_phase = TURN_PHASES["MOVEMENT"]  # Fase actual del turno (movimiento o combate)
@@ -39,7 +47,7 @@ class Game:
 
         # Inicializar
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Batalla de Arsuf")
+        pygame.display.set_caption("Batalla de Arsouf")
 
         # Cargar y escalar tablero
         board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
@@ -76,7 +84,7 @@ class Game:
         global size
         images = {}
         for key, path in IMAGE_PATHS.items():
-            if key == "board": continue
+            if key == "board" or key == "cover": continue
             try:
                 img = pygame.image.load(path).convert_alpha()
                 # Usar el tamaño más pequeño entre ancho y alto para que las unidades quepan bien en los hexágonos
@@ -86,7 +94,33 @@ class Game:
                 print(f"Error cargando {path}: {e}")
                 images[key] = pygame.Surface((size, size), pygame.SRCALPHA)
                 pygame.draw.circle(images[key], (0, 255, 0), (size // 2, size // 2), size // 2)
+
+        # Cargar la imagen de portada
+        try:
+            cover_img = pygame.image.load(IMAGE_PATHS["cover"]).convert_alpha()
+            # Escalar la imagen de portada para que ocupe toda la pantalla
+            images["cover"] = pygame.transform.scale(cover_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        except Exception as e:
+            print(f"Error cargando imagen de portada: {e}")
+            images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            images["cover"].fill((0, 0, 0))
+
         return images
+
+    @staticmethod
+    def _load_sounds():
+        sounds = {}
+        for key, path in AUDIO_PATHS.items():
+            try:
+                if key in ["arabesque", "victory", "defeat"]:
+                    # Estos son archivos de música que se reproducirán con pygame.mixer.music
+                    sounds[key] = path  # Solo guardamos la ruta
+                else:
+                    # Efectos de sonido que se reproducirán con pygame.mixer.Sound
+                    sounds[key] = pygame.mixer.Sound(path)
+            except Exception as e:
+                print(f"Error cargando sonido {path}: {e}")
+        return sounds
 
     @staticmethod
     def _get_initial_units():
@@ -116,6 +150,13 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.running = False
+
+            # Manejar eventos de la pantalla de introducción
+            if self.state == GAME_STATES["INTRO"]:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    # Saltar la introducción si se hace clic
+                    self._end_intro()
+                continue
 
             # Si el juego ha terminado, solo procesar eventos de salida
             if self.game_over:
@@ -333,6 +374,8 @@ class Game:
             if moved_unit:
                 # Devolver la unidad a su posición original
                 if self.grid.move_unit(moved_row, moved_col, row, col):
+                    # Reproducir sonido de cancelar movimiento
+                    self._play_sound("cancel_move")
                     # Eliminar la unidad de moved_units
                     self.moved_units.remove((moved_row, moved_col))
                     self.ui.add_log_message(f"{type(moved_unit).__name__} ha vuelto a su posición original")
@@ -345,6 +388,8 @@ class Game:
                 self.ui.add_log_message(f"Ya has movido a [{type(unit).__name__}] este turno")
                 return
 
+            # Reproducir sonido de selección
+            self._play_sound("select")
             self.selected_unit = (row, col)
             # Asignar el resultado a self.possible_moves
             self.possible_moves = self.grid.get_possible_moves(row, col, unit.speed, self.moved_units)
@@ -364,6 +409,8 @@ class Game:
             else:
                 # Movimiento normal
                 if self.grid.move_unit(old_row, old_col, row, col):
+                    # Reproducir sonido de movimiento
+                    self._play_sound("move")
                     self.moved_units.add((row, col))
                     self.last_moved_unit_pos = ((old_row, old_col), (row, col))  # Guardar posiciones original y nueva
 
@@ -573,7 +620,7 @@ class Game:
                             if hasattr(self, '_ai_moved_units_this_turn'):
                                 self._ai_moved_units_this_turn.add((row, col))
                             self.ui.add_log_message(
-                                f"[{type(unit).__name__}#{id(unit)}] mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
+                                f"[{type(unit).__name__} mueve desde ({row},{col}) hasta ({new_row}, {new_col})") #TODO: Identificar instancia específica de unidad (p.ej. Explorador 1..)
             else:
                 # Cuando se completa la fase de movimiento, pasar a la fase de combate
                 self.turn_phase = TURN_PHASES["COMBAT"]
@@ -1440,6 +1487,12 @@ class Game:
             self.winner = "CRUZADOS"
             self.ui.add_log_message("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf.")
 
+            # Reproducir música de victoria o derrota según el bando del jugador
+            if self.player_side == "CRUZADOS":
+                self._play_music("victory")
+            else:
+                self._play_music("defeat")
+
         # Victoria de los Sarracenos: imposibilidad de que los Cruzados ganen
         # Esto se verificaría si no quedan suficientes unidades cruzadas en el tablero
         crusader_units = self._count_remaining_crusader_units()
@@ -1450,6 +1503,12 @@ class Game:
             self.game_over = True
             self.winner = "SARRACENOS"
             self.ui.add_log_message("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf.")
+
+            # Reproducir música de victoria o derrota según el bando del jugador
+            if self.player_side == "SARRACENOS":
+                self._play_music("victory")
+            else:
+                self._play_music("defeat")
 
     def _count_remaining_crusader_units(self):
         """Cuenta las unidades cruzadas restantes en el tablero"""
@@ -1497,6 +1556,8 @@ class Game:
                     self.combat_attacker = None
                 else:
                     # Solo seleccionar la unidad si hay objetivos válidos
+                    # Reproducir sonido de selección
+                    self._play_sound("select")
                     self.combat_attacker = unit
                     self.ui.add_log_message(f"{type(unit).__name__} seleccionado. Elige objetivo. (Cancelar con click derecho)")
             else:
@@ -1506,9 +1567,13 @@ class Game:
             if unit and unit in self.combat_targets:
                 # Realizar ataque
                 if self.combat_attacker.atacar(unit, self.grid):
+                    # Reproducir sonido de ataque exitoso
+                    self._play_sound("success_attack")
                     self.ui.add_log_message(
                         f"¡Ataque exitoso! {type(self.combat_attacker).__name__} hirió a {type(unit).__name__}")
                 else:
+                    # Reproducir sonido de ataque fallido
+                    self._play_sound("failed_attack")
                     self.ui.add_log_message(f"¡Ataque fallido! {type(unit).__name__} resistió el ataque")
 
                 # Marcar la unidad como ya atacó este turno
@@ -1524,7 +1589,35 @@ class Game:
         self.ui.draw_game(self)
         pygame.display.flip()
 
+
+    def _end_intro(self):
+        """Finaliza la pantalla de introducción y pasa a la selección de bando"""
+        self.state = GAME_STATES["SELECT_SIDE"]
+
+    def _play_music(self, music_key):
+        """Reproduce música de fondo"""
+        try:
+            pygame.mixer.music.load(self.sounds[music_key])
+            pygame.mixer.music.play(-1)  # -1 para reproducir en bucle
+        except Exception as e:
+            print(f"Error reproduciendo música {music_key}: {e}")
+
+    def _stop_music(self):
+        """Detiene la música de fondo"""
+        pygame.mixer.music.stop()
+
+    def _play_sound(self, sound_key):
+        """Reproduce un efecto de sonido"""
+        try:
+            if sound_key in self.sounds:
+                self.sounds[sound_key].play()
+        except Exception as e:
+            print(f"Error reproduciendo sonido {sound_key}: {e}")
+
     def run(self):
+        # Iniciar la música de introducción
+        self._play_music("arabesque")
+
         while self.running:
             self._handle_events()
 
@@ -1537,6 +1630,11 @@ class Game:
                     self._ai_deploy_units()
                 elif self.state == GAME_STATES["AI_TURN"]:
                     self._ai_turn()
+
+                # Detener la música de introducción cuando comienza el movimiento del jugador
+                if self.state == GAME_STATES["PLAYER_TURN"] and self.turn_phase == TURN_PHASES["MOVEMENT"]:
+                    if pygame.mixer.music.get_busy():
+                        self._stop_music()
 
             self._draw()
             self.clock.tick(FPS)

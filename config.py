@@ -27,7 +27,7 @@ COLOR_BG = (0, 0, 0)
 
 # 5. TAMAÑOS UI
 PANEL_WIDTH = 300
-BOTON_WIDTH = 250
+BOTON_WIDTH = 260
 BOTON_HEIGHT = 50
 TITULO_Y = 200
 OPCIONES_Y = 300
@@ -106,19 +106,34 @@ ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 # Imágenes (SVG/PNG)
 IMAGE_PATHS = {
-    "board": os.path.join(ASSETS_DIR, "board.png"),
+    "board": os.path.join(ASSETS_DIR, "img", "Board.png"),
+    "cover": os.path.join(ASSETS_DIR, "img", "Cover.png"),
     # Cruzados
-    "ricardo": os.path.join(ASSETS_DIR, "ricardo.svg"),
-    "templario": os.path.join(ASSETS_DIR, "templario.svg"),
-    "hospitalario": os.path.join(ASSETS_DIR, "hospitalario.svg"),
-    "caballero": os.path.join(ASSETS_DIR, "caballero.svg"),
-    "infanteria": os.path.join(ASSETS_DIR, "infanteria.svg"),
-    "bagaje": os.path.join(ASSETS_DIR, "bagaje.svg"),
+    "ricardo": os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
+    "templario": os.path.join(ASSETS_DIR, "img", "Templario.svg"),
+    "hospitalario": os.path.join(ASSETS_DIR, "img", "Hospitalario.svg"),
+    "caballero": os.path.join(ASSETS_DIR, "img", "Caballero.svg"),
+    "infanteria": os.path.join(ASSETS_DIR, "img", "Infanteria.svg"),
+    "bagaje": os.path.join(ASSETS_DIR, "img", "Bagaje.svg"),
     # Sarracenos
-    "saladino": os.path.join(ASSETS_DIR, "saladino.svg"),
-    "mameluco": os.path.join(ASSETS_DIR, "mameluco.svg"),
-    "arquero": os.path.join(ASSETS_DIR, "arquero.svg"),
-    "explorador": os.path.join(ASSETS_DIR, "explorador.svg"),
+    "saladino": os.path.join(ASSETS_DIR, "img", "Saladino.svg"),
+    "mameluco": os.path.join(ASSETS_DIR, "img", "Mameluco.svg"),
+    "arquero": os.path.join(ASSETS_DIR, "img", "Arquero.svg"),
+    "explorador": os.path.join(ASSETS_DIR, "img", "Explorador.svg"),
+}
+
+# Archivos de audio
+AUDIO_PATHS = {
+    # Música
+    "arabesque": os.path.join(ASSETS_DIR, "audio", "Arabesque.mp3"),
+    "victory": os.path.join(ASSETS_DIR, "audio", "Victory.mp3"),
+    "defeat": os.path.join(ASSETS_DIR, "audio", "Defeat.mp3"),
+    # Efectos de sonido
+    "select": os.path.join(ASSETS_DIR, "audio", "select.ogg"),
+    "move": os.path.join(ASSETS_DIR, "audio", "move.ogg"),
+    "cancel_move": os.path.join(ASSETS_DIR, "audio", "cancel_move.ogg"),
+    "success_attack": os.path.join(ASSETS_DIR, "audio", "success_attack.ogg"),
+    "failed_attack": os.path.join(ASSETS_DIR, "audio", "failed_attack.ogg"),
 }
 
 # ------------------------------
@@ -149,6 +164,7 @@ COMBAT_COLORS = {
 }
 
 GAME_STATES = {
+    'INTRO': 'INTRO',
     'SELECT_SIDE': 'SELECT_SIDE',
     'DEPLOY_PLAYER': 'DEPLOY_PLAYER',
     'DEPLOY_AI': 'DEPLOY_AI',

@@ -18,6 +18,9 @@ class HexGrid:
         self.hex_width = HEX_WIDTH   # Ancho del hexágono (104px escalado)
         self.hex_height = HEX_HEIGHT  # Altura del hexágono (120px escalado)
 
+        # Factor de superposición vertical para hexágonos
+        self.vertical_overlap_factor = 0.75
+
         # Offsets para alineación visual (ajustar según necesidad)
         self.offset_x = MARGENES_ESCALADOS["izquierdo"] + int(self.hex_width * 0.5)
         self.offset_y = MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)
@@ -34,8 +37,8 @@ class HexGrid:
         # Espaciado horizontal: ancho del hexágono
         x = col * self.hex_width + indentacion
 
-        # Espaciado vertical: 3/4 de la altura para que se superpongan correctamente
-        y = row * (self.hex_height * 0.75)
+        # Espaciado vertical: factor de superposición de la altura para que se superpongan correctamente
+        y = row * (self.hex_height * self.vertical_overlap_factor)
 
         return int(x + self.offset_x), int(y + self.offset_y)
 
@@ -244,9 +247,9 @@ class HexGrid:
         # Para hexágonos verticales, el ancho total es el número de columnas por el ancho del hexágono
         width = (cols * self.hex_width) + self.hex_width * 0.5
 
-        # Para hexágonos verticales, la altura total es el número de filas por 3/4 de la altura del hexágono
+        # Para hexágonos verticales, la altura total es el número de filas por el factor de superposición de la altura
         # (debido a la superposición vertical)
-        height = rows * (self.hex_height * 0.75)
+        height = rows * (self.hex_height * self.vertical_overlap_factor)
 
         return pygame.Rect(x, y, width, height)
 
