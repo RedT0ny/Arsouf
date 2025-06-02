@@ -26,7 +26,7 @@ class Game:
 
         # Variables para la pantalla de introducción
         self.intro_start_time = pygame.time.get_ticks()
-        self.intro_duration = 5000  # 5 segundos en milisegundos
+        self.intro_duration = 207000  # 3:27 minutos en milisegundos (duración de la música de intro)
 
         # Cargar sonidos
         self.sounds = self._load_sounds()
@@ -98,8 +98,31 @@ class Game:
         # Cargar la imagen de portada
         try:
             cover_img = pygame.image.load(IMAGE_PATHS["cover"]).convert_alpha()
-            # Escalar la imagen de portada para que ocupe toda la pantalla
-            images["cover"] = pygame.transform.scale(cover_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+            # Escalar la imagen de portada manteniendo la relación de aspecto
+            img_width, img_height = cover_img.get_size()
+            aspect_ratio = img_width / img_height
+
+            # Calcular las dimensiones para mantener la relación de aspecto
+            if SCREEN_WIDTH / SCREEN_HEIGHT > aspect_ratio:
+                # La pantalla es más ancha que la imagen
+                new_width = int(SCREEN_HEIGHT * aspect_ratio)
+                new_height = SCREEN_HEIGHT
+            else:
+                # La pantalla es más alta que la imagen
+                new_width = SCREEN_WIDTH
+                new_height = int(SCREEN_WIDTH / aspect_ratio)
+
+            # Escalar la imagen manteniendo la relación de aspecto
+            scaled_img = pygame.transform.scale(cover_img, (new_width, new_height))
+
+            # Crear una superficie del tamaño de la pantalla
+            images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            images["cover"].fill((0, 0, 0))  # Fondo negro
+
+            # Centrar la imagen en la pantalla
+            x_offset = (SCREEN_WIDTH - new_width) // 2
+            y_offset = (SCREEN_HEIGHT - new_height) // 2
+            images["cover"].blit(scaled_img, (x_offset, y_offset))
         except Exception as e:
             print(f"Error cargando imagen de portada: {e}")
             images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -198,7 +221,7 @@ class Game:
                                        self.tablero_escalado.get_height())
 
             if tablero_rect.collidepoint(mouse_pos):
-                self._handle_board_click(mouse_pos)
+                self._handle_board_click(mouse_pos, event.button)
 
     def _handle_combat_phase(self, event):
         """Maneja los eventos durante la fase de combate"""
@@ -338,7 +361,7 @@ class Game:
                 self.ui.add_log_message("Turno del jugador finalizado")
                 self._check_unit_recovery()
 
-    def _handle_board_click(self, mouse_pos):
+    def _handle_board_click(self, mouse_pos, button=1):
         # Calcular la posición del tablero
         pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
         pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
@@ -356,17 +379,17 @@ class Game:
                     print(f"Has hecho click en coordenadas del grid: ({row}, {col})")
                     print(f"Posición en píxeles: ({x}, {y})")
 
-                    self._process_hex_click(row, col)
+                    self._process_hex_click(row, col, button)
                     return
 
         # DEBUG: Si no se encontró ningún hexágono
         print("Click fuera del tablero o entre hexágonos")
 
-    def _process_hex_click(self, row, col):
+    def _process_hex_click(self, row, col, button=1):
         unit = self.grid.grid[row][col]
 
-        # Verificar si se hizo clic en la posición de último movimiento (para deshacer)
-        if self.last_moved_unit_pos and (row, col) == self.last_moved_unit_pos[0]:
+        # Verificar si se hizo clic derecho en la posición de último movimiento (para deshacer)
+        if button == 3 and self.last_moved_unit_pos and (row, col) == self.last_moved_unit_pos[0]:
             # Usar directamente la posición de la última unidad movida
             moved_row, moved_col = self.last_moved_unit_pos[1]
             moved_unit = self.grid.grid[moved_row][moved_col]
