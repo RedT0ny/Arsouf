@@ -287,11 +287,11 @@ class HexGrid:
 
                             # Dibujar líneas diagonales (aspa)
                             pygame.draw.line(screen, COMBAT_COLORS['wounded'], 
-                                           (img_x, img_y), 
-                                           (img_x + img_width, img_y + img_height), 3)
+                                           (img_x + 0.25*img_width, img_y + 0.25*img_height),
+                                           (img_x + 0.75*img_width, img_y + 0.75*img_height), 3)
                             pygame.draw.line(screen, COMBAT_COLORS['wounded'], 
-                                           (img_x + img_width, img_y), 
-                                           (img_x, img_y + img_height), 3)
+                                           (img_x + 0.75*img_width, img_y + 0.25*img_height),
+                                           (img_x + 0.25*img_width, img_y + 0.75*img_height), 3)
 
     def draw_hex_debug(self, screen, tablero_x=0, tablero_y=0):
         """
