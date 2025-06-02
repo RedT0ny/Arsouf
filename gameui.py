@@ -110,7 +110,7 @@ class GameUI:
             debug_text = debug_font.render(f"{int(self.log_scroll_position)}/{total_lines}", True, (255, 255, 255))
             self.game.screen.blit(debug_text, (scrollbar_rect.x - 30, scrollbar_rect.y))
 
-    def handle_events(self, event):
+    def handle_scroll_event(self, event):
         """Manejo completo de eventos de scroll"""
         # Coordenadas del ratón
         mouse_pos = pygame.mouse.get_pos()
@@ -256,6 +256,11 @@ class GameUI:
                              SCREEN_HEIGHT - 80, BOTON_WIDTH, BOTON_HEIGHT)
         return None
 
+    def get_rules_button(self):
+        # Create a panel rect instead of passing the screen
+        panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)
+        return self._draw_rules_button(panel_rect, SCREEN_HEIGHT - 200)
+
     def handle_side_selection(self, event):
         """Maneja la selección de bando."""
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -351,10 +356,13 @@ class GameUI:
             self._draw_unit_info(selected_unit, content_rect, y_offset)
             y_offset += 150  # Espacio para la información de la unidad
 
-        # 4. Dibujar botón según el estado del juego
+        # 4. Dibujar botón de reglas
+        rules_button_rect = self._draw_rules_button(panel_rect, SCREEN_HEIGHT - 200)
+
+        # 5. Dibujar botón según el estado del juego
         button_rect = None
         if self.game.state == "PLAYER_TURN":
-            button_rect = self._draw_button(panel_rect, "Finalizar Turno", COLOR_BOTON_CANCELAR, SCREEN_HEIGHT - 80)
+            button_rect = self._draw_button(panel_rect, "Finalizar movimiento" if self.game.turn_phase == TURN_PHASES["MOVEMENT"] else "Finalizar Combate", COLOR_BOTON_CANCELAR, SCREEN_HEIGHT - 80)
         elif self.game.state == "DEPLOY_PLAYER" and not getattr(self.game, 'current_deploying_unit', None):
             button_rect = self._draw_button(panel_rect, "Confirmar Despliegue", COLOR_BOTON, SCREEN_HEIGHT - 80)
 
@@ -372,7 +380,7 @@ class GameUI:
         elif self.game.state == "DEPLOY_AI":
             text = "Despliegue del ordenador"
         elif self.game.state == "PLAYER_TURN":
-            phase = " Movimiento" if self.game.turn_phase == "movimiento" else " Combate"
+            phase = self.game.turn_phase
             text = f"{self.game.player_side}: {phase}"
         elif self.game.state == "AI_TURN":
             text = f"Turno del ordenador"
@@ -461,6 +469,10 @@ class GameUI:
         self.game.screen.blit(button_text, (button_rect.centerx - button_text.get_width()//2, 
                                          button_rect.centery - button_text.get_height()//2))
         return button_rect
+
+    def _draw_rules_button(self, panel_rect, y_position):
+        rules_button_rect = self._draw_button(panel_rect, "Ver Reglas", COLOR_CRUZADOS, y_position)
+        return rules_button_rect
 
     def draw_deployment_zones(self):
         """Dibuja las zonas de despliegue para cada bando."""
@@ -663,7 +675,7 @@ class GameUI:
             self.draw_possible_moves(game.possible_moves, game.grid, pos_x, pos_y)
 
         # 7. Dibujar objetivos de combate si estamos en fase de combate
-        if game.state == "PLAYER_TURN" and game.turn_phase == "combate":
+        if game.state == "PLAYER_TURN" and game.turn_phase == TURN_PHASES["COMBAT"]:
             self.draw_combat_targets()
 
         # 8. Dibujar UI

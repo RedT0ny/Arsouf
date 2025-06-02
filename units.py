@@ -1,5 +1,5 @@
 # units.py
-# import pygame
+
 import random
 from typing import TYPE_CHECKING
 from config import *
@@ -43,6 +43,8 @@ class Unit:
         if ataque_power > defensa_power:
             objetivo.recibir_herida(grid)
             return True
+        elif ataque_power < defensa_power:
+            self.recibir_herida(grid)
         return False
 
     def recibir_herida(self, grid):

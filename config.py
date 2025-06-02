@@ -89,9 +89,10 @@ HEX_REAL_WIDTH = 104   # Ancho original del hexágono en píxeles
 # 8. Dimensiones escaladas del hexágono (para pantalla)
 HEX_HEIGHT = int(HEX_REAL_HEIGHT * ESCALA)
 HEX_WIDTH = int(HEX_REAL_WIDTH * ESCALA)
-
 # Para compatibilidad con código existente (usar HEX_WIDTH y HEX_HEIGHT en nuevo código)
 HEX_SIZE = HEX_WIDTH  # Mantenemos HEX_SIZE para compatibilidad
+# Para mejor ajuste visual, usar el tamaño más pequeño entre ancho y alto
+HEX_MIN_SIZE = min(HEX_WIDTH, HEX_HEIGHT)
 
 # 9. Márgenes escalados (calculados una vez)
 MARGENES_ESCALADOS = {
@@ -108,6 +109,7 @@ ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 IMAGE_PATHS = {
     "board": os.path.join(ASSETS_DIR, "img", "Board.png"),
     "cover": os.path.join(ASSETS_DIR, "img", "Cover.png"),
+    "rules": os.path.join(ASSETS_DIR, "img", "Reglas.jpg"),
     # Cruzados
     "ricardo": os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
     "templario": os.path.join(ASSETS_DIR, "img", "Templario.svg"),
@@ -173,8 +175,8 @@ GAME_STATES = {
 }
 
 TURN_PHASES = {
-    'MOVEMENT': 'movimiento',
-    'COMBAT': 'combate'
+    'MOVEMENT': 'Movimiento',
+    'COMBAT': 'Combate'
 }
 
 # ------------------------------

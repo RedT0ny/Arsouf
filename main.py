@@ -1,18 +1,15 @@
 # main.py
-#TODO: Mostrar información en panel lateral cuando se selecciona una unidad, ya sea para movimiento o para combate.
 
 import sys
-
+import os
 import pygame
+from pygame import Rect
 
 # pylint: disable=unused-import
 from hexgrid import HexGrid
 from gameui import GameUI
 from units import *
 from config import *
-
-# Para mejor ajuste visual, usar el tamaño más pequeño entre ancho y alto
-HEX_MIN_SIZE = min(HEX_WIDTH, HEX_HEIGHT)
 
 class Game:
     def __init__(self):
@@ -188,12 +185,21 @@ class Game:
             # Primero manejar eventos de UI (scroll)
             if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
                               pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
-                if self.ui.handle_events(event):
+                if self.ui.handle_scroll_event(event):
                     continue  # Si el UI consumió el evento, no procesarlo más
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 button_rect = self.ui.get_button_rect()
+                rules_button_rect: Rect = self.ui.get_rules_button()
+
+                # Manejar botón de reglas
+                if rules_button_rect.collidepoint(mouse_pos):
+                    try:
+                        os.startfile(IMAGE_PATHS["rules"])  # En Windows
+                    except AttributeError:  # Para otros sistemas operativos
+                        print(f"Error cargando archivo de reglas {IMAGE_PATHS["rules"]}")
+                    continue
 
                 # Manejar botón de finalizar fase
                 if button_rect and button_rect.collidepoint(mouse_pos):
