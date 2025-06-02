@@ -373,9 +373,9 @@ class GameUI:
             text = "Despliegue del ordenador"
         elif self.game.state == "PLAYER_TURN":
             phase = " Movimiento" if self.game.turn_phase == "movimiento" else " Combate"
-            text = f"{self.game.player_side}: Fase de {phase}"
+            text = f"{self.game.player_side}: {phase}"
         elif self.game.state == "AI_TURN":
-            text = f"Turno del ordenador ({self.game.ai_side})"  # Eliminamos el bando para acortar
+            text = f"Turno del ordenador"
         else:
             text = ""
 
@@ -627,9 +627,9 @@ class GameUI:
         pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
         game.screen.blit(game.tablero_escalado, (pos_x, pos_y))
 
-        # 3. Dibujar debug de movimiento si existe
-        if __debug__ and hasattr(game, 'last_move_debug_pos') and game.last_move_debug_pos:
-            row, col = game.last_move_debug_pos
+        # 3. Dibujar indicador de último movimiento si existe (para función de deshacer)
+        if hasattr(game, 'last_moved_unit_pos') and game.last_moved_unit_pos:
+            row, col = game.last_moved_unit_pos[0]  # Posición original
             x, y = game.grid.hex_to_pixel(row, col)
             x += pos_x
             y += pos_y

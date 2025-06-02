@@ -69,7 +69,7 @@ class Game:
         self.moved_units = set()  # Unidades que ya han movido en este turno
         self.attacked_units = set()  # Unidades que ya han atacado en este turno
         self.current_turn_side = None  # Bandos del turno actual
-        self.last_move_debug_pos = None  # Para debug visual
+        self.last_moved_unit_pos = None  # Tupla con (posición original, posición nueva) de la última unidad movida
 
     @staticmethod
     def _load_images():
@@ -162,6 +162,14 @@ class Game:
     def _handle_combat_phase(self, event):
         """Maneja los eventos durante la fase de combate"""
         if event.type == pygame.MOUSEBUTTONDOWN:
+            # Verificar si es un clic derecho y hay un atacante seleccionado
+            if event.button == 3 and self.combat_attacker:
+                # Cancelar la selección del atacante
+                self.ui.add_log_message(f"Selección de {type(self.combat_attacker).__name__} cancelada")
+                self.combat_attacker = None
+                self.combat_targets = []
+                return
+
             mouse_pos = pygame.mouse.get_pos()
 
             # Primero verificar si se hizo clic en el botón de finalizar fase
@@ -188,6 +196,7 @@ class Game:
                 self.turn_phase = TURN_PHASES["COMBAT"]
                 self.ui.add_log_message("Fase de combate iniciada")
                 self.moved_units = set()  # Resetear unidades movidas
+                self.last_moved_unit_pos = None  # Resetear la última unidad movida
                 self.attacked_units = set()  # Resetear unidades atacantes
             elif self.turn_phase == TURN_PHASES["COMBAT"]:
                 self.turn_phase = TURN_PHASES["MOVEMENT"]
@@ -277,6 +286,7 @@ class Game:
                 self.turn_phase = TURN_PHASES["COMBAT"]
                 self.ui.add_log_message("Fase de combate iniciada")
                 self.moved_units = set()  # Resetear unidades movidas
+                self.last_moved_unit_pos = None  # Resetear la última unidad movida
                 self.attacked_units = set()  # Resetear unidades atacantes
 
             elif self.turn_phase == TURN_PHASES["COMBAT"]:
@@ -314,6 +324,22 @@ class Game:
     def _process_hex_click(self, row, col):
         unit = self.grid.grid[row][col]
 
+        # Verificar si se hizo clic en la posición de último movimiento (para deshacer)
+        if self.last_moved_unit_pos and (row, col) == self.last_moved_unit_pos[0]:
+            # Usar directamente la posición de la última unidad movida
+            moved_row, moved_col = self.last_moved_unit_pos[1]
+            moved_unit = self.grid.grid[moved_row][moved_col]
+
+            if moved_unit:
+                # Devolver la unidad a su posición original
+                if self.grid.move_unit(moved_row, moved_col, row, col):
+                    # Eliminar la unidad de moved_units
+                    self.moved_units.remove((moved_row, moved_col))
+                    self.ui.add_log_message(f"{type(moved_unit).__name__} ha vuelto a su posición original")
+                    self.last_moved_unit_pos = None
+                    return
+            return
+
         if not self.selected_unit and unit and self._is_player_unit(unit):
             if (row, col) in self.moved_units:
                 self.ui.add_log_message(f"Ya has movido a [{type(unit).__name__}] este turno")
@@ -339,7 +365,7 @@ class Game:
                 # Movimiento normal
                 if self.grid.move_unit(old_row, old_col, row, col):
                     self.moved_units.add((row, col))
-                    self.last_move_debug_pos = (old_row, old_col)
+                    self.last_moved_unit_pos = ((old_row, old_col), (row, col))  # Guardar posiciones original y nueva
 
             self.selected_unit = None
             self.possible_moves = []
@@ -547,7 +573,7 @@ class Game:
                             if hasattr(self, '_ai_moved_units_this_turn'):
                                 self._ai_moved_units_this_turn.add((row, col))
                             self.ui.add_log_message(
-                                f"[{type(unit).__name__}#{id(unit)}] se mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
+                                f"[{type(unit).__name__}#{id(unit)}] mueve desde ({row},{col}) hasta ({new_row}, {new_col})")
             else:
                 # Cuando se completa la fase de movimiento, pasar a la fase de combate
                 self.turn_phase = TURN_PHASES["COMBAT"]
@@ -1472,7 +1498,7 @@ class Game:
                 else:
                     # Solo seleccionar la unidad si hay objetivos válidos
                     self.combat_attacker = unit
-                    self.ui.add_log_message(f"{type(unit).__name__} seleccionado para ataque. Elige objetivo.")
+                    self.ui.add_log_message(f"{type(unit).__name__} seleccionado. Elige objetivo. (Cancelar con click derecho)")
             else:
                 self.ui.add_log_message("Selecciona una unidad aliada sana para atacar")
         else:
