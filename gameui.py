@@ -1,5 +1,7 @@
 # gameui.py
 import pygame
+import gettext
+_ = gettext.gettext
 from config import *
 
 # Para mejor ajuste visual, usar el tamaño más pequeño entre ancho y alto
@@ -268,9 +270,9 @@ class GameUI:
             mouse_pos = pygame.mouse.get_pos()
 
             if cruzados_rect.collidepoint(mouse_pos):
-                return "CRUZADOS"
+                return _("CRUZADOS")
             elif sarracenos_rect.collidepoint(mouse_pos):
-                return "SARRACENOS"
+                return _("SARRACENOS")
         return None
 
     def draw_side_selection(self):
@@ -278,20 +280,20 @@ class GameUI:
         self.game.screen.fill(COLOR_BG)
 
         # Título
-        title = self.font.render("Selecciona tu bando:", True, COLOR_TEXTO)
+        title = self.font.render(_("Selecciona tu bando:"), True, COLOR_TEXTO)
         self.game.screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, TITULO_Y))
 
         # Botón Cruzados
         cruzados_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, OPCIONES_Y, BOTON_WIDTH, BOTON_HEIGHT)
         pygame.draw.rect(self.game.screen, COLOR_CRUZADOS, cruzados_rect)
-        cruzados_text = self.font.render("Jugar como Cruzados", True, COLOR_TEXTO)
+        cruzados_text = self.font.render(_("Jugar como Cruzados"), True, COLOR_TEXTO)
         self.game.screen.blit(cruzados_text, (cruzados_rect.centerx - cruzados_text.get_width()//2, 
                                             cruzados_rect.centery - cruzados_text.get_height()//2))
 
         # Botón Sarracenos
         sarracenos_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, OPCIONES_Y + OPCIONES_ESPACIADO, BOTON_WIDTH, BOTON_HEIGHT)
         pygame.draw.rect(self.game.screen, COLOR_SARRACENOS, sarracenos_rect)
-        sarracenos_text = self.font.render("Jugar como Sarracenos", True, COLOR_TEXTO)
+        sarracenos_text = self.font.render(_("Jugar como Sarracenos"), True, COLOR_TEXTO)
         self.game.screen.blit(sarracenos_text, (sarracenos_rect.centerx - sarracenos_text.get_width()//2, 
                                              sarracenos_rect.centery - sarracenos_text.get_height()//2))
 
@@ -579,7 +581,7 @@ class GameUI:
 
         # Dibujar título
         font_title = pygame.font.SysFont('Arial', 16, bold=True)
-        text_title = font_title.render("Progreso hacia Arsouf", True, (255, 255, 255))
+        text_title = font_title.render(_("Progreso hacia Arsouf"), True, (255, 255, 255))
         game.screen.blit(text_title, (panel_x + 10, panel_y + 10))
 
         # Dibujar progreso de bagajes
@@ -593,10 +595,23 @@ class GameUI:
 
     def draw_intro(self, game):
         """Dibuja la pantalla de introducción"""
+        # Cargar la fuente para el texto de introducción
+        intro_font = pygame.font.Font(FONT_PATHS["abbasy"], 144)
+
+        # Crear el texto
+        intro_text = "The Battle of Arsouf"
+        intro_text_surface = intro_font.render(intro_text, True, WHITE)
+
+        # Obtener rectángulo del texto para centrarlo
+        intro_text_rect = intro_text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100))
+
         # Dibujar la imagen de portada a pantalla completa
         game.screen.blit(game.images["cover"], (0, 0))
 
-        # Verificar si han pasado los 5 segundos
+        # Dibujar el texto encima
+        game.screen.blit(intro_text_surface, intro_text_rect)
+
+        # Verificar si han pasado los 3m 27s segundos de duración máxima
         current_time = pygame.time.get_ticks()
         if current_time - game.intro_start_time >= game.intro_duration:
             game._end_intro()
@@ -622,24 +637,24 @@ class GameUI:
 
         # Dibujar título
         font_title = pygame.font.SysFont('Arial', 30, bold=True)
-        text_title = font_title.render("FIN DEL JUEGO", True, (255, 215, 0))
+        text_title = font_title.render(_("FIN DEL JUEGO"), True, (255, 215, 0))
         game.screen.blit(text_title, (panel_x + (panel_width - text_title.get_width())//2, panel_y + 30))
 
         # Dibujar mensaje de victoria
         font = pygame.font.SysFont('Arial', 20)
         if game.winner == "CRUZADOS":
-            text_winner = font.render("¡Victoria de los Cruzados!", True, (255, 255, 255))
-            text_reason = font.render("Han llegado suficientes unidades a Arsouf", True, (255, 255, 255))
+            text_winner = font.render(_("¡Victoria de los Cruzados!"), True, (255, 255, 255))
+            text_reason = font.render(_("Han llegado suficientes unidades a Arsouf"), True, (255, 255, 255))
         else:
-            text_winner = font.render("¡Victoria de los Sarracenos!", True, (255, 255, 255))
-            text_reason = font.render("Han impedido que los Cruzados lleguen a Arsouf", True, (255, 255, 255))
+            text_winner = font.render(_("¡Victoria de los Sarracenos!"), True, (255, 255, 255))
+            text_reason = font.render(_("Han impedido que los Cruzados lleguen a Arsouf"), True, (255, 255, 255))
 
         game.screen.blit(text_winner, (panel_x + (panel_width - text_winner.get_width())//2, panel_y + 80))
         game.screen.blit(text_reason, (panel_x + (panel_width - text_reason.get_width())//2, panel_y + 120))
 
         # Dibujar instrucción para salir
         font_exit = pygame.font.SysFont('Arial', 16)
-        text_exit = font_exit.render("Presiona ESC para salir", True, (200, 200, 200))
+        text_exit = font_exit.render(_("Presiona ESC para salir"), True, (200, 200, 200))
         game.screen.blit(text_exit, (panel_x + (panel_width - text_exit.get_width())//2, panel_y + 160))
 
 

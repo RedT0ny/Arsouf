@@ -3,9 +3,9 @@
 import sys
 import os
 import pygame
-from pygame import Rect
+import gettext
+_ = gettext.gettext
 
-# pylint: disable=unused-import
 from hexgrid import HexGrid
 from gameui import GameUI
 from units import *
@@ -44,7 +44,7 @@ class Game:
 
         # Inicializar
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Batalla de Arsouf")
+        pygame.display.set_caption(_("Batalla de Arsouf"))
 
         # Cargar y escalar tablero
         board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
@@ -88,7 +88,7 @@ class Game:
                 size = int(min(HEX_WIDTH, HEX_HEIGHT) * 0.85)
                 images[key] = pygame.transform.smoothscale(img, (size, size))
             except Exception as e:
-                print(f"Error cargando {path}: {e}")
+                print(f"Error loading {path}: {e}")
                 images[key] = pygame.Surface((size, size), pygame.SRCALPHA)
                 pygame.draw.circle(images[key], (0, 255, 0), (size // 2, size // 2), size // 2)
 
@@ -121,7 +121,7 @@ class Game:
             y_offset = (SCREEN_HEIGHT - new_height) // 2
             images["cover"].blit(scaled_img, (x_offset, y_offset))
         except Exception as e:
-            print(f"Error cargando imagen de portada: {e}")
+            print(f"Error loading cover: {e}")
             images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             images["cover"].fill((0, 0, 0))
 
@@ -139,7 +139,7 @@ class Game:
                     # Efectos de sonido que se reproducirán con pygame.mixer.Sound
                     sounds[key] = pygame.mixer.Sound(path)
             except Exception as e:
-                print(f"Error cargando sonido {path}: {e}")
+                print(f"Error loading audio {path}: {e}")
         return sounds
 
     @staticmethod
@@ -198,7 +198,7 @@ class Game:
                     try:
                         os.startfile(IMAGE_PATHS["rules"])  # En Windows
                     except AttributeError:  # Para otros sistemas operativos
-                        print(f"Error cargando archivo de reglas {IMAGE_PATHS['rules']}")
+                        print(f"Error loading rules {IMAGE_PATHS['rules']}")
                     continue
 
                 # Manejar botón de finalizar fase
@@ -235,7 +235,7 @@ class Game:
             # Verificar si es un clic derecho y hay un atacante seleccionado
             if event.button == 3 and self.combat_attacker:
                 # Cancelar la selección del atacante
-                self.ui.add_log_message(f"Selección de {type(self.combat_attacker).__name__} cancelada")
+                self.ui.add_log_message(_("Selección de {type(self.combat_attacker).__name__} cancelada").format(type(self.combat_attacker).__name__))
                 self.combat_attacker = None
                 self.combat_targets = []
                 return
@@ -264,14 +264,14 @@ class Game:
         if self.state == GAME_STATES["PLAYER_TURN"]:
             if self.turn_phase == TURN_PHASES["MOVEMENT"]:
                 self.turn_phase = TURN_PHASES["COMBAT"]
-                self.ui.add_log_message("Fase de combate iniciada")
+                self.ui.add_log_message(_("Fase de combate iniciada"))
                 self.moved_units = set()  # Resetear unidades movidas
                 self.last_moved_unit_pos = None  # Resetear la última unidad movida
                 self.attacked_units = set()  # Resetear unidades atacantes
             elif self.turn_phase == TURN_PHASES["COMBAT"]:
                 self.turn_phase = TURN_PHASES["MOVEMENT"]
                 self.state = GAME_STATES["AI_TURN"]
-                self.ui.add_log_message("Turno del jugador finalizado")
+                self.ui.add_log_message(_("Turno del jugador finalizado"))
                 self._check_unit_recovery()
 
         self.selected_unit = None
@@ -298,10 +298,10 @@ class Game:
 
     def _start_game(self, player_side):
         self.player_side = player_side
-        self.ai_side = "SARRACENOS" if player_side == "CRUZADOS" else "CRUZADOS"
+        self.ai_side = _("SARRACENOS") if player_side == _("CRUZADOS") else _("CRUZADOS")
         self.state = GAME_STATES["DEPLOY_PLAYER"]
         self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
-        self.ui.add_log_message(f"Jugando como {player_side}. Comienza el despliegue.")
+        self.ui.add_log_message(_("Jugando como {player_side}. Comienza el despliegue.").format(player_side=self.player_side))
 
     def _handle_side_selection(self, event):
         side = self.ui.handle_side_selection(event)
@@ -331,9 +331,9 @@ class Game:
                     f"Colocado {type(self.current_deploying_unit).__name__}. Siguiente unidad lista.")
             else:
                 self.current_deploying_unit = None
-                self.ui.add_log_message("¡Despliegue completado!")
+                self.ui.add_log_message(_("¡Despliegue completado!"))
         else:
-            self.ui.add_log_message("Posición inválida para despliegue")
+            self.ui.add_log_message(_("Posición inválida para despliegue"))
 
 
     def _end_player_turn(self):
@@ -341,7 +341,7 @@ class Game:
         if self.state == GAME_STATES["DEPLOY_PLAYER"] and not self.current_deploying_unit:
             # Confirmar despliegue del jugador
             self.state = GAME_STATES["DEPLOY_AI"]
-            self.ui.add_log_message("Despliegue confirmado. El ordenador está desplegando")
+            self.ui.add_log_message(_("Despliegue confirmado. El ordenador está desplegando"))
 
             # Limpiar selecciones
             self.selected_unit = None
@@ -354,7 +354,7 @@ class Game:
             if self.turn_phase == TURN_PHASES["MOVEMENT"]:
                 # Pasar a fase de combate
                 self.turn_phase = TURN_PHASES["COMBAT"]
-                self.ui.add_log_message("Fase de combate iniciada")
+                self.ui.add_log_message(_("Fase de combate iniciada"))
                 self.moved_units = set()  # Resetear unidades movidas
                 self.last_moved_unit_pos = None  # Resetear la última unidad movida
                 self.attacked_units = set()  # Resetear unidades atacantes
@@ -364,7 +364,7 @@ class Game:
                 self.turn_phase = TURN_PHASES["MOVEMENT"]
                 self.state = GAME_STATES["AI_TURN"]
                 self.current_turn_side = self.ai_side
-                self.ui.add_log_message("Turno del jugador finalizado")
+                self.ui.add_log_message(_("Turno del jugador finalizado"))
                 self._check_unit_recovery()
 
     def _handle_board_click(self, mouse_pos, button=1):
@@ -588,7 +588,7 @@ class Game:
     def _ai_turn(self):
         # 1. Inicializar el turno de la IA si es nuevo
         if not hasattr(self, '_ai_turn_initialized'):
-            self.ui.add_log_message("Turno del ordenador - Fase de movimiento")
+            self.ui.add_log_message(_("Turno del ordenador - Fase de movimiento"))
             self._ai_turn_initialized = True
             self._ai_moved_units_this_turn = set()
             self.turn_phase = TURN_PHASES["MOVEMENT"]  # Usar la variable global turn_phase
@@ -653,7 +653,7 @@ class Game:
             else:
                 # Cuando se completa la fase de movimiento, pasar a la fase de combate
                 self.turn_phase = TURN_PHASES["COMBAT"]
-                self.ui.add_log_message("Turno del ordenador - Fase de combate")
+                self.ui.add_log_message(_("Turno del ordenador - Fase de combate"))
                 self._ai_attacked_units_this_turn = set()  # Inicializar conjunto de unidades que ya atacaron
 
                 # Obtener todas las unidades de la IA para la fase de combate
@@ -677,7 +677,7 @@ class Game:
         # 4. Finalizar turno si no quedan unidades y estamos en fase de movimiento
         if self.turn_phase == TURN_PHASES["MOVEMENT"] and hasattr(self, '_ai_units_to_consider') and not self._ai_units_to_consider:
             self.turn_phase = TURN_PHASES["COMBAT"]
-            self.ui.add_log_message("Turno del ordenador - Fase de combate")
+            self.ui.add_log_message(_("Turno del ordenador - Fase de combate"))
             self._ai_attacked_units_this_turn = set()  # Inicializar conjunto de unidades que ya atacaron
 
             # Obtener todas las unidades de la IA para la fase de combate
@@ -1407,7 +1407,7 @@ class Game:
 
         # Realizar ataque
         if target:
-            if unit.atacar(target, self.grid):
+            if unit.attack(target, self.grid):
                 self.ui.add_log_message(
                     f"¡IA ataca! {type(unit).__name__} hirió a {type(target).__name__}")
             else:
@@ -1484,7 +1484,7 @@ class Game:
     def _end_ai_turn(self):
         self.state = GAME_STATES["PLAYER_TURN"]
         self.turn_phase = TURN_PHASES["MOVEMENT"]  # Reset to movement phase for player's turn
-        self.ui.add_log_message("Turno del ordenador finalizado. ¡Te toca!")
+        self.ui.add_log_message(_("Turno del ordenador finalizado. ¡Te toca!"))
         # Limpiar variables de estado del turno de la IA
         if hasattr(self, '_ai_turn_initialized'):
             del self._ai_turn_initialized
@@ -1514,7 +1514,7 @@ class Game:
         if self.units_in_arsouf["bagaje"] >= 2 and self.units_in_arsouf["other"] >= 2:
             self.game_over = True
             self.winner = "CRUZADOS"
-            self.ui.add_log_message("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf.")
+            self.ui.add_log_message(_("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf."))
 
             # Reproducir música de victoria o derrota según el bando del jugador
             if self.player_side == "CRUZADOS":
@@ -1531,7 +1531,7 @@ class Game:
         if remaining_bagaje + self.units_in_arsouf["bagaje"] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
             self.game_over = True
             self.winner = "SARRACENOS"
-            self.ui.add_log_message("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf.")
+            self.ui.add_log_message(_("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."))
 
             # Reproducir música de victoria o derrota según el bando del jugador
             if self.player_side == "SARRACENOS":
@@ -1560,7 +1560,7 @@ class Game:
             for col in range(self.grid.cols):
                 unit = self.grid.grid[row][col]
                 if unit and unit.health == 1:
-                    unit.recuperar(self.grid)
+                    unit.recover(self.grid)
 
     def _process_combat_click(self, row, col):
         """Procesa clics durante la fase de combate"""
@@ -1590,12 +1590,12 @@ class Game:
                     self.combat_attacker = unit
                     self.ui.add_log_message(f"{type(unit).__name__} seleccionado. Elige objetivo. (Cancelar con click derecho)")
             else:
-                self.ui.add_log_message("Selecciona una unidad aliada sana para atacar")
+                self.ui.add_log_message(_("Selecciona una unidad aliada sana para atacar"))
         else:
             # Seleccionar objetivo (debe ser enemigo adyacente)
             if unit and unit in self.combat_targets:
                 # Realizar ataque
-                if self.combat_attacker.atacar(unit, self.grid):
+                if self.combat_attacker.attack(unit, self.grid):
                     # Reproducir sonido de ataque exitoso
                     self._play_sound("success_attack")
                     self.ui.add_log_message(
@@ -1612,7 +1612,7 @@ class Game:
                 self.combat_attacker = None
                 self.combat_targets = []
             else:
-                self.ui.add_log_message("Objetivo no válido. Selecciona un enemigo adyacente")
+                self.ui.add_log_message(_("Objetivo no válido. Selecciona un enemigo adyacente"))
 
     def _draw(self):
         self.ui.draw_game(self)

@@ -1,8 +1,23 @@
 # config.py (versión optimizada)
+import json
 import os
-#import pygame
 
-# 1. Dimensiones ORIGINALES del tablero (píxeles físicos)
+# ------------------------------
+# CONFIGURACIÓN DEL JUEGO
+# ------------------------------
+# 0. Configuración general
+GAME_NAME = "La Batalla de Arsouf"
+VERSION = "Alfa 1.2.0"
+AUTHOR = "Red Tony"
+# 0.1. Configuración de depuración
+DEBUG_MODE = False  # Cambia a False para producción
+
+# ------------------------------
+# 1. Dimensiones del tablero
+# ------------------------------
+
+# 1. Dimensiones ORIGINALES del tablero (en píxeles)
+# (Estas son las dimensiones físicas del tablero en tu imagen JPG)
 TABLERO_REAL_WIDTH = 2340
 TABLERO_REAL_HEIGHT = 1470
 
@@ -19,7 +34,7 @@ HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["der
 HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 4. Configuración de pantalla
-DISPLAY_SCALING = 0.5
+DISPLAY_SCALING = 0.75
 SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
 SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60
@@ -138,6 +153,11 @@ AUDIO_PATHS = {
     "failed_attack": os.path.join(ASSETS_DIR, "audio", "failed_attack.ogg"),
 }
 
+# Fuentes
+FONT_PATHS = {
+    "abbasy": os.path.join(ASSETS_DIR, "fonts", "Abbasy.ttf"),
+}
+
 # ------------------------------
 # CONSTANTES DE JUEGO
 # ------------------------------
@@ -153,7 +173,8 @@ COLOR_BOTON_CANCELAR = (200, 50, 50)
 COLOR_TEXTO = (255, 255, 255)
 COLOR_ZONA_JUGADOR = (100, 200, 100, 70)
 COLOR_ZONA_IA = (200, 100, 100, 70)
-
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
 # ------------------------------
 # COMBATE

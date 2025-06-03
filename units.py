@@ -26,28 +26,32 @@ class Unit:
         self.row = row
         self.col = col
 
-    def atacar(self, objetivo, grid):
+    def attack(self, objetivo, grid):
         """Devuelve True si el ataque fue exitoso"""
         if self.health != 2:  # Solo unidades sanas pueden atacar
             return False
 
-        ataque_power = self.power + random.randint(1, 6)
+        attack_power= self.power + random.randint(1, 6)
 
         # Bonus por líder adyacente
-        if self._tiene_lider_adyacente(grid):
-            ataque_power += 2
+        if self._is_leader_adjacent(grid):
+            attack_power += 2
 
         # Cálculo del poder defensivo, incluyendo bonus
-        defensa_power = objetivo.power + random.randint(1, 6) + self._calcular_bono_aliados(objetivo, grid)
+        defensa_power = objetivo.power + random.randint(1, 6) + self._get_allied_bonus(objetivo, grid)
 
-        if ataque_power > defensa_power:
-            objetivo.recibir_herida(grid)
+        if attack_power > defensa_power:
+            objetivo.get_wound(grid)
             return True
-        elif ataque_power < defensa_power:
-            self.recibir_herida(grid)
+        elif attack_power < defensa_power:
+            self.get_wound(grid)
         return False
 
-    def recibir_herida(self, grid):
+    def charge(self, objetivo, grid):
+        # Método de carga para atacar a un objetivo
+        return
+
+    def get_wound(self, grid):
         if self.health == 2:  # Primera herida
             self.health = 1
             self.speed = 1
@@ -56,17 +60,17 @@ class Unit:
             self.health = 0
             grid.eliminar_unidad(self.row, self.col)
 
-    def recuperar(self, grid):
+    def recover(self, grid):
         """Intenta recuperar la unidad si no hay enemigos cerca"""
         if (self.health == 1 and 
-            not self._enemigos_cercanos(grid, radius=3)):
+            not self._are_enemies_close(grid, radius=3)):
             self.health = 2
             self.speed = self.original_speed
             self.wounded_mark = False
             return True
         return False
 
-    def _tiene_lider_adyacente(self, grid):
+    def _is_leader_adjacent(self, grid):
         # Detectar líder aliado adyacente usando el atributo leader
         for r, c in grid.get_adjacent_positions(self.row, self.col):
             unit = grid.get_unit(r, c)
@@ -74,7 +78,7 @@ class Unit:
                 return True
         return False
 
-    def _calcular_bono_aliados(self, unidad_defensora: 'Unit', grid: 'HexGrid') -> float:
+    def _get_allied_bonus(self, unidad_defensora: 'Unit', grid: 'HexGrid') -> float:
         """Calcula el bono de defensa por unidades aliadas adyacentes a la unidad ATACANTE,
         con bono adicional si el líder está adyacente al DEFENSOR.
 
@@ -94,17 +98,17 @@ class Unit:
         # 2. Bono adicional si el líder está adyacente al DEFENSOR
         for r, c in grid.get_adjacent_positions(unidad_defensora.row, unidad_defensora.col):
             unidad_adyacente = grid.get_unit(r, c)
-            if unidad_adyacente and self._es_lider(unidad_adyacente) and unidad_adyacente.side == unidad_defensora.side:
+            if unidad_adyacente and self.is_leader(unidad_adyacente) and unidad_adyacente.side == unidad_defensora.side:
                 bono_total += 2
                 break  # Solo se cuenta una vez aunque haya múltiples líderes (por seguridad)
 
         return bono_total
 
-    def _es_lider(self, unidad: 'Unit') -> bool:
+    def is_leader(self, unidad: 'Unit') -> bool:
         """Determina si una unidad es el líder de su facción"""
         return unidad.leader
 
-    def _enemigos_cercanos(self, grid, radius=3):
+    def _are_enemies_close(self, grid, radius=3):
         """Verifica si hay enemigos en un radio determinado"""
         enemies = grid.get_units_in_radius(self.row, self.col, radius)
         return any(unit.side != self.side for unit in enemies)
