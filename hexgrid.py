@@ -3,6 +3,9 @@ from collections import deque
 
 import pygame
 import math
+import gettext
+_ = gettext.gettext
+
 from typing import List, Tuple, Optional  # Añadir estas importaciones
 from units import *
 from config import COMBAT_COLORS, HEX_WIDTH, HEX_HEIGHT, HEX_ROWS, HEX_COLS, MARGENES_ESCALADOS, ROAD_HEXES, FORBIDDEN_HEXES, RIVER_BARRIERS, FORD_HEX
@@ -56,11 +59,11 @@ class HexGrid:
         """
         # 1. Validar coordenadas
         if not (0 <= row < self.rows and 0 <= col < self.cols):
-            raise ValueError(f"Coordenadas ({row}, {col}) fuera del grid {self.rows}x{self.cols}")
+            raise ValueError(_("Coordenadas ({row}, {col}) fuera del grid {rows}x{cols}").format(row=row, col=col, rows=self.rows, cols=self.cols))
 
         # 2. Verificar si la posición está ocupada
         if self.grid[row][col] is not None:
-            print(f"¡Advertencia: Sobreescribiendo unidad en ({row}, {col})!")
+            print(_("¡Advertencia: Sobreescribiendo unidad en ({row}, {col})!").format(row=row, col=col))
 
         # 3. Asignar unidad al grid
         self.grid[row][col] = unit

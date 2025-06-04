@@ -1,6 +1,8 @@
 # config.py (versión optimizada)
 import json
 import os
+import gettext
+_ = gettext.gettext
 
 # ------------------------------
 # CONFIGURACIÓN DEL JUEGO
@@ -34,7 +36,7 @@ HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["der
 HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 4. Configuración de pantalla
-DISPLAY_SCALING = 0.75
+DISPLAY_SCALING = 0.75  # Factor de escala para la pantalla (0.75 = 75% del tamaño original)
 SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
 SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60
@@ -188,6 +190,7 @@ COMBAT_COLORS = {
 
 GAME_STATES = {
     'INTRO': 'INTRO',
+    'SETUP_MENU': 'SETUP_MENU',
     'SELECT_SIDE': 'SELECT_SIDE',
     'DEPLOY_PLAYER': 'DEPLOY_PLAYER',
     'DEPLOY_AI': 'DEPLOY_AI',
@@ -196,17 +199,20 @@ GAME_STATES = {
 }
 
 TURN_PHASES = {
-    'MOVEMENT': 'Movimiento',
-    'COMBAT': 'Combate'
+    'MOVEMENT': _('Movimiento'),
+    'COMBAT': _('Combate')
 }
 
 # ------------------------------
 # VALIDACIÓN DE CONFIG
 # ------------------------------
 if __name__ == "__main__":
-    print("Configuración cargada correctamente:")
-    print(f"- Tamaño de ventana: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
-    print(f"- Tamaño del tablero: {TABLERO_REAL_WIDTH}x{TABLERO_REAL_HEIGHT} (Utilizable: {HEX_AREA_REAL_WIDTH}x{HEX_AREA_REAL_HEIGHT} px)")
-    print(f"- Tamaño escalado: {SCREEN_WIDTH - PANEL_WIDTH}x{SCREEN_HEIGHT - LOG_PANEL_HEIGHT}")
-    print(f"- Escala: {ESCALA:.2f}")
-    print(f"- Hexágonos: {HEX_ROWS}x{HEX_COLS} (size: {HEX_SIZE}px)")
+    print(_("Configuración cargada correctamente:"))
+    print(_("- Tamaño de ventana: {width}x{height}").format(width=SCREEN_WIDTH, height=SCREEN_HEIGHT))
+    print(_("- Tamaño del tablero: {width}x{height} (Utilizable: {area_width}x{area_height})").format(
+        width=TABLERO_REAL_WIDTH, height=TABLERO_REAL_HEIGHT, 
+        area_width=HEX_AREA_REAL_WIDTH, area_height=HEX_AREA_REAL_HEIGHT))
+    print(_("- Tamaño escalado: {width}x{height}").format(
+        width=SCREEN_WIDTH - PANEL_WIDTH, height=SCREEN_HEIGHT - LOG_PANEL_HEIGHT))
+    print(_("- Escala: {scale:.2f}").format(scale=ESCALA))
+    print(_("- Hexágonos: {rows}x{cols} (size: {size}px)").format(rows=HEX_ROWS, cols=HEX_COLS, size=HEX_SIZE))

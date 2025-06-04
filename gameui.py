@@ -261,7 +261,28 @@ class GameUI:
     def get_rules_button(self):
         # Create a panel rect instead of passing the screen
         panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)
-        return self._draw_rules_button(panel_rect, SCREEN_HEIGHT - 200)
+        return self._draw_rules_button(panel_rect, SCREEN_HEIGHT - 250)
+
+    def handle_setup_menu(self, event):
+        """Maneja las interacciones con el menú de configuración."""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            scale_rect, language_rect, defaults_rect, rules_rect, side_rect, quit_rect = self.draw_setup_menu()
+            mouse_pos = pygame.mouse.get_pos()
+
+            # Verificar en qué botón se hizo clic
+            if scale_rect.collidepoint(mouse_pos):
+                return "SCALE"
+            elif language_rect.collidepoint(mouse_pos):
+                return "LANGUAGE"
+            elif defaults_rect.collidepoint(mouse_pos):
+                return "DEFAULTS"
+            elif rules_rect.collidepoint(mouse_pos):
+                return "RULES"
+            elif side_rect.collidepoint(mouse_pos):
+                return "SELECT_SIDE"
+            elif quit_rect.collidepoint(mouse_pos):
+                return "QUIT"
+        return None
 
     def handle_side_selection(self, event):
         """Maneja la selección de bando."""
@@ -274,6 +295,68 @@ class GameUI:
             elif sarracenos_rect.collidepoint(mouse_pos):
                 return _("SARRACENOS")
         return None
+
+    def draw_setup_menu(self):
+        """Dibuja la pantalla del menú de configuración."""
+        self.game.screen.fill(COLOR_BG)
+
+        # Título
+        title = self.font.render(_("Menú de Configuración"), True, COLOR_TEXTO)
+        self.game.screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, TITULO_Y))
+
+        # Botones del menú
+        button_y = OPCIONES_Y
+        button_spacing = 70  # Espacio entre botones
+
+        # 1. Botón de escala de pantalla
+        scale_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        pygame.draw.rect(self.game.screen, (100, 150, 200), scale_rect)
+        scale_text = self.font.render(f"{_('Escala de pantalla')}: {int(DISPLAY_SCALING * 100)}%", True, COLOR_TEXTO)
+        self.game.screen.blit(scale_text, (scale_rect.centerx - scale_text.get_width()//2, 
+                                         scale_rect.centery - scale_text.get_height()//2))
+        button_y += button_spacing
+
+        # 2. Botón de idioma
+        language_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        pygame.draw.rect(self.game.screen, (150, 100, 200), language_rect)
+        language_text = self.font.render(_("Idioma"), True, COLOR_TEXTO)
+        self.game.screen.blit(language_text, (language_rect.centerx - language_text.get_width()//2, 
+                                            language_rect.centery - language_text.get_height()//2))
+        button_y += button_spacing
+
+        # 3. Botón de valores predeterminados
+        defaults_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        pygame.draw.rect(self.game.screen, (200, 150, 100), defaults_rect)
+        defaults_text = self.font.render(_("Valores predeterminados"), True, COLOR_TEXTO)
+        self.game.screen.blit(defaults_text, (defaults_rect.centerx - defaults_text.get_width()//2, 
+                                            defaults_rect.centery - defaults_text.get_height()//2))
+        button_y += button_spacing
+
+        # 4. Botón de ver reglas
+        rules_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        pygame.draw.rect(self.game.screen, COLOR_CRUZADOS, rules_rect)
+        rules_text = self.font.render(_("Ver Reglas"), True, COLOR_TEXTO)
+        self.game.screen.blit(rules_text, (rules_rect.centerx - rules_text.get_width()//2, 
+                                        rules_rect.centery - rules_text.get_height()//2))
+        button_y += button_spacing
+
+        # 5. Botón de selección de bando
+        side_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        pygame.draw.rect(self.game.screen, (100, 200, 150), side_rect)
+        side_text = self.font.render(_("Seleccionar bando"), True, COLOR_TEXTO)
+        self.game.screen.blit(side_text, (side_rect.centerx - side_text.get_width()//2, 
+                                        side_rect.centery - side_text.get_height()//2))
+        button_y += button_spacing
+
+        # 6. Botón de salir
+        quit_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        pygame.draw.rect(self.game.screen, COLOR_BOTON_CANCELAR, quit_rect)
+        quit_text = self.font.render(_("Salir"), True, COLOR_TEXTO)
+        self.game.screen.blit(quit_text, (quit_rect.centerx - quit_text.get_width()//2, 
+                                        quit_rect.centery - quit_text.get_height()//2))
+
+        pygame.display.flip()
+        return scale_rect, language_rect, defaults_rect, rules_rect, side_rect, quit_rect
 
     def draw_side_selection(self):
         """Dibuja la pantalla de selección de lado."""
@@ -341,7 +424,7 @@ class GameUI:
         # 2. Información de la unidad actual para despliegue
         if hasattr(self.game, 'current_deploying_unit') and self.game.current_deploying_unit:
             unit_name = type(self.game.current_deploying_unit).__name__
-            unit_info = f"Coloca: {unit_name[:12]}" if len(unit_name) > 12 else f"Coloca: {unit_name}"
+            unit_info = f"{_('Coloca')}: {_(unit_name[:12])}" if len(unit_name) > 12 else f"{_('Coloca')}: {_(unit_name)}"
             unit_text = self.font.render(unit_info, True, COLOR_TEXTO)
 
             # Ajustar texto si es muy largo
@@ -359,14 +442,14 @@ class GameUI:
             y_offset += 150  # Espacio para la información de la unidad
 
         # 4. Dibujar botón de reglas
-        rules_button_rect = self._draw_rules_button(panel_rect, SCREEN_HEIGHT - 200)
+        rules_button_rect = self._draw_rules_button(panel_rect, SCREEN_HEIGHT - 250)
 
         # 5. Dibujar botón según el estado del juego
         button_rect = None
         if self.game.state == "PLAYER_TURN":
-            button_rect = self._draw_button(panel_rect, "Finalizar movimiento" if self.game.turn_phase == TURN_PHASES["MOVEMENT"] else "Finalizar Combate", COLOR_BOTON_CANCELAR, SCREEN_HEIGHT - 80)
+            button_rect = self._draw_button(panel_rect, _("Finalizar movimiento") if self.game.turn_phase == TURN_PHASES["MOVEMENT"] else _("Finalizar Combate"), COLOR_BOTON_CANCELAR, SCREEN_HEIGHT - 80)
         elif self.game.state == "DEPLOY_PLAYER" and not getattr(self.game, 'current_deploying_unit', None):
-            button_rect = self._draw_button(panel_rect, "Confirmar Despliegue", COLOR_BOTON, SCREEN_HEIGHT - 80)
+            button_rect = self._draw_button(panel_rect, _("Confirmar Despliegue"), COLOR_BOTON, SCREEN_HEIGHT - 80)
 
         return button_rect
 
@@ -375,17 +458,19 @@ class GameUI:
         # Definir máximo ancho disponible (panel_width - márgenes)
         max_width = PANEL_WIDTH - 10  # 10px de margen a cada lado
 
-        if self.game.state == "SELECT_SIDE":
-            text = "Selecciona tu bando"
-        elif self.game.state == "DEPLOY_PLAYER":
-            text = "Despliega tus unidades"
-        elif self.game.state == "DEPLOY_AI":
-            text = "Despliegue del ordenador"
-        elif self.game.state == "PLAYER_TURN":
+        if self.game.state == GAME_STATES["SETUP_MENU"]:
+            text = _("Menú de Configuración")
+        elif self.game.state == GAME_STATES["SELECT_SIDE"]:
+            text = _("Selecciona tu bando")
+        elif self.game.state == GAME_STATES["DEPLOY_PLAYER"]:
+            text = _("Despliega tus unidades")
+        elif self.game.state == GAME_STATES["DEPLOY_AI"]:
+            text = _("Despliegue del ordenador")
+        elif self.game.state == GAME_STATES["PLAYER_TURN"]:
             phase = self.game.turn_phase
-            text = f"{self.game.player_side}: {phase}"
-        elif self.game.state == "AI_TURN":
-            text = f"Turno del ordenador"
+            text = f"{_(self.game.player_side)}: {_(phase)}"
+        elif self.game.state == GAME_STATES["AI_TURN"]:
+            text = _("Turno del ordenador")
         else:
             text = ""
 
@@ -413,7 +498,7 @@ class GameUI:
         # Título: Tipo de unidad
         unit_name = type(unit).__name__
         title_font = pygame.font.SysFont('Arial', 20, bold=True)
-        title_text = title_font.render(unit_name, True, COLOR_TEXTO)
+        title_text = title_font.render(_(unit_name), True, COLOR_TEXTO)
 
         # Centrar el título
         title_x = content_rect.x + (max_width - title_text.get_width()) // 2
@@ -437,43 +522,43 @@ class GameUI:
 
         # Bando
         side_color = COLOR_CRUZADOS if unit.side == "CRUZADOS" else COLOR_SARRACENOS
-        side_text = self._render_fitted_text(f"Bando: {unit.side}", max_width, side_color, info_font_size)
+        side_text = self._render_fitted_text(f"{_('Bando')}: {_(unit.side)}", max_width, side_color, info_font_size)
         self.game.screen.blit(side_text, (content_rect.x, y_offset))
         y_offset += line_height
 
         # Fuerza de combate
-        power_text = self._render_fitted_text(f"Fuerza: {unit.power}", max_width, COLOR_TEXTO, info_font_size)
+        power_text = self._render_fitted_text(f"{_('Fuerza')}: {unit.power}", max_width, COLOR_TEXTO, info_font_size)
         self.game.screen.blit(power_text, (content_rect.x, y_offset))
         y_offset += line_height
 
         # Velocidad
-        speed_text = self._render_fitted_text(f"Velocidad: {unit.speed}/{unit.original_speed}", max_width, COLOR_TEXTO, info_font_size)
+        speed_text = self._render_fitted_text(f"{_('Velocidad')}: {unit.speed}/{unit.original_speed}", max_width, COLOR_TEXTO, info_font_size)
         self.game.screen.blit(speed_text, (content_rect.x, y_offset))
         y_offset += line_height
 
         # Líder (si aplica)
         if unit.leader:
-            leader_text = self._render_fitted_text("Líder: Sí", max_width, (255, 215, 0), info_font_size)
+            leader_text = self._render_fitted_text(f"{_('Líder')}: {_('Sí')}", max_width, (255, 215, 0), info_font_size)
             self.game.screen.blit(leader_text, (content_rect.x, y_offset))
             y_offset += line_height
 
         # Estado de salud
-        health_status = "Sana" if unit.health == 2 else "Herida"
+        health_status = _("Sana") if unit.health == 2 else _("Herida")
         health_color = (50, 200, 50) if unit.health == 2 else COMBAT_COLORS['wounded']
-        health_text = self._render_fitted_text(f"Estado: {health_status}", max_width, health_color, info_font_size)
+        health_text = self._render_fitted_text(f"{_('Estado')}: {health_status}", max_width, health_color, info_font_size)
         self.game.screen.blit(health_text, (content_rect.x, y_offset))
 
     def _draw_button(self, panel_rect, text, color, y_pos):
         """Dibuja un botón en el panel."""
         button_rect = pygame.Rect(panel_rect.x + (PANEL_WIDTH - BOTON_WIDTH)//2, y_pos, BOTON_WIDTH, BOTON_HEIGHT)
         pygame.draw.rect(self.game.screen, color, button_rect)
-        button_text = self.font.render(text, True, COLOR_TEXTO)
+        button_text = self.font.render(_(text), True, COLOR_TEXTO)
         self.game.screen.blit(button_text, (button_rect.centerx - button_text.get_width()//2, 
                                          button_rect.centery - button_text.get_height()//2))
         return button_rect
 
     def _draw_rules_button(self, panel_rect, y_position):
-        rules_button_rect = self._draw_button(panel_rect, "Ver Reglas", COLOR_CRUZADOS, y_position)
+        rules_button_rect = self._draw_button(panel_rect, _("Ver Reglas"), COLOR_CRUZADOS, y_position)
         return rules_button_rect
 
     def draw_deployment_zones(self):
@@ -586,11 +671,11 @@ class GameUI:
 
         # Dibujar progreso de bagajes
         font = pygame.font.SysFont('Arial', 14)
-        text_bagaje = font.render(f"Bagajes: {game.units_in_arsouf['bagaje']}/2", True, (255, 255, 255))
+        text_bagaje = font.render(f"{_('Bagajes')}: {game.units_in_arsouf['bagaje']}/2", True, (255, 255, 255))
         game.screen.blit(text_bagaje, (panel_x + 10, panel_y + 35))
 
         # Dibujar progreso de otras unidades
-        text_other = font.render(f"Otras unidades: {game.units_in_arsouf['other']}/2", True, (255, 255, 255))
+        text_other = font.render(f"{_('Otras unidades')}: {game.units_in_arsouf['other']}/2", True, (255, 255, 255))
         game.screen.blit(text_other, (panel_x + 10, panel_y + 55))
 
     def draw_intro(self, game):
@@ -599,11 +684,11 @@ class GameUI:
         intro_font = pygame.font.Font(FONT_PATHS["abbasy"], 144)
 
         # Crear el texto
-        intro_text = "The Battle of Arsouf"
+        intro_text = _("The Battle of Arsouf")
         intro_text_surface = intro_font.render(intro_text, True, WHITE)
 
         # Obtener rectángulo del texto para centrarlo
-        intro_text_rect = intro_text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100))
+        intro_text_rect = intro_text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 200))
 
         # Dibujar la imagen de portada a pantalla completa
         game.screen.blit(game.images["cover"], (0, 0))
@@ -701,14 +786,18 @@ class GameUI:
         # 9. Dibujar información de progreso hacia la victoria
         self.draw_victory_progress(game)
 
-        # 10. Dibujar pantalla de selección si es necesario
-        if game.state == "SELECT_SIDE":
+        # 10. Dibujar pantalla de menú de configuración si es necesario
+        if game.state == GAME_STATES["SETUP_MENU"]:
+            self.draw_setup_menu()
+
+        # 11. Dibujar pantalla de selección si es necesario
+        if game.state == GAME_STATES["SELECT_SIDE"]:
             self.draw_side_selection()
 
-        # 11. Dibujar pantalla de introducción si es necesario
+        # 12. Dibujar pantalla de introducción si es necesario
         if game.state == GAME_STATES["INTRO"]:
             self.draw_intro(game)
 
-        # 12. Dibujar pantalla de fin de juego si es necesario
+        # 13. Dibujar pantalla de fin de juego si es necesario
         if game.game_over:
             self.draw_game_over(game)
