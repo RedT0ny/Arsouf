@@ -8,7 +8,7 @@ _ = gettext.gettext
 # CONFIGURACIÓN DEL JUEGO
 # ------------------------------
 # 0. Configuración general
-GAME_NAME = "La Batalla de Arsouf"
+GAME_NAME = _("La Batalla de Arsouf")
 VERSION = "Alfa 1.2.0"
 AUTHOR = "Red Tony"
 # 0.1. Configuración de depuración

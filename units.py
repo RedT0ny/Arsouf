@@ -20,6 +20,7 @@ class Unit:
         self.original_speed = 0  # Se establecerá en cada subclase
         self.wounded_mark = False  # Para mostrar cruz roja
         self.leader = False  # Indica si la unidad es un líder (Ricardo o Saladino)
+        self.charging_hex = None  # Para almacenar el hexágono objetivo de una carga
 
     def set_position(self, row, col):
         """Establece la posición en el grid."""
@@ -31,11 +32,16 @@ class Unit:
         if self.health != 2:  # Solo unidades sanas pueden atacar
             return False
 
-        attack_power= self.power + random.randint(1, 6)
+        attack_power = self.power + random.randint(1, 6)
 
         # Bonus por líder adyacente
         if self._is_leader_adjacent(grid):
             attack_power += 2
+
+        # Bonus por carga de caballería cruzada
+        is_charging = self.charge(objetivo, grid)
+        if is_charging:
+            attack_power += 1
 
         # Cálculo del poder defensivo, incluyendo bonus
         defensa_power = objetivo.power + random.randint(1, 6) + self._get_allied_bonus(objetivo, grid)
@@ -48,8 +54,38 @@ class Unit:
         return False
 
     def charge(self, objetivo, grid):
-        # Método de carga para atacar a un objetivo
-        return
+        """
+        Determina si la unidad está realizando una carga contra el objetivo.
+        Una carga ocurre cuando un caballero cruzado se mueve dos casillas consecutivas
+        en la misma dirección y luego ataca a una unidad sarracena en la siguiente casilla
+        en esa misma dirección.
+
+        Args:
+            objetivo: La unidad objetivo del ataque
+            grid: El grid hexagonal
+
+        Returns:
+            bool: True si la unidad está cargando, False en caso contrario
+        """
+        # Solo los caballeros cruzados pueden cargar
+        if not (isinstance(self, Caballero) or isinstance(self, Templario) or isinstance(self, Hospitalario)):
+            return False
+
+        # Solo se puede cargar contra unidades sarracenas
+        if objetivo.side != "SARRACENOS":
+            return False
+
+        # Verificar si tenemos un hexágono de carga definido
+        if not self.charging_hex:
+            return False
+
+        # Verificar si el objetivo está en el hexágono de carga
+        target_row, target_col = self.charging_hex
+        if objetivo.row != target_row or objetivo.col != target_col:
+            return False
+
+        # Si llegamos aquí, se cumplen todas las condiciones para una carga
+        return True
 
     def get_wound(self, grid):
         if self.health == 2:  # Primera herida

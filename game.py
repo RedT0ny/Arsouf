@@ -59,11 +59,11 @@ class Game:
         # Inicializar componentes
         self.grid = HexGrid()
         self.ui = GameUI(self)
-        
+
         # Inicializar menús
         self.setup_menu = SetupMenu(self.screen)
         self.side_selection_menu = SideSelectionMenu(self.screen)
-        
+
         self.clock = pygame.time.Clock()
         self.running = True
 
@@ -243,7 +243,7 @@ class Game:
             # Verificar si es un clic derecho y hay un atacante seleccionado
             if event.button == 3 and self.combat_attacker:
                 # Cancelar la selección del atacante
-                self.ui.add_log_message(_("Selección de {type(self.combat_attacker).__name__} cancelada").format(type=type(self.combat_attacker).__name__))
+                self.ui.add_log_message(_("Selección de {} cancelada").format(type(self.combat_attacker).__name__))
                 self.combat_attacker = None
                 self.combat_targets = []
                 return
@@ -281,11 +281,20 @@ class Game:
                 self.state = GAME_STATES["AI_TURN"]
                 self.ui.add_log_message(_("Turno del jugador finalizado"))
                 self._check_unit_recovery()
+                self._reset_charging_flags()  # Limpiar flags de carga al final de la fase de combate
 
         self.selected_unit = None
         self.possible_moves = []
         self.combat_attacker = None
         self.combat_targets = []
+
+    def _reset_charging_flags(self):
+        """Resetea los flags de carga de todas las unidades en el tablero"""
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                unit = self.grid.get_unit(row, col)
+                if unit:
+                    unit.charging_hex = None
 
     def _get_hex_under_mouse(self, mouse_pos):
         """Encuentra el hexágono bajo el cursor"""
@@ -365,7 +374,7 @@ class Game:
 
         # Recrear la pantalla con las nuevas dimensiones
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        
+
         # Actualizar los menús con la nueva pantalla
         self.setup_menu = SetupMenu(self.screen)
         self.side_selection_menu = SideSelectionMenu(self.screen)
@@ -390,7 +399,7 @@ class Game:
 
         # Recrear la pantalla con las dimensiones predeterminadas
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        
+
         # Actualizar los menús con la nueva pantalla
         self.setup_menu = SetupMenu(self.screen)
         self.side_selection_menu = SideSelectionMenu(self.screen)
@@ -539,6 +548,28 @@ class Game:
                     self._play_sound("move")
                     self.moved_units.add((row, col))
                     self.last_moved_unit_pos = ((old_row, old_col), (row, col))  # Guardar posiciones original y nueva
+
+                    # Verificar si es un caballero cruzado para posible carga
+                    moved_unit = self.grid.grid[row][col]
+                    if (isinstance(moved_unit, Caballero) or 
+                        isinstance(moved_unit, Templario) or 
+                        isinstance(moved_unit, Hospitalario)):
+
+                        # Calcular la dirección del movimiento
+                        dir_row = row - old_row
+                        dir_col = col - old_col
+
+                        # Calcular el siguiente hexágono en la misma dirección
+                        next_row = row + dir_row
+                        next_col = col + dir_col
+
+                        # Verificar si el hexágono está dentro del tablero
+                        if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
+                            # Verificar si hay una unidad sarracena en ese hexágono
+                            target_unit = self.grid.get_unit(next_row, next_col)
+                            if target_unit and target_unit.side == "SARRACENOS":
+                                # Establecer el hexágono de carga
+                                moved_unit.charging_hex = (next_row, next_col)
 
             self.selected_unit = None
             self.possible_moves = []
@@ -903,17 +934,40 @@ class Game:
             # Seleccionar objetivo (debe ser enemigo adyacente)
             if unit and unit in self.combat_targets:
                 # Realizar ataque
+                is_charging = False
+                if isinstance(self.combat_attacker, (Caballero, Templario, Hospitalario)) and unit.side == "SARRACENOS":
+                    # Verificar si es posible una carga
+                    is_charging = self.combat_attacker.charge(unit, self.grid)
+
                 if self.combat_attacker.attack(unit, self.grid):
                     # Reproducir sonido de ataque exitoso
                     self._play_sound("success_attack")
-                    self.ui.add_log_message(
-                        _("¡Ataque exitoso! {attacker_type} hirió a {defender_type}").format(
-                            attacker_type=type(self.combat_attacker).__name__, 
-                            defender_type=type(unit).__name__))
+
+                    # Mensaje específico si fue una carga
+                    if is_charging:
+                        self.ui.add_log_message(
+                            _("¡Carga exitosa! {attacker_type} cargó contra {defender_type} y lo hirió").format(
+                                attacker_type=type(self.combat_attacker).__name__, 
+                                defender_type=type(unit).__name__))
+                    else:
+                        self.ui.add_log_message(
+                            _("¡Ataque exitoso! {attacker_type} hirió a {defender_type}").format(
+                                attacker_type=type(self.combat_attacker).__name__, 
+                                defender_type=type(unit).__name__))
                 else:
                     # Reproducir sonido de ataque fallido
                     self._play_sound("failed_attack")
-                    self.ui.add_log_message(_("¡Ataque fallido! {unit_type} resistió el ataque").format(unit_type=type(unit).__name__))
+
+                    # Mensaje específico si fue una carga
+                    if is_charging:
+                        self.ui.add_log_message(
+                            _("¡Carga fallida! {attacker_type} cargó contra {defender_type} pero no logró herirlo").format(
+                                attacker_type=type(self.combat_attacker).__name__, 
+                                defender_type=type(unit).__name__))
+                    else:
+                        self.ui.add_log_message(
+                            _("¡Ataque fallido! {unit_type} resistió el ataque").format(
+                                unit_type=type(unit).__name__))
 
                 # Marcar la unidad como ya atacó este turno
                 self.attacked_units.add((self.combat_attacker.row, self.combat_attacker.col))
@@ -921,6 +975,8 @@ class Game:
                 # Resetear selección después del ataque
                 self.combat_attacker = None
                 self.combat_targets = []
+            else:
+                self.ui.add_log_message(_("Objetivo no válido. Selecciona un enemigo adyacente"))
 
     def _choose_strategic_move(self, row, col, unit, possible_moves):
         """Elige un movimiento estratégico según el tipo de unidad y el bando."""
@@ -1610,462 +1666,34 @@ class Game:
             # Ordenar por prioridad
             return mamelucos + archers + explorers + leaders
 
-    def _draw(self):
-        """Dibuja el estado actual del juego."""
-        self.ui.draw_game(self)
-
-    def _end_intro(self):
-        """Finaliza la pantalla de introducción y pasa al menú de configuración"""
-        self.state = GAME_STATES["SETUP_MENU"]
-
-    def _play_music(self, music_key):
-        """Reproduce música de fondo"""
-        try:
-            pygame.mixer.music.load(self.sounds[music_key])
-            pygame.mixer.music.play(-1)  # -1 para reproducir en bucle
-        except Exception as e:
-            print(f"Error playing music: {e}")
-
-    def _stop_music(self):
-        """Detiene la música de fondo"""
-        pygame.mixer.music.stop()
-
-    def _play_sound(self, sound_key):
-        """Reproduce un efecto de sonido"""
-        try:
-            if sound_key in self.sounds:
-                self.sounds[sound_key].play()
-        except Exception as e:
-            print(f"Error playing sound: {e}")
-
     def run(self):
         """Bucle principal del juego."""
-        # Reproducir música de introducción
+        # Iniciar la música de introducción
         self._play_music("arabesque")
 
         while self.running:
-            self.clock.tick(FPS)
-            
-            # Manejar eventos
             self._handle_events()
-            
-            # Actualizar estado del juego
-            if self.state == GAME_STATES["AI_TURN"]:
-                self._ai_turn()
-            
-            # Dibujar
-            self._draw()
-            
-            # Manejar fin de juego
+
+            # Verificar si el juego ha terminado
             if self.game_over:
                 self._handle_game_over()
-            
-            # Actualizar pantalla
-            pygame.display.flip()
-        
+            else:
+                # Restaurar la lógica original de despliegue
+                if self.state == GAME_STATES["DEPLOY_AI"]:
+                    self._ai_deploy_units()
+                elif self.state == GAME_STATES["AI_TURN"]:
+                    self._ai_turn()
+
+                # Detener la música de introducción cuando comienza el movimiento del jugador
+                if self.state == GAME_STATES["PLAYER_TURN"] and self.turn_phase == TURN_PHASES["MOVEMENT"]:
+                    if pygame.mixer.music.get_busy():
+                        self._stop_music()
+
+            self._draw()
+            self.clock.tick(FPS)
+
         pygame.quit()
         sys.exit()
-
-    def _load_images(self):
-        global size
-        images = {}
-        for key, path in IMAGE_PATHS.items():
-            if key == "board" or key == "cover": continue
-            try:
-                img = pygame.image.load(path).convert_alpha()
-                # Usar el tamaño más pequeño entre ancho y alto para que las unidades quepan bien en los hexágonos
-                size = int(min(HEX_WIDTH, HEX_HEIGHT) * 0.85)
-                images[key] = pygame.transform.smoothscale(img, (size, size))
-            except Exception as e:
-                print(f"Error loading {path}: {e}")
-                images[key] = pygame.Surface((size, size), pygame.SRCALPHA)
-                pygame.draw.circle(images[key], (0, 255, 0), (size // 2, size // 2), size // 2)
-
-        # Cargar la imagen de portada
-        try:
-            cover_img = pygame.image.load(IMAGE_PATHS["cover"]).convert_alpha()
-            # Escalar la imagen de portada manteniendo la relación de aspecto
-            img_width, img_height = cover_img.get_size()
-            aspect_ratio = img_width / img_height
-
-            # Calcular las dimensiones para mantener la relación de aspecto
-            if SCREEN_WIDTH / SCREEN_HEIGHT > aspect_ratio:
-                # La pantalla es más ancha que la imagen
-                new_width = int(SCREEN_HEIGHT * aspect_ratio)
-                new_height = SCREEN_HEIGHT
-            else:
-                # La pantalla es más alta que la imagen
-                new_width = SCREEN_WIDTH
-                new_height = int(SCREEN_WIDTH / aspect_ratio)
-
-            # Escalar la imagen manteniendo la relación de aspecto
-            scaled_img = pygame.transform.scale(cover_img, (new_width, new_height))
-
-            # Crear una superficie del tamaño de la pantalla
-            images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            images["cover"].fill((0, 0, 0))  # Fondo negro
-
-            # Centrar la imagen en la pantalla
-            x_offset = (SCREEN_WIDTH - new_width) // 2
-            y_offset = (SCREEN_HEIGHT - new_height) // 2
-            images["cover"].blit(scaled_img, (x_offset, y_offset))
-        except Exception as e:
-            print(f"Error loading cover: {e}")
-            images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            images["cover"].fill((0, 0, 0))
-
-        return images
-
-    @staticmethod
-    def _load_sounds():
-        sounds = {}
-        for key, path in AUDIO_PATHS.items():
-            try:
-                if key in ["arabesque", "victory", "defeat"]:
-                    # Estos son archivos de música que se reproducirán con pygame.mixer.music
-                    sounds[key] = path  # Solo guardamos la ruta
-                else:
-                    # Efectos de sonido que se reproducirán con pygame.mixer.Sound
-                    sounds[key] = pygame.mixer.Sound(path)
-            except Exception as e:
-                print(f"Error loading audio {path}: {e}")
-        return sounds
-
-    @staticmethod
-    def _get_initial_units():
-        """Devuelve las unidades iniciales para cada bando."""
-        return {
-            "CRUZADOS": [
-                Ricardo(), Templario(), Hospitalario(),
-                Caballero(), Caballero(), Caballero(),
-                *[Infanteria() for _ in range(6)],
-                *[Bagaje() for _ in range(4)]
-            ],
-            "SARRACENOS": [
-                Saladino(),
-                *[Mameluco() for _ in range(4)],
-                *[Arquero() for _ in range(6)],
-                *[Explorador() for _ in range(5)]
-            ]
-        }
-
-    def get_current_turn(self):
-        return self.state
-
-    def get_current_turn_phase(self):
-        return self.turn_phase
-
-    def _handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                self.running = False
-
-            # Manejar eventos de la pantalla de introducción
-            if self.state == GAME_STATES["INTRO"]:
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    # Saltar la introducción si se hace clic
-                    self._end_intro()
-                continue
-
-            # Si el juego ha terminado, solo procesar eventos de salida
-            if self.game_over:
-                continue
-
-            # Primero manejar eventos de UI (scroll)
-            if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
-                              pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
-                if self.ui.handle_scroll_event(event):
-                    continue  # Si el UI consumió el evento, no procesarlo más
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                button_rect = self.ui.get_button_rect()
-                rules_button_rect = self.ui.get_rules_button()
-
-                # Manejar botón de reglas
-                if rules_button_rect.collidepoint(mouse_pos):
-                    try:
-                        os.startfile(IMAGE_PATHS["rules"])  # En Windows
-                    except AttributeError:  # Para otros sistemas operativos
-                        print(f"Error loading rules {IMAGE_PATHS['rules']}")
-                    continue
-
-                # Manejar botón de finalizar fase
-                if button_rect and button_rect.collidepoint(mouse_pos):
-                    self._end_player_turn()
-                    continue
-
-                # Manejo específico por estado y fase
-                if self.state == GAME_STATES["SETUP_MENU"]:
-                    self._handle_setup_menu(event)
-                elif self.state == GAME_STATES["SELECT_SIDE"]:
-                    self._handle_side_selection(event)
-                elif self.state == GAME_STATES["DEPLOY_PLAYER"]:
-                    self._handle_deployment(event)
-                elif self.state == GAME_STATES["PLAYER_TURN"]:
-                    if self.turn_phase == TURN_PHASES["MOVEMENT"]:
-                        self._handle_movement_phase(event)
-                    elif self.turn_phase == TURN_PHASES["COMBAT"]:
-                        self._handle_combat_phase(event)  # Asegurar que se llama aquí
-
-    def _handle_movement_phase(self, event):
-        """Maneja la fase de movimiento (existente)"""
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-            pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
-            tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
-                                       self.tablero_escalado.get_height())
-
-            if tablero_rect.collidepoint(mouse_pos):
-                self._handle_board_click(mouse_pos, event.button)
-
-    def _handle_combat_phase(self, event):
-        """Maneja los eventos durante la fase de combate"""
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # Verificar si es un clic derecho y hay un atacante seleccionado
-            if event.button == 3 and self.combat_attacker:
-                # Cancelar la selección del atacante
-                self.ui.add_log_message(_("Selección de {} cancelada").format(type(self.combat_attacker).__name__))
-                self.combat_attacker = None
-                self.combat_targets = []
-                return
-
-            mouse_pos = pygame.mouse.get_pos()
-
-            # Primero verificar si se hizo clic en el botón de finalizar fase
-            button_rect = self.ui.get_button_rect()
-            if button_rect and button_rect.collidepoint(mouse_pos):
-                self._end_current_phase()
-                return
-
-            # Verificar clic en el tablero
-            pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-            pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
-            tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
-                                       self.tablero_escalado.get_height())
-            if tablero_rect.collidepoint(mouse_pos):
-                hex_pos = self._get_hex_under_mouse(mouse_pos)
-                if hex_pos:
-                    row, col = hex_pos
-                    self._process_combat_click(row, col)
-
-    def _end_current_phase(self):
-        """Finaliza la fase actual y pasa a la siguiente"""
-        if self.state == GAME_STATES["PLAYER_TURN"]:
-            if self.turn_phase == TURN_PHASES["MOVEMENT"]:
-                self.turn_phase = TURN_PHASES["COMBAT"]
-                self.ui.add_log_message(_("Fase de combate iniciada"))
-                self.moved_units = set()  # Resetear unidades movidas
-                self.last_moved_unit_pos = None  # Resetear la última unidad movida
-                self.attacked_units = set()  # Resetear unidades atacantes
-            elif self.turn_phase == TURN_PHASES["COMBAT"]:
-                self.turn_phase = TURN_PHASES["MOVEMENT"]
-                self.state = GAME_STATES["AI_TURN"]
-                self.ui.add_log_message(_("Turno del jugador finalizado"))
-                self._check_unit_recovery()
-
-        self.selected_unit = None
-        self.possible_moves = []
-        self.combat_attacker = None
-        self.combat_targets = []
-
-    def _get_hex_under_mouse(self, mouse_pos):
-        """Encuentra el hexágono bajo el cursor"""
-        # Calcular la posición del tablero
-        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
-
-        for row in range(self.grid.rows):
-            for col in range(self.grid.cols):
-                x, y = self.grid.hex_to_pixel(row, col)
-                # Aplicar offset del tablero
-                x += pos_x
-                y += pos_y
-                distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
-                if distance < HEX_MIN_SIZE / 2:
-                    return row, col
-        return None
-
-    def _start_game(self, player_side):
-        self.player_side = player_side
-        self.ai_side = _("SARRACENOS") if player_side == _("CRUZADOS") else _("CRUZADOS")
-        self.state = GAME_STATES["DEPLOY_PLAYER"]
-        self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
-        self.ui.add_log_message(_("Jugando como {player_side}. Comienza el despliegue.").format(player_side=self.player_side))
-
-    def _handle_setup_menu(self, event):
-        """Maneja las interacciones con el menú de configuración."""
-        action = self.ui.handle_setup_menu(event)
-        if action:
-            if action == "SCALE":
-                # Cambiar la escala de pantalla
-                self._change_display_scale()
-            elif action == "LANGUAGE":
-                # Cambiar el idioma
-                self._change_language()
-            elif action == "DEFAULTS":
-                # Restaurar valores predeterminados
-                self._restore_defaults()
-            elif action == "RULES":
-                # Mostrar las reglas
-                try:
-                    os.startfile(IMAGE_PATHS["rules"])  # En Windows
-                except AttributeError:  # Para otros sistemas operativos
-                    print(f"Error loading rules {IMAGE_PATHS['rules']}")
-            elif action == "SELECT_SIDE":
-                # Ir a la pantalla de selección de bando
-                self.state = GAME_STATES["SELECT_SIDE"]
-            elif action == "QUIT":
-                # Salir del juego
-                print(_("Saliendo del juego"))
-                self.running = False
-
-    def _load_board(self):
-        """Carga y escala el tablero según la escala actual."""
-        # Cargar la imagen del tablero
-        board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
-
-        # Escalar el tablero según la escala actual
-        self.tablero_escalado = pygame.transform.smoothscale(
-            board_img,
-            (int(TABLERO_REAL_WIDTH * ESCALA), int(TABLERO_REAL_HEIGHT * ESCALA))
-        )
-
-    def _change_display_scale(self):
-        """Cambia la escala de pantalla."""
-        global DISPLAY_SCALING
-        # Ciclar entre diferentes escalas (75%, 100%, 125%, 150%)
-        scales = [0.4, 0.5, 0.6, 0.75]
-        current_index = scales.index(DISPLAY_SCALING) if DISPLAY_SCALING in scales else 0
-        next_index = (current_index + 1) % len(scales)
-        DISPLAY_SCALING = scales[next_index]
-
-        # Actualizar dimensiones de pantalla
-        global SCREEN_WIDTH, SCREEN_HEIGHT
-        SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
-        SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
-
-        # Recrear la pantalla con las nuevas dimensiones
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-        # Recargar y escalar el tablero
-        self._load_board()
-
-        # Mensaje de log en consola
-        print(_("Escala de pantalla cambiada a {scale}%").format(scale=int(DISPLAY_SCALING * 100)))
-
-    def _change_language(self):
-        """Cambia el idioma del juego."""
-        # Por ahora, solo mostrar un mensaje
-        print(_("Cambio de idioma no implementado aún"))
-
-    def _restore_defaults(self):
-        """Restaura los valores predeterminados."""
-        global DISPLAY_SCALING, SCREEN_WIDTH, SCREEN_HEIGHT
-        DISPLAY_SCALING = 0.75
-        SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
-        SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
-
-        # Recrear la pantalla con las dimensiones predeterminadas
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-        # Recargar y escalar el tablero
-        self._load_board()
-
-        # Mensaje de log
-        print(_("Valores predeterminados restaurados"))
-
-    def _handle_side_selection(self, event):
-        side = self.ui.handle_side_selection(event)
-        if side:
-            self._start_game(side)
-
-    def _handle_deployment(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            hex_pos = self.ui.handle_deployment_click(pygame.mouse.get_pos(), self)
-            if hex_pos:
-                self._place_unit(hex_pos)
-
-    def _place_unit(self, hex_pos):
-        """Coloca una unidad en el tablero durante el despliegue."""
-        row, col = hex_pos
-
-        if (self.grid.grid[row][col] is None and
-                self.grid.is_in_deployment_zone(row, col, self.player_side)):
-
-            # Colocar la unidad actual
-            self.grid.add_unit(row, col, self.current_deploying_unit)
-
-            # Preparar siguiente unidad o finalizar despliegue
-            if self.units_to_deploy[self.player_side]:
-                self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
-                self.ui.add_log_message(
-                    f"Colocado {type(self.current_deploying_unit).__name__}. Siguiente unidad lista.")
-            else:
-                self.current_deploying_unit = None
-                self.ui.add_log_message(_("¡Despliegue completado!"))
-        else:
-            self.ui.add_log_message(_("Posición inválida para despliegue"))
-
-
-    def _end_player_turn(self):
-        """Maneja la finalización del turno del jugador o fase de despliegue"""
-        if self.state == GAME_STATES["DEPLOY_PLAYER"] and not self.current_deploying_unit:
-            # Confirmar despliegue del jugador
-            self.state = GAME_STATES["DEPLOY_AI"]
-            self.ui.add_log_message(_("Despliegue confirmado. El ordenador está desplegando"))
-
-            # Limpiar selecciones
-            self.selected_unit = None
-            self.possible_moves = []
-
-            # Iniciar despliegue de la IA
-            self._ai_deploy_units()
-
-        elif self.state == GAME_STATES["PLAYER_TURN"]:
-            if self.turn_phase == TURN_PHASES["MOVEMENT"]:
-                # Pasar a fase de combate
-                self.turn_phase = TURN_PHASES["COMBAT"]
-                self.ui.add_log_message(_("Fase de combate iniciada"))
-                self.moved_units = set()  # Resetear unidades movidas
-                self.last_moved_unit_pos = None  # Resetear la última unidad movida
-                self.attacked_units = set()  # Resetear unidades atacantes
-
-            elif self.turn_phase == TURN_PHASES["COMBAT"]:
-                # Finalizar turno completo
-                self.turn_phase = TURN_PHASES["MOVEMENT"]
-                self.state = GAME_STATES["AI_TURN"]
-                self.current_turn_side = self.ai_side
-                self.ui.add_log_message(_("Turno del jugador finalizado"))
-                self._check_unit_recovery()
-
-    def _handle_board_click(self, mouse_pos, button=1):
-        # Calcular la posición del tablero
-        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
-
-        for row in range(self.grid.rows):
-            for col in range(self.grid.cols):
-                x, y = self.grid.hex_to_pixel(row, col)
-                # Aplicar offset del tablero
-                x += pos_x
-                y += pos_y
-
-                distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
-                if distance < HEX_MIN_SIZE / 2:
-                    # Mensaje de debug para verificar coordenadas
-                    print(_("Has hecho click en coordenadas del grid: ({row}, {col})").format(row=row, col=col))
-                    print(_("Posición en píxeles: ({x}, {y})").format(x=x, y=y))
-
-                    self._process_hex_click(row, col, button)
-                    return
-
-        # DEBUG: Si no se encontró ningún hexágono
-        print(_("Click fuera del tablero o entre hexágonos"))
-
-    def _is_player_unit(self, unit):
-        return unit.side == self.player_side
 
     def _execute_ai_combat(self):
         """Ejecuta un ataque de la IA según prioridades estratégicas."""
@@ -2170,145 +1798,9 @@ class Game:
                         return True
         return False
 
-    def _end_ai_turn(self):
-        self.state = GAME_STATES["PLAYER_TURN"]
-        self.turn_phase = TURN_PHASES["MOVEMENT"]  # Reset to movement phase for player's turn
-        self.ui.add_log_message(_("Turno del ordenador finalizado. ¡Te toca!"))
-        # Limpiar variables de estado del turno de la IA
-        if hasattr(self, '_ai_turn_initialized'):
-            del self._ai_turn_initialized
-            del self._ai_moved_units_this_turn
-            del self._ai_units_to_consider
-            if hasattr(self, '_ai_combat_units'):
-                del self._ai_combat_units
-            if hasattr(self, '_ai_attacked_units_this_turn'):
-                del self._ai_attacked_units_this_turn
-            # No need to delete turn_phase as it's a shared variable
-        self._check_unit_recovery()
-        self.selected_unit = None
-        self.possible_moves = []
-
-    def _unit_reaches_arsouf(self, unit):
-        """Registra una unidad que ha llegado a Arsouf"""
-        if isinstance(unit, Bagaje):
-            self.units_in_arsouf["bagaje"] += 1
-            self.ui.add_log_message(_("¡Bagaje ha llegado a Arsouf! ({count}/2)").format(count=self.units_in_arsouf['bagaje']))
-        else:
-            self.units_in_arsouf["other"] += 1
-            self.ui.add_log_message(_("¡{unit_type} ha llegado a Arsouf! ({count}/2)").format(unit_type=type(unit).__name__, count=self.units_in_arsouf['other']))
-
-    def _check_win_condition(self):
-        """Verifica si se ha cumplido la condición de victoria"""
-        # Victoria de los Cruzados: 2 bagajes y 2 otras unidades en Arsouf
-        if self.units_in_arsouf["bagaje"] >= 2 and self.units_in_arsouf["other"] >= 2:
-            self.game_over = True
-            self.winner = "CRUZADOS"
-            self.ui.add_log_message(_("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf."))
-
-            # Reproducir música de victoria o derrota según el bando del jugador
-            if self.player_side == "CRUZADOS":
-                self._play_music("victory")
-            else:
-                self._play_music("defeat")
-
-        # Victoria de los Sarracenos: imposibilidad de que los Cruzados ganen
-        # Esto se verificaría si no quedan suficientes unidades cruzadas en el tablero
-        crusader_units = self._count_remaining_crusader_units()
-        remaining_bagaje = crusader_units["bagaje"]
-        remaining_other = crusader_units["other"]
-
-        if remaining_bagaje + self.units_in_arsouf["bagaje"] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
-            self.game_over = True
-            self.winner = "SARRACENOS"
-            self.ui.add_log_message(_("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."))
-
-            # Reproducir música de victoria o derrota según el bando del jugador
-            if self.player_side == "SARRACENOS":
-                self._play_music("victory")
-            else:
-                self._play_music("defeat")
-
-    def _count_remaining_crusader_units(self):
-        """Cuenta las unidades cruzadas restantes en el tablero"""
-        remaining = {"bagaje": 0, "other": 0}
-
-        for row in range(self.grid.rows):
-            for col in range(self.grid.cols):
-                unit = self.grid.grid[row][col]
-                if unit and unit.side == "CRUZADOS":
-                    if isinstance(unit, Bagaje):
-                        remaining["bagaje"] += 1
-                    else:
-                        remaining["other"] += 1
-
-        return remaining
-
-    def _check_unit_recovery(self):
-        """Verifica recuperación de todas las unidades heridas"""
-        for row in range(self.grid.rows):
-            for col in range(self.grid.cols):
-                unit = self.grid.grid[row][col]
-                if unit and unit.health == 1:
-                    unit.recover(self.grid)
-
-    def _process_combat_click(self, row, col):
-        """Procesa clics durante la fase de combate"""
-        unit = self.grid.get_unit(row, col)
-
-        # Si no hay atacante seleccionado
-        if not self.combat_attacker:
-            # Seleccionar atacante (debe ser unidad aliada sana)
-            if unit and unit.side == self.player_side and unit.health == 2:
-                # Verificar si la unidad ya atacó este turno
-                if (row, col) in self.attacked_units:
-                    self.ui.add_log_message(_("{unit_type} ya ha atacado este turno").format(unit_type=type(unit).__name__))
-                    return
-
-                # Obtener enemigos adyacentes primero
-                self.combat_targets = self.grid.get_adjacent_enemies(row, col, self.player_side)
-
-                # Verificar si hay enemigos adyacentes
-                if not self.combat_targets:
-                    self.ui.add_log_message(_("No hay enemigos adyacentes para que {unit_type} ataque").format(unit_type=type(unit).__name__))
-                    # No seleccionar la unidad si no hay objetivos
-                    self.combat_attacker = None
-                else:
-                    # Solo seleccionar la unidad si hay objetivos válidos
-                    # Reproducir sonido de selección
-                    self._play_sound("select")
-                    self.combat_attacker = unit
-                    self.ui.add_log_message(_("{unit_type} seleccionado. Elige objetivo. (Cancelar con click derecho)").format(unit_type=type(unit).__name__))
-            else:
-                self.ui.add_log_message(_("Selecciona una unidad aliada sana para atacar"))
-        else:
-            # Seleccionar objetivo (debe ser enemigo adyacente)
-            if unit and unit in self.combat_targets:
-                # Realizar ataque
-                if self.combat_attacker.attack(unit, self.grid):
-                    # Reproducir sonido de ataque exitoso
-                    self._play_sound("success_attack")
-                    self.ui.add_log_message(
-                        _("¡Ataque exitoso! {attacker_type} hirió a {defender_type}").format(
-                            attacker_type=type(self.combat_attacker).__name__,
-                            defender_type=type(unit).__name__))
-                else:
-                    # Reproducir sonido de ataque fallido
-                    self._play_sound("failed_attack")
-                    self.ui.add_log_message(_("¡Ataque fallido! {unit_type} resistió el ataque").format(unit_type=type(unit).__name__))
-
-                # Marcar la unidad como ya atacó este turno
-                self.attacked_units.add((self.combat_attacker.row, self.combat_attacker.col))
-
-                # Resetear selección después del ataque
-                self.combat_attacker = None
-                self.combat_targets = []
-            else:
-                self.ui.add_log_message(_("Objetivo no válido. Selecciona un enemigo adyacente"))
-
     def _draw(self):
         self.ui.draw_game(self)
         pygame.display.flip()
-
 
     def _end_intro(self):
         """Finaliza la pantalla de introducción y pasa al menú de configuración"""
@@ -2333,34 +1825,6 @@ class Game:
                 self.sounds[sound_key].play()
         except Exception as e:
             print(f"Error reproduciendo sonido {sound_key}: {e}")
-
-    def run(self):
-        # Iniciar la música de introducción
-        self._play_music("arabesque")
-
-        while self.running:
-            self._handle_events()
-
-            # Verificar si el juego ha terminado
-            if self.game_over:
-                self._handle_game_over()
-            else:
-                # Restaurar la lógica original de despliegue
-                if self.state == GAME_STATES["DEPLOY_AI"]:
-                    self._ai_deploy_units()
-                elif self.state == GAME_STATES["AI_TURN"]:
-                    self._ai_turn()
-
-                # Detener la música de introducción cuando comienza el movimiento del jugador
-                if self.state == GAME_STATES["PLAYER_TURN"] and self.turn_phase == TURN_PHASES["MOVEMENT"]:
-                    if pygame.mixer.music.get_busy():
-                        self._stop_music()
-
-            self._draw()
-            self.clock.tick(FPS)
-
-        pygame.quit()
-        sys.exit()
 
     def _handle_game_over(self):
         """Maneja el estado de juego terminado"""

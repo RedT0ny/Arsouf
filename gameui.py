@@ -263,39 +263,6 @@ class GameUI:
         panel_rect = pygame.Rect(SCREEN_WIDTH - PANEL_WIDTH, 0, PANEL_WIDTH, SCREEN_HEIGHT)
         return self._draw_rules_button(panel_rect, SCREEN_HEIGHT - 250)
 
-    def handle_setup_menu(self, event):
-        """Maneja las interacciones con el menú de configuración."""
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            scale_rect, language_rect, defaults_rect, rules_rect, side_rect, quit_rect = self.draw_setup_menu()
-            mouse_pos = pygame.mouse.get_pos()
-
-            # Verificar en qué botón se hizo clic
-            if scale_rect.collidepoint(mouse_pos):
-                return "SCALE"
-            elif language_rect.collidepoint(mouse_pos):
-                return "LANGUAGE"
-            elif defaults_rect.collidepoint(mouse_pos):
-                return "DEFAULTS"
-            elif rules_rect.collidepoint(mouse_pos):
-                return "RULES"
-            elif side_rect.collidepoint(mouse_pos):
-                return "SELECT_SIDE"
-            elif quit_rect.collidepoint(mouse_pos):
-                return "QUIT"
-        return None
-
-    def handle_side_selection(self, event):
-        """Maneja la selección de bando."""
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            cruzados_rect, sarracenos_rect = self.draw_side_selection()
-            mouse_pos = pygame.mouse.get_pos()
-
-            if cruzados_rect.collidepoint(mouse_pos):
-                return _("CRUZADOS")
-            elif sarracenos_rect.collidepoint(mouse_pos):
-                return _("SARRACENOS")
-        return None
-
     def draw_setup_menu(self):
         """Dibuja la pantalla del menú de configuración."""
         self.game.screen.fill(COLOR_BG)
@@ -639,15 +606,6 @@ class GameUI:
                 # Dibujar borde rojo más grueso
                 pygame.draw.circle(self.game.screen, (255, 0, 0), (x, y), HEX_MIN_SIZE//2 + 5, 3)
 
-    def draw_combat_indicators(self):
-        # Dibujar marcadores de heridas y rangos de ataque
-        for row in range(self.game.grid.rows):
-            for col in range(self.game.grid.cols):
-                unit = self.game.grid.grid[row][col]
-                if unit and unit.wounded_mark:
-                    x, y = self.game.grid.hex_to_pixel(row, col)
-                    pygame.draw.circle(self.game.screen, COMBAT_COLORS['wounded'], (x, y), 10, 2)
-
     def draw_victory_progress(self, game):
         """Dibuja el progreso hacia la victoria"""
         if game.state == "SELECT_SIDE" or game.state == "DEPLOY_PLAYER" or game.state == "DEPLOY_AI":
@@ -684,7 +642,7 @@ class GameUI:
         intro_font = pygame.font.Font(FONT_PATHS["abbasy"], 144)
 
         # Crear el texto
-        intro_text = _("The Battle of Arsouf")
+        intro_text = GAME_NAME
         intro_text_surface = intro_font.render(intro_text, True, WHITE)
 
         # Obtener rectángulo del texto para centrarlo
