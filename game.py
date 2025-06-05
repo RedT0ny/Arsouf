@@ -556,7 +556,7 @@ class Game:
             self.selected_unit = None
             self.possible_moves = []
 
-    def _set_charging_hex(self, old_row, old_col, row, col)
+    def _set_charging_hex(self, old_row, old_col, row, col):
         """Fija el hexágono sobre el que un caballero cruzado está cargando"""
         # Verificar si es un caballero cruzado para posible carga
         moved_unit = self.grid.grid[row][col]
@@ -579,8 +579,9 @@ class Game:
 
             # Comprobar si ha movido dos casillas en la misma dirección
             if dir in directions:
-                next_row, new_col = directions[dir]
-                
+                drow, dcol = directions[dir]
+                next_row, next_col = old_row + drow, old_col + dcol
+
                 # Verificar si el hexágono está dentro del tablero
                 if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
                     # Verificar si hay una unidad sarracena en ese hexágono
@@ -589,11 +590,11 @@ class Game:
                         # Establecer el hexágono de carga
                         moved_unit.charging_hex = (next_row, next_col)
                         self.ui.add_log_message(_("{unit_type} cargando sobre {target} en ({next_row},{next_col})!").format(
-                                unit_type=type(moved_unit).__name__,
-                                target=type(target_unit).__name__,
-                                next_row=next_row,
-                                next_col=next_col
-                            ))
+                            unit_type=type(moved_unit).__name__,
+                            target=type(target_unit).__name__,
+                            next_row=next_row,
+                            next_col=next_col
+                        ))
     
     def _is_player_unit(self, unit):
         """Verifica si una unidad pertenece al jugador."""
