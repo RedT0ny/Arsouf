@@ -548,44 +548,53 @@ class Game:
                     self._play_sound("move")
                     self.moved_units.add((row, col))
                     self.last_moved_unit_pos = ((old_row, old_col), (row, col))  # Guardar posiciones original y nueva
-
-                    # Verificar si es un caballero cruzado para posible carga
-                    moved_unit = self.grid.grid[row][col]
-                    if (isinstance(moved_unit, Caballero) or 
-                        isinstance(moved_unit, Templario) or 
-                        isinstance(moved_unit, Hospitalario)):
-
-                        # Diccionario de direcciones de carga posibles
-                        directions = {
-                            (0, -2): (0, -3),    # O
-                            (-2, -1): (-3, -1),  # NO
-                            (-2, 1): (-3, 2),    # NE
-                            (0, 2): (0, 3),      # E
-                            (2, 1): (3, 2),      # SE
-                            (2, -1): (3, -1)     # SO
-                        }
-                        
-                        # Calcular la dirección del movimiento
-                        dir = (row - old_row, col - old_col)
-
-                        # Comprobar si ha movido dos casillas en la misma dirección
-                        if dir in directions:
-                            next_row, new_col = directions[dir]
-                            
-                        # Verificar si el hexágono está dentro del tablero
-                        if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
-                            # Verificar si hay una unidad sarracena en ese hexágono
-                            target_unit = self.grid.get_unit(next_row, next_col)
-                            if target_unit and target_unit.side == "SARRACENOS":
-                                # Establecer el hexágono de carga
-                                moved_unit.charging_hex = (next_row, next_col)
-
+                    self._set_charging_hex(old_row, old_col, row, col)
+            
             self.selected_unit = None
             self.possible_moves = []
         else:
             self.selected_unit = None
             self.possible_moves = []
 
+    def _set_charging_hex(self, old_row, old_col, row, col)
+        """Fija el hexágono sobre el que un caballero cruzado está cargando"""
+        # Verificar si es un caballero cruzado para posible carga
+        moved_unit = self.grid.grid[row][col]
+        if (isinstance(moved_unit, Caballero) or 
+            isinstance(moved_unit, Templario) or 
+            isinstance(moved_unit, Hospitalario)):
+
+            # Diccionario de direcciones de carga posibles
+            directions = {
+                (0, -2): (0, -3),    # O
+                (-2, -1): (-3, -1),  # NO
+                (-2, 1): (-3, 2),    # NE
+                (0, 2): (0, 3),      # E
+                (2, 1): (3, 2),      # SE
+                (2, -1): (3, -1)     # SO
+            }
+            
+            # Calcular la dirección del movimiento
+            dir = (row - old_row, col - old_col)
+
+            # Comprobar si ha movido dos casillas en la misma dirección
+            if dir in directions:
+                next_row, new_col = directions[dir]
+                
+                # Verificar si el hexágono está dentro del tablero
+                if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
+                    # Verificar si hay una unidad sarracena en ese hexágono
+                    target_unit = self.grid.get_unit(next_row, next_col)
+                    if target_unit and target_unit.side == "SARRACENOS":
+                        # Establecer el hexágono de carga
+                        moved_unit.charging_hex = (next_row, next_col)
+                        self.ui.add_log_message(_("{unit_type} cargando sobre {target} en ({next_row},{next_col})!").format(
+                                unit_type=type(moved_unit).__name__,
+                                target=type(target_unit).__name__,
+                                next_row=next_row,
+                                next_col=next_col
+                            ))
+    
     def _is_player_unit(self, unit):
         """Verifica si una unidad pertenece al jugador."""
         return unit.side == self.player_side
