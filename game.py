@@ -387,8 +387,45 @@ class Game:
 
     def _change_language(self):
         """Cambia el idioma del juego."""
-        # Por ahora, solo mostrar un mensaje
-        print(_("Cambio de idioma no implementado aún"))
+        global CURRENT_LANGUAGE
+
+        # Lista de idiomas disponibles
+        available_languages = ['es', 'en']
+
+        # Obtener el siguiente idioma en la lista
+        current_index = available_languages.index(CURRENT_LANGUAGE) if CURRENT_LANGUAGE in available_languages else 0
+        next_index = (current_index + 1) % len(available_languages)
+        new_language = available_languages[next_index]
+
+        # Actualizar la variable global en config.py
+        CURRENT_LANGUAGE = new_language
+
+        # Cargar las traducciones para el nuevo idioma
+        try:
+            translation = gettext.translation(
+                TRANSLATION_DOMAIN,
+                localedir=LOCALE_DIR,
+                languages=[new_language],
+                fallback=True
+            )
+            _ = translation.gettext
+            # Instalar la traducción globalmente
+            translation.install()
+
+            # Actualizar la función de traducción en todos los módulos que la usan
+            import gameui
+            gameui._ = _
+            import menu
+            menu._ = _
+            import units
+            units._ = _
+
+            # Mensaje de éxito
+            self.ui.add_log_message(f"{_("Idioma cambiado a:")} {new_language}")
+            print(f"Idioma cambiado a: {new_language}")
+        except Exception as e:
+            self.ui.add_log_message(_("Error al cambiar idioma"))
+            print(f"Error al cambiar idioma: {e}")
 
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
@@ -549,7 +586,7 @@ class Game:
                     self.moved_units.add((row, col))
                     self.last_moved_unit_pos = ((old_row, old_col), (row, col))  # Guardar posiciones original y nueva
                     self._set_charging_hex(old_row, old_col, row, col)
-            
+
             self.selected_unit = None
             self.possible_moves = []
         else:
@@ -573,7 +610,7 @@ class Game:
                 (2, 1): (3, 2),      # SE
                 (2, -1): (3, -1)     # SO
             }
-            
+
             # Calcular la dirección del movimiento
             dir = (row - old_row, col - old_col)
 
@@ -595,7 +632,7 @@ class Game:
                             next_row=next_row,
                             next_col=next_col
                         ))
-    
+
     def _is_player_unit(self, unit):
         """Verifica si una unidad pertenece al jugador."""
         return unit.side == self.player_side
@@ -1851,4 +1888,3 @@ class Game:
 
         pygame.quit()
         sys.exit()
-

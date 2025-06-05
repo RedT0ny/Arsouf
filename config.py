@@ -2,14 +2,49 @@
 import json
 import os
 import gettext
-_ = gettext.gettext
+import locale
+
+# Configuración de internacionalización
+LOCALE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'locale')
+TRANSLATION_DOMAIN = 'messages'
+
+# Intentar obtener el idioma del sistema
+try:
+    current_locale, encoding = locale.getlocale()
+    if current_locale is None:
+        language = 'es'  # Idioma por defecto: español
+    else:
+        language = current_locale.split('_')[0]
+        # Asegurarse de que el idioma sea uno de los disponibles
+        if language not in ['es', 'en']:
+            language = 'es'  # Si no es un idioma soportado, usar español
+except (ValueError, AttributeError):
+    language = 'es'  # Idioma por defecto si hay algún error
+
+# Configurar gettext
+try:
+    translation = gettext.translation(
+        TRANSLATION_DOMAIN,
+        localedir=LOCALE_DIR,
+        languages=[language],
+        fallback=True
+    )
+    _ = translation.gettext
+    # Instalar la traducción globalmente
+    translation.install()
+except Exception as e:
+    print(f"Error al cargar traducciones: {e}")
+    _ = gettext.gettext  # Fallback a gettext básico
+
+# Variable global para el idioma actual
+CURRENT_LANGUAGE = language
 
 # ------------------------------
 # CONFIGURACIÓN DEL JUEGO
 # ------------------------------
 # 0. Configuración general
 GAME_NAME = _("game_name")
-VERSION = "v1.3.0 Alpha"
+VERSION = "Alfa 1.2.0"
 AUTHOR = "Red Tony"
 # 0.1. Configuración de depuración
 DEBUG_MODE = False  # Cambia a False para producción
