@@ -555,14 +555,23 @@ class Game:
                         isinstance(moved_unit, Templario) or 
                         isinstance(moved_unit, Hospitalario)):
 
+                        # Diccionario de direcciones de carga posibles
+                        directions = {
+                            (0, -2): (0, -3),    # O
+                            (-2, -1): (-3, -1),  # NO
+                            (-2, 1): (-3, 2),    # NE
+                            (0, 2): (0, 3),      # E
+                            (2, 1): (3, 2),      # SE
+                            (2, -1): (3, -1)     # SO
+                        }
+                        
                         # Calcular la dirección del movimiento
-                        dir_row = row - old_row
-                        dir_col = col - old_col
+                        dir = (row - old_row, col - old_col)
 
-                        # Calcular el siguiente hexágono en la misma dirección
-                        next_row = row + dir_row
-                        next_col = col + dir_col
-
+                        # Comprobar si ha movido dos casillas en la misma dirección
+                        if dir in directions:
+                            next_row, new_col = directions[dir]
+                            
                         # Verificar si el hexágono está dentro del tablero
                         if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
                             # Verificar si hay una unidad sarracena en ese hexágono
