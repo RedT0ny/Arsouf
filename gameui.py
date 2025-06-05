@@ -488,7 +488,7 @@ class GameUI:
         line_height = info_font_size + 4
 
         # Bando
-        side_color = COLOR_CRUZADOS if unit.side == "CRUZADOS" else COLOR_SARRACENOS
+        side_color = COLOR_CRUZADOS if unit.side == _("CRUZADOS") else COLOR_SARRACENOS
         side_text = self._render_fitted_text(f"{_('Bando')}: {_(unit.side)}", max_width, side_color, info_font_size)
         self.game.screen.blit(side_text, (content_rect.x, y_offset))
         y_offset += line_height
@@ -533,7 +533,7 @@ class GameUI:
         if self.game.state not in ["DEPLOY_PLAYER", "DEPLOY_AI"]:
             return
 
-        if self.game.player_side == "CRUZADOS":
+        if self.game.player_side == _("CRUZADOS"):
             # Cruzados: últimas 4 columnas, primeras 4 filas
             player_zone = self._calculate_zone(HEX_COLS - 4, 0, 4, 4)
             ai_zone = self._calculate_zone(0, HEX_ROWS - 2, 8, 2)
@@ -685,7 +685,7 @@ class GameUI:
 
         # Dibujar mensaje de victoria
         font = pygame.font.SysFont('Arial', 20)
-        if game.winner == "CRUZADOS":
+        if game.winner == _("CRUZADOS"):
             text_winner = font.render(_("¡Victoria de los Cruzados!"), True, (255, 255, 255))
             text_reason = font.render(_("Han llegado suficientes unidades a Arsouf"), True, (255, 255, 255))
         else:

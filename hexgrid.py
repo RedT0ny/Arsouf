@@ -178,7 +178,7 @@ class HexGrid:
 
     def is_in_deployment_zone(self, row, col, side):
         """Determina si una posición está en la zona de despliegue."""
-        if side == "CRUZADOS":
+        if side == _("CRUZADOS"):
             return col >= HEX_COLS - 4 and row < 4
         else:
             return col < 8 and row >= HEX_ROWS - 2

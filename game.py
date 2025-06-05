@@ -3,7 +3,7 @@ import sys
 import os
 import pygame
 import gettext
-_ = gettext.gettext
+_ = gettext.gettext  # type: callable
 import random
 
 from hexgrid import HexGrid
@@ -45,7 +45,7 @@ class Game:
 
         # Inicializar
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption(_("Batalla de Arsouf"))
+        pygame.display.set_caption(f"{_('game_name')} {VERSION}")
 
         # Cargar y escalar tablero
         board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
@@ -152,13 +152,13 @@ class Game:
     def _get_initial_units():
         """Devuelve las unidades iniciales para cada bando."""
         return {
-            "CRUZADOS": [
+            _("CRUZADOS"): [
                 Ricardo(), Templario(), Hospitalario(),
                 Caballero(), Caballero(), Caballero(),
                 *[Infanteria() for _ in range(6)],
                 *[Bagaje() for _ in range(4)]
             ],
-            "SARRACENOS": [
+            _("SARRACENOS"): [
                 Saladino(),
                 *[Mameluco() for _ in range(4)],
                 *[Arquero() for _ in range(6)],
@@ -520,7 +520,7 @@ class Game:
 
         if not self.selected_unit and unit and self._is_player_unit(unit):
             if (row, col) in self.moved_units:
-                self.ui.add_log_message(_("Ya has movido a [{unit_type}] este turno").format(unit_type=type(unit).__name__))
+                self.ui.add_log_message(_("Ya has movido a {unit_type} este turno").format(unit_type=type(unit).__name__))
                 return
 
             # Reproducir sonido de selección
@@ -533,7 +533,7 @@ class Game:
             moved_unit = self.grid.grid[old_row][old_col]
 
             # Verificar si es una unidad cruzada llegando a Arsouf
-            if moved_unit.side == "CRUZADOS" and (row, col) in self.arsouf_hexes:
+            if moved_unit.side == _("CRUZADOS") and (row, col) in self.arsouf_hexes:
                 # Unidad llega a Arsouf
                 self._unit_reaches_arsouf(moved_unit)
                 # Eliminar la unidad del tablero original
@@ -586,7 +586,7 @@ class Game:
                 if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
                     # Verificar si hay una unidad sarracena en ese hexágono
                     target_unit = self.grid.get_unit(next_row, next_col)
-                    if target_unit and target_unit.side == "SARRACENOS":
+                    if target_unit and target_unit.side == _("SARRACENOS"):
                         # Establecer el hexágono de carga
                         moved_unit.charging_hex = (next_row, next_col)
                         self.ui.add_log_message(_("{unit_type} cargando sobre {target} en ({next_row},{next_col})!").format(
@@ -616,7 +616,7 @@ class Game:
             return
 
         # Estrategia específica según el bando de la IA
-        if self.ai_side == "CRUZADOS":
+        if self.ai_side == _("CRUZADOS"):
             # Estrategia para Cruzados: proteger bagajes cerca del borde derecho
 
             # Buscar unidades de bagaje para desplegar primero
@@ -749,7 +749,7 @@ class Game:
             ]
 
             # Ordenar unidades según prioridad estratégica
-            if self.ai_side == "CRUZADOS":
+            if self.ai_side == _("CRUZADOS"):
                 # Para Cruzados: primero mover Ricardo y unidades fuertes, luego infantería, bagajes al final
                 leaders = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Ricardo)]
                 strong_units = [(r, c, u) for r, c, u in all_ai_units
@@ -782,7 +782,7 @@ class Game:
                         new_row, new_col = self._choose_strategic_move(row, col, unit, self.possible_moves)
 
                         # Verificar si es una unidad cruzada llegando a Arsouf
-                        if unit.side == "CRUZADOS" and (new_row, new_col) in self.arsouf_hexes:
+                        if unit.side == _("CRUZADOS") and (new_row, new_col) in self.arsouf_hexes:
                             # Unidad llega a Arsouf
                             self._unit_reaches_arsouf(unit)
                             # Eliminar la unidad del tablero original
@@ -871,11 +871,11 @@ class Game:
         # Victoria de los Cruzados: 2 bagajes y 2 otras unidades en Arsouf
         if self.units_in_arsouf["bagaje"] >= 2 and self.units_in_arsouf["other"] >= 2:
             self.game_over = True
-            self.winner = "CRUZADOS"
+            self.winner = _("CRUZADOS")
             self.ui.add_log_message(_("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf."))
 
             # Reproducir música de victoria o derrota según el bando del jugador
-            if self.player_side == "CRUZADOS":
+            if self.player_side == _("CRUZADOS"):
                 self._play_music("victory")
             else:
                 self._play_music("defeat")
@@ -888,11 +888,11 @@ class Game:
 
         if remaining_bagaje + self.units_in_arsouf["bagaje"] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
             self.game_over = True
-            self.winner = "SARRACENOS"
+            self.winner = _("SARRACENOS")
             self.ui.add_log_message(_("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."))
 
             # Reproducir música de victoria o derrota según el bando del jugador
-            if self.player_side == "SARRACENOS":
+            if self.player_side == _("SARRACENOS"):
                 self._play_music("victory")
             else:
                 self._play_music("defeat")
@@ -904,7 +904,7 @@ class Game:
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
                 unit = self.grid.grid[row][col]
-                if unit and unit.side == "CRUZADOS":
+                if unit and unit.side == _("CRUZADOS"):
                     if isinstance(unit, Bagaje):
                         remaining["bagaje"] += 1
                     else:
@@ -954,7 +954,7 @@ class Game:
             if unit and unit in self.combat_targets:
                 # Realizar ataque
                 is_charging = False
-                if isinstance(self.combat_attacker, (Caballero, Templario, Hospitalario)) and unit.side == "SARRACENOS":
+                if isinstance(self.combat_attacker, (Caballero, Templario, Hospitalario)) and unit.side == _("SARRACENOS"):
                     # Verificar si es posible una carga
                     is_charging = self.combat_attacker.charge(unit, self.grid)
 
@@ -999,7 +999,7 @@ class Game:
 
     def _choose_strategic_move(self, row, col, unit, possible_moves):
         """Elige un movimiento estratégico según el tipo de unidad y el bando."""
-        if self.ai_side == "CRUZADOS":
+        if self.ai_side == _("CRUZADOS"):
             # Estrategia para Cruzados
             if isinstance(unit, Bagaje):
                 # Bagajes: Priorizar movimiento hacia Arsouf
@@ -1208,7 +1208,7 @@ class Game:
             dist_to_protect = ((r - avg_r) ** 2 + (c - avg_c) ** 2) ** 0.5
 
             # Posición relativa respecto al enemigo (preferir posiciones que estén entre el enemigo y las unidades a proteger)
-            enemy_direction = -1 if self.ai_side == "CRUZADOS" else 1  # Dirección aproximada del enemigo
+            enemy_direction = -1 if self.ai_side == _("CRUZADOS") else 1  # Dirección aproximada del enemigo
             relative_position = c * enemy_direction  # Valor más alto = más cerca del enemigo
 
             # Combinar factores: queremos estar cerca pero no demasiado
@@ -1227,7 +1227,7 @@ class Game:
             return None
 
         # Determinar dirección hacia el enemigo
-        enemy_col_direction = -1 if self.ai_side == "CRUZADOS" else 1  # Izquierda para Cruzados, Derecha para Sarracenos
+        enemy_col_direction = -1 if self.ai_side == _("CRUZADOS") else 1  # Izquierda para Cruzados, Derecha para Sarracenos
 
         # Evaluar movimientos por avance hacia el enemigo
         move_scores = {}
@@ -1279,7 +1279,7 @@ class Game:
         move_scores = {}
         for r, c in possible_moves:
             # Avance hacia el enemigo
-            forward_score = (r - row) if self.ai_side == "SARRACENOS" else (row - r)
+            forward_score = (r - row) if self.ai_side == _("SARRACENOS") else (row - r)
 
             # Movimiento lateral (flanqueo)
             lateral_movement = abs(c - col)
@@ -1422,7 +1422,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == "CRUZADOS":
+                if unit and unit.side == _("CRUZADOS"):
                     crusader_units.append((r, c))
 
         if not crusader_units:
@@ -1486,7 +1486,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == "CRUZADOS" and isinstance(unit, Bagaje):
+                if unit and unit.side == _("CRUZADOS") and isinstance(unit, Bagaje):
                     baggage_positions.append((r, c))
 
         return baggage_positions
@@ -1498,7 +1498,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == "CRUZADOS":
+                if unit and unit.side == _("CRUZADOS"):
                     crusader_units.append((r, c))
 
         if not crusader_units:
@@ -1657,7 +1657,7 @@ class Game:
             return []
 
         # Ordenar unidades según prioridad estratégica para combate
-        if self.ai_side == "CRUZADOS":
+        if self.ai_side == _("CRUZADOS"):
             # Para Cruzados: priorizar unidades fuertes y proteger bagajes
             # 1. Caballeros y unidades de élite
             strong_units = [(r, c, u) for r, c, u in combat_ready_units
@@ -1684,35 +1684,6 @@ class Game:
 
             # Ordenar por prioridad
             return mamelucos + archers + explorers + leaders
-
-    def run(self):
-        """Bucle principal del juego."""
-        # Iniciar la música de introducción
-        self._play_music("arabesque")
-
-        while self.running:
-            self._handle_events()
-
-            # Verificar si el juego ha terminado
-            if self.game_over:
-                self._handle_game_over()
-            else:
-                # Restaurar la lógica original de despliegue
-                if self.state == GAME_STATES["DEPLOY_AI"]:
-                    self._ai_deploy_units()
-                elif self.state == GAME_STATES["AI_TURN"]:
-                    self._ai_turn()
-
-                # Detener la música de introducción cuando comienza el movimiento del jugador
-                if self.state == GAME_STATES["PLAYER_TURN"] and self.turn_phase == TURN_PHASES["MOVEMENT"]:
-                    if pygame.mixer.music.get_busy():
-                        self._stop_music()
-
-            self._draw()
-            self.clock.tick(FPS)
-
-        pygame.quit()
-        sys.exit()
 
     def _execute_ai_combat(self):
         """Ejecuta un ataque de la IA según prioridades estratégicas."""
@@ -1786,7 +1757,7 @@ class Game:
                 score += 5
 
             # Estrategias específicas según el bando
-            if self.ai_side == "CRUZADOS":
+            if self.ai_side == _("CRUZADOS"):
                 # Priorizar unidades que amenazan a los bagajes
                 if isinstance(target, Explorador) or isinstance(target, Mameluco):
                     score += 3
@@ -1816,10 +1787,6 @@ class Game:
                     if distance <= 2:  # Si está a 2 o menos hexágonos de distancia
                         return True
         return False
-
-    def _draw(self):
-        self.ui.draw_game(self)
-        pygame.display.flip()
 
     def _end_intro(self):
         """Finaliza la pantalla de introducción y pasa al menú de configuración"""
@@ -1851,3 +1818,37 @@ class Game:
         # Aquí podríamos mostrar una pantalla de victoria/derrota
         # Por ahora, solo mostramos un mensaje en el log
         pass
+
+    def _draw(self):
+        self.ui.draw_game(self)
+        pygame.display.flip()
+
+    def run(self):
+        """Bucle principal del juego."""
+        # Iniciar la música de introducción
+        self._play_music("arabesque")
+
+        while self.running:
+            self._handle_events()
+
+            # Verificar si el juego ha terminado
+            if self.game_over:
+                self._handle_game_over()
+            else:
+                # Restaurar la lógica original de despliegue
+                if self.state == GAME_STATES["DEPLOY_AI"]:
+                    self._ai_deploy_units()
+                elif self.state == GAME_STATES["AI_TURN"]:
+                    self._ai_turn()
+
+                # Detener la música de introducción cuando comienza el movimiento del jugador
+                if self.state == GAME_STATES["PLAYER_TURN"] and self.turn_phase == TURN_PHASES["MOVEMENT"]:
+                    if pygame.mixer.music.get_busy():
+                        self._stop_music()
+
+            self._draw()
+            self.clock.tick(FPS)
+
+        pygame.quit()
+        sys.exit()
+

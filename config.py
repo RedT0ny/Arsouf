@@ -8,8 +8,8 @@ _ = gettext.gettext
 # CONFIGURACIÓN DEL JUEGO
 # ------------------------------
 # 0. Configuración general
-GAME_NAME = _("La Batalla de Arsouf")
-VERSION = "Alfa 1.2.0"
+GAME_NAME = _("game_name")
+VERSION = "v1.3.0 Alpha"
 AUTHOR = "Red Tony"
 # 0.1. Configuración de depuración
 DEBUG_MODE = False  # Cambia a False para producción
@@ -36,7 +36,7 @@ HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["der
 HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 4. Configuración de pantalla
-DISPLAY_SCALING = 0.5  # Factor de escala para la pantalla (0.75 = 75% del tamaño original)
+DISPLAY_SCALING = 0.75  # Factor de escala para la pantalla (0.75 = 75% del tamaño original)
 SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
 SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60

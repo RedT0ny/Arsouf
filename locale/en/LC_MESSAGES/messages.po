@@ -1,0 +1,385 @@
+# English translations for Battle of Arsouf.
+# RedT0ny <redtony@gmail.com>, 2025.
+# This file is distributed under the same license as the Battle of Arsouf package.
+msgid ""
+msgstr ""
+"Project-Id-Version: Alpha 1.4.0\n"
+"Report-Msgid-Bugs-To: redtony@gmail.com\n"
+"POT-Creation-Date: 2025-06-05 22:02+0200\n"
+"PO-Revision-Date: 2025-06-05 21:52+0200\n"
+"Last-Translator: RedT0ny <redtony@gmail.com>\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: config.py:11 game.py:48
+msgid "game_name"
+msgstr "The Battle of Arsouf"
+
+#: config.py:202
+msgid "Movimiento"
+msgstr "Movement"
+
+#: config.py:203
+msgid "Combate"
+msgstr "Combat"
+
+#: config.py:210
+msgid "Configuración cargada correctamente:"
+msgstr "Configuration loaded successfully:"
+
+#: config.py:211
+#, python-brace-format
+msgid "- Tamaño de ventana: {width}x{height}"
+msgstr "- Window size: {width}x{height}"
+
+#: config.py:212
+#, python-brace-format
+msgid ""
+"- Tamaño del tablero: {width}x{height} (Utilizable: "
+"{area_width}x{area_height})"
+msgstr "- Board size: {width}x{height} (Usable: {area_width}x{area_height})"
+
+#: config.py:215
+#, python-brace-format
+msgid "- Tamaño escalado: {width}x{height}"
+msgstr "- Scaled size: {width}x{height}"
+
+#: config.py:217
+#, python-brace-format
+msgid "- Escala: {scale:.2f}"
+msgstr "- Scale: {scale:.2f}"
+
+#: config.py:218
+#, python-brace-format
+msgid "- Hexágonos: {rows}x{cols} (size: {size}px)"
+msgstr "- Hexagons: {rows}x{cols} (size: {size}px)"
+
+#: game.py:155 game.py:318 game.py:536 game.py:619 game.py:752 game.py:785
+#: game.py:874 game.py:878 game.py:907 game.py:1002 game.py:1211 game.py:1230
+#: game.py:1425 game.py:1489 game.py:1501 game.py:1660 game.py:1760
+#: gameui.py:491 gameui.py:536 gameui.py:688 hexgrid.py:181 menu.py:131
+#: units.py:165 units.py:175 units.py:183 units.py:191 units.py:199
+#: units.py:208
+msgid "CRUZADOS"
+msgstr "CRUSADERS"
+
+#: game.py:161 game.py:318 game.py:589 game.py:891 game.py:895 game.py:957
+#: game.py:1282 menu.py:133 units.py:78 units.py:221 units.py:231 units.py:239
+#: units.py:247
+msgid "SARRACENOS"
+msgstr "SARACENS"
+
+#: game.py:246
+#, python-brace-format
+msgid "Selección de {} cancelada"
+msgstr "Selection of {} cancelled"
+
+#: game.py:275 game.py:463
+msgid "Fase de combate iniciada"
+msgstr "Combat phase started"
+
+#: game.py:282 game.py:473
+msgid "Turno del jugador finalizado"
+msgstr "Player's turn finished"
+
+#: game.py:321
+#, python-brace-format
+msgid "Jugando como {player_side}. Comienza el despliegue."
+msgstr "Playing as {player_side}. Start deployment."
+
+#: game.py:347
+msgid "Saliendo del juego"
+msgstr "Quitting the game"
+
+#: game.py:386
+#, python-brace-format
+msgid "Escala de pantalla cambiada a {scale}%"
+msgstr "Display scale changed to {scale}%"
+
+#: game.py:391
+msgid "Cambio de idioma no implementado aún"
+msgstr "Locale change not implemented yet"
+
+#: game.py:411
+msgid "Valores predeterminados restaurados"
+msgstr "Default values restored"
+
+#: game.py:441
+msgid "¡Despliegue completado!"
+msgstr "Deployment completed"
+
+#: game.py:443
+msgid "Posición inválida para despliegue"
+msgstr "Position not valid"
+
+#: game.py:450
+msgid "Despliegue confirmado. El ordenador está desplegando"
+msgstr "Player deployment confirmed. AI deploying"
+
+#: game.py:491
+#, python-brace-format
+msgid "Has hecho click en coordenadas del grid: ({row}, {col})"
+msgstr "You clicked: ({row}, {col})"
+
+#: game.py:492
+#, python-brace-format
+msgid "Posición en píxeles: ({x}, {y})"
+msgstr "Pixel position: ({x}, {y})"
+
+#: game.py:498
+msgid "Click fuera del tablero o entre hexágonos"
+msgstr "Click outside board or in border between hexagons"
+
+#: game.py:516
+#, python-brace-format
+msgid "{unit_type} ha vuelto a su posición original"
+msgstr "{unit_type} returned to its original position"
+
+#: game.py:523
+#, python-brace-format
+msgid "Ya has movido a {unit_type} este turno"
+msgstr "{unit_type} has already moved this turn"
+
+#: game.py:541 game.py:790
+#, python-brace-format
+msgid "{unit_type} ha llegado a Arsouf!"
+msgstr "{unit_type} reached Arsouf!"
+
+#: game.py:592
+#, python-brace-format
+msgid "{unit_type} cargando sobre {target} en ({next_row},{next_col})!"
+msgstr "{unit_type} charging at {target} at ({next_row},{next_col})!"
+
+#: game.py:731
+#, python-brace-format
+msgid "IA despliega {unit_type} en ({row},{col})"
+msgstr "AI deploys {unit_type} at ({row},{col})"
+
+#: game.py:739
+msgid "Turno del ordenador - Fase de movimiento"
+msgstr "AI's turn - Movement phase"
+
+#: game.py:804 game.py:828
+msgid "Turno del ordenador - Fase de combate"
+msgstr "AI's turn - Combat phase"
+
+#: game.py:844
+msgid "Turno del ordenador finalizado. ¡Te toca!"
+msgstr "AI's turn finished. Your turn!"
+
+#: game.py:864
+#, python-brace-format
+msgid "¡Bagaje ha llegado a Arsouf! ({count}/2)"
+msgstr "Baggage reached Arsouf! ({count}/2)"
+
+#: game.py:867
+#, python-brace-format
+msgid "¡{unit_type} ha llegado a Arsouf! ({count}/2)"
+msgstr "{unit_type} reached Arsouf! ({count}/2)"
+
+#: game.py:875
+msgid "¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf."
+msgstr "CRUSADERS WIN! Enough units reached Arsouf."
+
+#: game.py:892
+msgid "¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."
+msgstr "SARACENS WIN! Crusaders cannot reach Arsouf."
+
+#: game.py:933
+#, python-brace-format
+msgid "{unit_type} ya ha atacado este turno"
+msgstr "{unit_type} has already attacked this turn"
+
+#: game.py:941
+#, python-brace-format
+msgid "No hay enemigos adyacentes para que {unit_type} ataque"
+msgstr "No adjacent enemies for {unit_type} to attack"
+
+#: game.py:949
+#, python-brace-format
+msgid "{unit_type} seleccionado. Elige objetivo. (Cancelar con click derecho)"
+msgstr "{unit_type} selected. Choose target. (Cancel with right click)"
+
+#: game.py:951
+msgid "Selecciona una unidad aliada sana para atacar"
+msgstr "Select a healthy allied unit to attack"
+
+#: game.py:968
+#, python-brace-format
+msgid "¡Carga exitosa! {attacker_type} cargó contra {defender_type} y lo hirió"
+msgstr "Charge successful! {attacker_type} charged at {defender_type} and wounded it"
+
+#: game.py:973
+#, python-brace-format
+msgid "¡Ataque exitoso! {attacker_type} hirió a {defender_type}"
+msgstr "Attack successful! {attacker_type} wounded {defender_type}"
+
+#: game.py:983
+#, python-brace-format
+msgid ""
+"¡Carga fallida! {attacker_type} cargó contra {defender_type} pero no "
+"logró herirlo"
+msgstr "Charge failed! {attacker_type} charged at {defender_type} but could not wound it"
+
+#: game.py:988
+#, python-brace-format
+msgid "¡Ataque fallido! {unit_type} resistió el ataque"
+msgstr "Attack failed! {unit_type} resisted the attack"
+
+#: game.py:998
+msgid "Objetivo no válido. Selecciona un enemigo adyacente"
+msgstr "Invalid target. Select an adjacent enemy"
+
+#: gameui.py:271 gameui.py:429 menu.py:37
+msgid "Menú de Configuración"
+msgstr "Setup Menu"
+
+#: gameui.py:281 menu.py:46
+msgid "Escala de pantalla"
+msgstr "Display scale"
+
+#: gameui.py:289 menu.py:51
+msgid "Idioma"
+msgstr "Language"
+
+#: gameui.py:297 menu.py:56
+msgid "Valores predeterminados"
+msgstr "Default settings"
+
+#: gameui.py:305 gameui.py:528 menu.py:61
+msgid "Ver Reglas"
+msgstr "See Rules"
+
+#: gameui.py:313 menu.py:66
+msgid "Seleccionar bando"
+msgstr "Side selection"
+
+#: gameui.py:321 menu.py:71
+msgid "Salir"
+msgstr "Quit"
+
+#: gameui.py:333 menu.py:110
+msgid "Selecciona tu bando:"
+msgstr "Select your side:"
+
+#: gameui.py:339 menu.py:115
+msgid "Jugar como Cruzados"
+msgstr "Play as Crusaders"
+
+#: gameui.py:346 menu.py:119
+msgid "Jugar como Sarracenos"
+msgstr "Play as Saracens"
+
+#: gameui.py:394
+msgid "Coloca"
+msgstr "Places"
+
+#: gameui.py:417
+msgid "Finalizar movimiento"
+msgstr "End movement turn"
+
+#: gameui.py:417
+msgid "Finalizar Combate"
+msgstr "End Combat turn"
+
+#: gameui.py:419
+msgid "Confirmar Despliegue"
+msgstr "Confirm Deployment"
+
+#: gameui.py:431
+msgid "Selecciona tu bando"
+msgstr "Select your side"
+
+#: gameui.py:433
+msgid "Despliega tus unidades"
+msgstr "Deploy your units"
+
+#: gameui.py:435
+msgid "Despliegue del ordenador"
+msgstr "AI Deployment"
+
+#: gameui.py:440
+msgid "Turno del ordenador"
+msgstr "AI's turn"
+
+#: gameui.py:492
+msgid "Bando"
+msgstr "Side"
+
+#: gameui.py:497
+msgid "Fuerza"
+msgstr "Power"
+
+#: gameui.py:502
+msgid "Velocidad"
+msgstr "Speed"
+
+#: gameui.py:508
+msgid "Líder"
+msgstr "Leader"
+
+#: gameui.py:508
+msgid "Sí"
+msgstr "Yes"
+
+#: gameui.py:513
+msgid "Sana"
+msgstr "Healthy"
+
+#: gameui.py:513
+msgid "Herida"
+msgstr "Wounded"
+
+#: gameui.py:515
+msgid "Estado"
+msgstr "Status"
+
+#: gameui.py:627
+msgid "Progreso hacia Arsouf"
+msgstr "Progress to Arsouf"
+
+#: gameui.py:632
+msgid "Bagajes"
+msgstr "Baggage"
+
+#: gameui.py:636
+msgid "Otras unidades"
+msgstr "Other units"
+
+#: gameui.py:683
+msgid "FIN DEL JUEGO"
+msgstr "GAME OVER"
+
+#: gameui.py:689
+msgid "¡Victoria de los Cruzados!"
+msgstr "CRUSADERS WIN!"
+
+#: gameui.py:690
+msgid "Han llegado suficientes unidades a Arsouf"
+msgstr "Enough units reached Arsouf"
+
+#: gameui.py:692
+msgid "¡Victoria de los Sarracenos!"
+msgstr "SARACENS WIN!"
+
+#: gameui.py:693
+msgid "Han impedido que los Cruzados lleguen a Arsouf"
+msgstr "Prevented Crusaders from reaching Arsouf"
+
+#: gameui.py:700
+msgid "Presiona ESC para salir"
+msgstr "Press ESC to quit"
+
+#: hexgrid.py:62
+#, python-brace-format
+msgid "Coordenadas ({row}, {col}) fuera del grid {rows}x{cols}"
+msgstr "Coordinates ({row}, {col}) out of grid {rows}x{cols}"
+
+#: hexgrid.py:66
+#, python-brace-format
+msgid "¡Advertencia: Sobreescribiendo unidad en ({row}, {col})!"
+msgstr "Warning: Overwriting unit at ({row}, {col})!"

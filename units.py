@@ -1,6 +1,9 @@
 # units.py
 
 import random
+import gettext
+_ = gettext.gettext  # type: callable
+
 from typing import TYPE_CHECKING
 from config import *
 
@@ -11,7 +14,7 @@ class Unit:
     """Clase base para todas las unidades del juego."""
     def __init__(self, image_key, side):
         self.image_key = image_key
-        self.side = side  # "CRUZADOS" o "SARRACENOS"
+        self.side = side  # _("CRUZADOS") o _("SARRACENOS")
         self.power = 0
         self.row = None
         self.col = None
@@ -72,7 +75,7 @@ class Unit:
             return False
 
         # Solo se puede cargar contra unidades sarracenas
-        if objetivo.side != "SARRACENOS":
+        if objetivo.side != _("SARRACENOS"):
             return False
 
         # Verificar si tenemos un hexágono de carga definido
@@ -159,7 +162,7 @@ class Unit:
 class Ricardo(Unit):
     """Líder de los cruzados."""
     def __init__(self):
-        super().__init__("ricardo","CRUZADOS")
+        super().__init__("ricardo",_("CRUZADOS"))
         self.power = 2
         self.original_speed = 2
         self.speed = self.original_speed
@@ -169,7 +172,7 @@ class Ricardo(Unit):
 class Templario(Unit):
     """Caballeros Templarios (élite)."""
     def __init__(self):
-        super().__init__("templario","CRUZADOS")
+        super().__init__("templario",_("CRUZADOS"))
         self.power = 4
         self.original_speed = 2
         self.speed = self.original_speed
@@ -177,7 +180,7 @@ class Templario(Unit):
 class Hospitalario(Unit):
     """Caballeros Hospitalarios (élite)."""
     def __init__(self):
-        super().__init__("hospitalario","CRUZADOS")
+        super().__init__("hospitalario",_("CRUZADOS"))
         self.power = 4
         self.original_speed = 2
         self.speed = self.original_speed
@@ -185,7 +188,7 @@ class Hospitalario(Unit):
 class Caballero(Unit):
     """Caballeros estándar."""
     def __init__(self):
-        super().__init__("caballero","CRUZADOS")
+        super().__init__("caballero",_("CRUZADOS"))
         self.power = 3
         self.original_speed = 2
         self.speed = self.original_speed
@@ -193,7 +196,7 @@ class Caballero(Unit):
 class Infanteria(Unit):
     """Soldados de infantería básicos."""
     def __init__(self):
-        super().__init__("infanteria","CRUZADOS")
+        super().__init__("infanteria",_("CRUZADOS"))
         self.power = 2
         self.original_speed = 1
         self.speed = self.original_speed
@@ -202,7 +205,7 @@ class Infanteria(Unit):
 class Bagaje(Unit):
     """Carros de suministros (no combaten)."""
     def __init__(self):
-        super().__init__("bagaje","CRUZADOS")
+        super().__init__("bagaje",_("CRUZADOS"))
         self.power = 1
         self.original_speed = 1
         self.speed = self.original_speed
@@ -215,7 +218,7 @@ class Bagaje(Unit):
 class Saladino(Unit):
     """Líder de los sarracenos."""
     def __init__(self):
-        super().__init__("saladino","SARRACENOS")
+        super().__init__("saladino",_("SARRACENOS"))
         self.power = 2
         self.original_speed = 3
         self.speed = self.original_speed
@@ -225,7 +228,7 @@ class Saladino(Unit):
 class Mameluco(Unit):
     """Caballería pesada sarracena."""
     def __init__(self):
-        super().__init__("mameluco","SARRACENOS")
+        super().__init__("mameluco",_("SARRACENOS"))
         self.power = 3
         self.original_speed = 3
         self.speed = self.original_speed
@@ -233,7 +236,7 @@ class Mameluco(Unit):
 class Arquero(Unit):
     """Arqueros a caballo."""
     def __init__(self):
-        super().__init__("arquero","SARRACENOS")
+        super().__init__("arquero",_("SARRACENOS"))
         self.power = 2
         self.original_speed = 3
         self.speed = self.original_speed
@@ -241,7 +244,7 @@ class Arquero(Unit):
 class Explorador(Unit):
     """Unidades rápidas de reconocimiento."""
     def __init__(self):
-        super().__init__("explorador","SARRACENOS")
+        super().__init__("explorador",_("SARRACENOS"))
         self.power = 1
         self.original_speed = 3
         self.speed = self.original_speed
