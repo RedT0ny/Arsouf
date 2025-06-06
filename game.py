@@ -37,7 +37,7 @@ class Game:
         # Objetivos del juego
         self.arsouf_hexes = [(1, 0), (1, 1)]  # Hexágonos de Arsouf
         self.units_in_arsouf = {
-            "bagaje": 0,  # Contador de unidades de bagaje en Arsouf
+            _("Bagaje"): 0,  # Contador de unidades de bagaje en Arsouf
             "other": 0    # Contador de otras unidades en Arsouf
         }
         self.game_over = False
@@ -437,7 +437,7 @@ class Game:
             print(f"{_('Idioma cambiado a:')} {new_language}")
         except Exception as e:
             self.ui.add_log_message(_("Error al cambiar idioma"))
-            print(f"{_('Error al cambiar idioma:')} {e}")
+            print(f"{_('Error al cambiar idioma')}: {e}")
 
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
@@ -927,8 +927,8 @@ class Game:
     def _unit_reaches_arsouf(self, unit):
         """Registra una unidad que ha llegado a Arsouf"""
         if isinstance(unit, Bagaje):
-            self.units_in_arsouf["bagaje"] += 1
-            self.ui.add_log_message(_("¡Bagaje ha llegado a Arsouf! ({count}/2)").format(count=self.units_in_arsouf['bagaje']))
+            self.units_in_arsouf[_("Bagaje")] += 1
+            self.ui.add_log_message(_("¡Bagaje ha llegado a Arsouf! ({count}/2)").format(count=self.units_in_arsouf[_('Bagaje')]))
         else:
             self.units_in_arsouf["other"] += 1
             self.ui.add_log_message(_("¡{unit_type} ha llegado a Arsouf! ({count}/2)").format(unit_type=type(unit).__name__, count=self.units_in_arsouf['other']))
@@ -936,7 +936,7 @@ class Game:
     def _check_win_condition(self):
         """Verifica si se ha cumplido la condición de victoria"""
         # Victoria de los Cruzados: 2 bagajes y 2 otras unidades en Arsouf
-        if self.units_in_arsouf["bagaje"] >= 2 and self.units_in_arsouf["other"] >= 2:
+        if self.units_in_arsouf[_("Bagaje")] >= 2 and self.units_in_arsouf["other"] >= 2:
             self.game_over = True
             self.winner = _("CRUZADOS")
             self.ui.add_log_message(_("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf."))
@@ -950,10 +950,10 @@ class Game:
         # Victoria de los Sarracenos: imposibilidad de que los Cruzados ganen
         # Esto se verificaría si no quedan suficientes unidades cruzadas en el tablero
         crusader_units = self._count_remaining_crusader_units()
-        remaining_bagaje = crusader_units["bagaje"]
+        remaining_bagaje = crusader_units[_("Bagaje")]
         remaining_other = crusader_units["other"]
 
-        if remaining_bagaje + self.units_in_arsouf["bagaje"] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
+        if remaining_bagaje + self.units_in_arsouf[_("Bagaje")] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
             self.game_over = True
             self.winner = _("SARRACENOS")
             self.ui.add_log_message(_("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."))
@@ -966,14 +966,14 @@ class Game:
 
     def _count_remaining_crusader_units(self):
         """Cuenta las unidades cruzadas restantes en el tablero"""
-        remaining = {"bagaje": 0, "other": 0}
+        remaining = {_("Bagaje"): 0, "other": 0}
 
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
                 unit = self.grid.grid[row][col]
                 if unit and unit.side == _("CRUZADOS"):
                     if isinstance(unit, Bagaje):
-                        remaining["bagaje"] += 1
+                        remaining[_("Bagaje")] += 1
                     else:
                         remaining["other"] += 1
 

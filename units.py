@@ -162,7 +162,7 @@ class Unit:
 class Ricardo(Unit):
     """Líder de los cruzados."""
     def __init__(self):
-        super().__init__("ricardo",_("CRUZADOS"))
+        super().__init__(_("Ricardo"),_("CRUZADOS"))
         self.power = 2
         self.original_speed = 2
         self.speed = self.original_speed
@@ -172,7 +172,7 @@ class Ricardo(Unit):
 class Templario(Unit):
     """Caballeros Templarios (élite)."""
     def __init__(self):
-        super().__init__("templario",_("CRUZADOS"))
+        super().__init__(_("Templario"),_("CRUZADOS"))
         self.power = 4
         self.original_speed = 2
         self.speed = self.original_speed
@@ -180,7 +180,7 @@ class Templario(Unit):
 class Hospitalario(Unit):
     """Caballeros Hospitalarios (élite)."""
     def __init__(self):
-        super().__init__("hospitalario",_("CRUZADOS"))
+        super().__init__(_("Hospitalario"),_("CRUZADOS"))
         self.power = 4
         self.original_speed = 2
         self.speed = self.original_speed
@@ -188,7 +188,7 @@ class Hospitalario(Unit):
 class Caballero(Unit):
     """Caballeros estándar."""
     def __init__(self):
-        super().__init__("caballero",_("CRUZADOS"))
+        super().__init__(_("Caballero"),_("CRUZADOS"))
         self.power = 3
         self.original_speed = 2
         self.speed = self.original_speed
@@ -196,7 +196,7 @@ class Caballero(Unit):
 class Infanteria(Unit):
     """Soldados de infantería básicos."""
     def __init__(self):
-        super().__init__("infanteria",_("CRUZADOS"))
+        super().__init__(_("Infanteria"),_("CRUZADOS"))
         self.power = 2
         self.original_speed = 1
         self.speed = self.original_speed
@@ -205,7 +205,7 @@ class Infanteria(Unit):
 class Bagaje(Unit):
     """Carros de suministros (no combaten)."""
     def __init__(self):
-        super().__init__("bagaje",_("CRUZADOS"))
+        super().__init__(_("Bagaje"),_("CRUZADOS"))
         self.power = 1
         self.original_speed = 1
         self.speed = self.original_speed
@@ -218,7 +218,7 @@ class Bagaje(Unit):
 class Saladino(Unit):
     """Líder de los sarracenos."""
     def __init__(self):
-        super().__init__("saladino",_("SARRACENOS"))
+        super().__init__(_("Saladino"),_("SARRACENOS"))
         self.power = 2
         self.original_speed = 3
         self.speed = self.original_speed
@@ -228,7 +228,7 @@ class Saladino(Unit):
 class Mameluco(Unit):
     """Caballería pesada sarracena."""
     def __init__(self):
-        super().__init__("mameluco",_("SARRACENOS"))
+        super().__init__(_("Mameluco"),_("SARRACENOS"))
         self.power = 3
         self.original_speed = 3
         self.speed = self.original_speed
@@ -236,7 +236,7 @@ class Mameluco(Unit):
 class Arquero(Unit):
     """Arqueros a caballo."""
     def __init__(self):
-        super().__init__("arquero",_("SARRACENOS"))
+        super().__init__(_("Arquero"),_("SARRACENOS"))
         self.power = 2
         self.original_speed = 3
         self.speed = self.original_speed
@@ -244,7 +244,7 @@ class Arquero(Unit):
 class Explorador(Unit):
     """Unidades rápidas de reconocimiento."""
     def __init__(self):
-        super().__init__("explorador",_("SARRACENOS"))
+        super().__init__(_("Explorador"),_("SARRACENOS"))
         self.power = 1
         self.original_speed = 3
         self.speed = self.original_speed
