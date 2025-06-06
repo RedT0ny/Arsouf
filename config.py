@@ -165,17 +165,17 @@ IMAGE_PATHS = {
     "reglas": os.path.join(ASSETS_DIR, "img", "Reglas.jpg"),
     "rules": os.path.join(ASSETS_DIR, "img", "Rules.jpg"),
     # Cruzados
-    "ricardo": os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
-    "templario": os.path.join(ASSETS_DIR, "img", "Templario.svg"),
-    "hospitalario": os.path.join(ASSETS_DIR, "img", "Hospitalario.svg"),
-    "caballero": os.path.join(ASSETS_DIR, "img", "Caballero.svg"),
-    "infanteria": os.path.join(ASSETS_DIR, "img", "Infanteria.svg"),
-    "bagaje": os.path.join(ASSETS_DIR, "img", "Bagaje.svg"),
+    _("Ricardo"): os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
+    _("Templario"): os.path.join(ASSETS_DIR, "img", "Templario.svg"),
+    _("Hospitalario"): os.path.join(ASSETS_DIR, "img", "Hospitalario.svg"),
+    _("Caballero"): os.path.join(ASSETS_DIR, "img", "Caballero.svg"),
+    _("Infanteria"): os.path.join(ASSETS_DIR, "img", "Infanteria.svg"),
+    _("Bagaje"): os.path.join(ASSETS_DIR, "img", "Bagaje.svg"),
     # Sarracenos
-    "saladino": os.path.join(ASSETS_DIR, "img", "Saladino.svg"),
-    "mameluco": os.path.join(ASSETS_DIR, "img", "Mameluco.svg"),
-    "arquero": os.path.join(ASSETS_DIR, "img", "Arquero.svg"),
-    "explorador": os.path.join(ASSETS_DIR, "img", "Explorador.svg"),
+    _("Saladino"): os.path.join(ASSETS_DIR, "img", "Saladino.svg"),
+    _("Mameluco"): os.path.join(ASSETS_DIR, "img", "Mameluco.svg"),
+    _("Arquero"): os.path.join(ASSETS_DIR, "img", "Arquero.svg"),
+    _("Explorador"): os.path.join(ASSETS_DIR, "img", "Explorador.svg"),
 }
 
 # Archivos de audio

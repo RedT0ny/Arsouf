@@ -621,7 +621,7 @@ class GameUI:
 
         # Dibujar progreso de bagajes
         font = pygame.font.SysFont('Arial', 14)
-        text_bagaje = font.render(f"{_('Bagajes')}: {game.units_in_arsouf['bagaje']}/2", True, (255, 255, 255))
+        text_bagaje = font.render(f"{_('Bagajes')}: {game.units_in_arsouf[_('Bagaje')]}/2", True, (255, 255, 255))
         game.screen.blit(text_bagaje, (panel_x + 10, panel_y + 35))
 
         # Dibujar progreso de otras unidades
