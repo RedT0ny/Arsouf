@@ -33,7 +33,7 @@ try:
     # Instalar la traducción globalmente
     translation.install()
 except Exception as e:
-    print(f"Error al cargar traducciones: {e}")
+    print(f"{_("Error al cargar traducciones:")} {e}")
     _ = gettext.gettext  # Fallback a gettext básico
 
 # Variable global para el idioma actual
@@ -71,7 +71,7 @@ HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["der
 HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 4. Configuración de pantalla
-DISPLAY_SCALING = 0.75  # Factor de escala para la pantalla (0.75 = 75% del tamaño original)
+DISPLAY_SCALING = 0.5  # Factor de escala para la pantalla (0.75 = 75% del tamaño original)
 SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
 SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60
@@ -161,7 +161,9 @@ ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 IMAGE_PATHS = {
     "board": os.path.join(ASSETS_DIR, "img", "Board.png"),
     "cover": os.path.join(ASSETS_DIR, "img", "Cover.png"),
-    "rules": os.path.join(ASSETS_DIR, "img", "Reglas.jpg"),
+    # Docs
+    "reglas": os.path.join(ASSETS_DIR, "img", "Reglas.jpg"),
+    "rules": os.path.join(ASSETS_DIR, "img", "Rules.jpg"),
     # Cruzados
     "ricardo": os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
     "templario": os.path.join(ASSETS_DIR, "img", "Templario.svg"),

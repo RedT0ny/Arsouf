@@ -94,7 +94,7 @@ class Game:
                 size = int(min(HEX_WIDTH, HEX_HEIGHT) * 0.85)
                 images[key] = pygame.transform.smoothscale(img, (size, size))
             except Exception as e:
-                print(f"Error loading {path}: {e}")
+                print(f"{_('Error loading')} {path}: {e}")
                 images[key] = pygame.Surface((size, size), pygame.SRCALPHA)
                 pygame.draw.circle(images[key], (0, 255, 0), (size // 2, size // 2), size // 2)
 
@@ -127,7 +127,7 @@ class Game:
             y_offset = (SCREEN_HEIGHT - new_height) // 2
             images["cover"].blit(scaled_img, (x_offset, y_offset))
         except Exception as e:
-            print(f"Error loading cover: {e}")
+            print(f"{_('Error loading cover:')} {e}")
             images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             images["cover"].fill((0, 0, 0))
 
@@ -145,8 +145,15 @@ class Game:
                     # Efectos de sonido que se reproducirán con pygame.mixer.Sound
                     sounds[key] = pygame.mixer.Sound(path)
             except Exception as e:
-                print(f"Error loading audio {path}: {e}")
+                print(f"{_('Error loading audio')} {path}: {e}")
         return sounds
+
+    @staticmethod
+    def _load_rules():
+        try:
+            os.startfile(IMAGE_PATHS["rules"] if CURRENT_LANGUAGE == 'en' else IMAGE_PATHS["reglas"])
+        except AttributeError:  # Para otros sistemas operativos
+            print(_('Error loading rules file'))
 
     @staticmethod
     def _get_initial_units():
@@ -201,10 +208,7 @@ class Game:
 
                 # Manejar botón de reglas
                 if rules_button_rect.collidepoint(mouse_pos):
-                    try:
-                        os.startfile(IMAGE_PATHS["rules"])  # En Windows
-                    except AttributeError:  # Para otros sistemas operativos
-                        print(f"Error loading rules {IMAGE_PATHS['rules']}")
+                    self._load_rules()
                     continue
 
                 # Manejar botón de finalizar fase
@@ -335,10 +339,7 @@ class Game:
                 self._restore_defaults()
             elif action == "RULES":
                 # Mostrar las reglas
-                try:
-                    os.startfile(IMAGE_PATHS["rules"])  # En Windows
-                except AttributeError:  # Para otros sistemas operativos
-                    print(f"Error loading rules {IMAGE_PATHS['rules']}")
+                self._load_rules()
             elif action == "SELECT_SIDE":
                 # Ir a la pantalla de selección de bando
                 self.state = GAME_STATES["SELECT_SIDE"]
@@ -387,7 +388,7 @@ class Game:
 
     def _change_language(self):
         """Cambia el idioma del juego."""
-        global CURRENT_LANGUAGE
+        global CURRENT_LANGUAGE, _
 
         # Lista de idiomas disponibles
         available_languages = ['es', 'en']
@@ -415,21 +416,32 @@ class Game:
             # Actualizar la función de traducción en todos los módulos que la usan
             import gameui
             gameui._ = _
+            import hexgrid
+            hexgrid._ = _
             import menu
             menu._ = _
             import units
             units._ = _
+            # Actualizar la función de traducción en el módulo actual (game.py)
+            import sys
+            current_module = sys.modules[__name__]
+            current_module._ = _
 
-            # Mensaje de éxito
-            self.ui.add_log_message(f"{_("Idioma cambiado a:")} {new_language}")
-            print(f"Idioma cambiado a: {new_language}")
+            # Reinicializar units_to_deploy para que use las claves traducidas actualizadas
+            if hasattr(self, 'units_to_deploy'):
+                self.units_to_deploy = self._get_initial_units()
+
+            # Mensaje de éxito (usando formato de cadena normal en lugar de f-string con _())
+            language_changed_msg = _("Idioma cambiado a: {lang}")
+            self.ui.add_log_message(language_changed_msg.format(lang=new_language))
+            print(f"{_('Idioma cambiado a:')} {new_language}")
         except Exception as e:
             self.ui.add_log_message(_("Error al cambiar idioma"))
-            print(f"Error al cambiar idioma: {e}")
+            print(f"{_('Error al cambiar idioma:')} {e}")
 
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
-        global DISPLAY_SCALING, SCREEN_WIDTH, SCREEN_HEIGHT
+        global DISPLAY_SCALING, SCREEN_WIDTH, SCREEN_HEIGHT, CURRENT_LANGUAGE
         DISPLAY_SCALING = 0.75
         SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
         SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
@@ -443,6 +455,23 @@ class Game:
 
         # Recargar y escalar el tablero
         self._load_board()
+
+        # Cambiar el idioma si no es el predeterminado
+        # Intentar obtener el idioma del sistema
+        try:
+            current_locale, encoding = locale.getlocale()
+            if current_locale is None:
+                language = 'es'  # Idioma por defecto: español
+            else:
+                language = current_locale.split('_')[0]
+                # Asegurarse de que el idioma sea uno de los disponibles
+                if language not in ['es', 'en']:
+                    language = 'es'  # Si no es un idioma soportado, usar español
+        except (ValueError, AttributeError):
+            language = 'es'  # Idioma por defecto si hay algún error
+
+        if(CURRENT_LANGUAGE != language):
+            self._change_language()
 
         # Mensaje de log
         print(_("Valores predeterminados restaurados"))
@@ -472,7 +501,8 @@ class Game:
             if self.units_to_deploy[self.player_side]:
                 self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
                 self.ui.add_log_message(
-                    f"Colocado {type(self.current_deploying_unit).__name__}. Siguiente unidad lista.")
+                    _("Colocado {unit}. Siguiente unidad lista.").format(unit=type(self.current_deploying_unit).__name__)
+                )
             else:
                 self.current_deploying_unit = None
                 self.ui.add_log_message(_("¡Despliegue completado!"))
@@ -1753,10 +1783,10 @@ class Game:
         if target:
             if unit.attack(target, self.grid):
                 self.ui.add_log_message(
-                    f"¡IA ataca! {type(unit).__name__} hirió a {type(target).__name__}")
+                    f"{_('¡IA ataca!')} {_(type(unit).__name__)} {_('hirió a')} {_(type(target).__name__)}")
             else:
                 self.ui.add_log_message(
-                    f"¡Ataque fallido de IA! {type(target).__name__} resistió el ataque de {type(unit).__name__}")
+                    f"{_('¡Ataque fallido de IA!')} {type(target).__name__} {_('resistió el ataque de')} {_(type(unit).__name__)}")
 
             # Marcar la unidad como ya atacó este turno
             if hasattr(self, '_ai_attacked_units_this_turn'):
@@ -1835,7 +1865,7 @@ class Game:
             pygame.mixer.music.load(self.sounds[music_key])
             pygame.mixer.music.play(-1)  # -1 para reproducir en bucle
         except Exception as e:
-            print(f"Error reproduciendo música {music_key}: {e}")
+            print(f"{_('Error reproduciendo música')} {music_key}: {e}")
 
     def _stop_music(self):
         """Detiene la música de fondo"""
@@ -1847,7 +1877,7 @@ class Game:
             if sound_key in self.sounds:
                 self.sounds[sound_key].play()
         except Exception as e:
-            print(f"Error reproduciendo sonido {sound_key}: {e}")
+            print(f"{_('Error reproduciendo sonido')} {sound_key}: {e}")
 
     def _handle_game_over(self):
         """Maneja el estado de juego terminado"""

@@ -14,7 +14,7 @@ class Unit:
     """Clase base para todas las unidades del juego."""
     def __init__(self, image_key, side):
         self.image_key = image_key
-        self.side = side  # _("CRUZADOS") o _("SARRACENOS")
+        self.side = side  # "CRUZADOS" o "SARRACENOS"
         self.power = 0
         self.row = None
         self.col = None
@@ -153,7 +153,7 @@ class Unit:
         return any(unit.side != self.side for unit in enemies)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(row={self.row}, col={self.col})"
+        return f"{_(self.__class__.__name__)}({self.row},{self.col})"
 
 # ------------------------------
 # UNIDADES CRUZADAS (Ricardo Corazón de León)

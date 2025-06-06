@@ -75,7 +75,7 @@ class GameUI:
                 self._draw_log_scrollbar(panel_rect, total_lines, visible_lines)
 
         except Exception as e:
-            print(f"ERROR dibujando panel LOG: {e}")
+            print(f"{_('ERROR dibujando panel LOG:')} {e}")
             raise
 
     def _draw_log_scrollbar(self, panel_rect, total_lines, visible_lines):
@@ -145,8 +145,6 @@ class GameUI:
                 self.log_scroll_dragging = True
                 self.drag_start_y = mouse_pos[1]
                 self.drag_start_position = self.log_scroll_position
-#                 if __debug__:
-#                     print("DEBUG: Scroll - Arrastre iniciado")
                 return True
         return False
 
@@ -154,8 +152,6 @@ class GameUI:
         """Finaliza el arrastre del scroll"""
         if self.log_scroll_dragging:
             self.log_scroll_dragging = False
-#             if __debug__:
-#                 print("DEBUG: Scroll - Arrastre finalizado")
             return True
         return False
 
@@ -199,10 +195,6 @@ class GameUI:
         # Calcular nueva posición con límites
         max_scroll = total_lines - visible_lines
         self.log_scroll_position = max(0, min(self.log_scroll_position - scroll_delta, max_scroll))
-
-        # Debug opcional
-#         if __debug__:
-#             print(f"DEBUG: Wheel scroll - Delta: {wheel_delta}, Posición: {self.log_scroll_position}/{max_scroll}")
 
     def add_log_message(self, message):
         """Añade un mensaje al log y ajusta el scroll al final."""
