@@ -158,14 +158,17 @@ class Game:
     @staticmethod
     def _get_initial_units():
         """Devuelve las unidades iniciales para cada bando."""
+        # Importar las constantes traducidas
+        import translated_constants as tc
+
         return {
-            SIDE_CRUSADERS: [
+            tc.SIDE_CRUSADERS: [
                 Ricardo(), Templario(), Hospitalario(),
                 Caballero(), Caballero(), Caballero(),
                 *[Infanteria() for _ in range(6)],
                 *[Bagaje() for _ in range(4)]
             ],
-            SIDE_SARACENS: [
+            tc.SIDE_SARACENS: [
                 Saladino(),
                 *[Mameluco() for _ in range(4)],
                 *[Arquero() for _ in range(6)],
@@ -322,7 +325,7 @@ class Game:
         self.ai_side = SIDE_SARACENS if player_side == SIDE_CRUSADERS else SIDE_CRUSADERS
         self.state = GAME_STATES["DEPLOY_PLAYER"]
         self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
-        self.ui.add_log_message(_("Jugando como {player_side}. Comienza el despliegue.").format(player_side=self.player_side))
+        self.ui.add_log_message(_("Jugando como {player_side}. Comienza el despliegue.").format(player_side=_(self.player_side)))
 
     def _handle_setup_menu(self, event):
         """Maneja las interacciones con el menú de configuración."""
@@ -402,38 +405,57 @@ class Game:
             next_index = (current_index + 1) % len(available_languages)
             new_language = available_languages[next_index]
 
-        # Actualizar la variable global en config.py
-        CURRENT_LANGUAGE = new_language
+        # Debug: Verificar que el idioma ha cambiado
+        print(f"Changing language from {CURRENT_LANGUAGE} to {new_language}")
 
-        # Cargar las traducciones para el nuevo idioma
         try:
+            # Actualizar las constantes traducidas en el módulo translated_constants
+            import translated_constants as tc
+            tc.update_constants(new_language)
+
+            # Actualizar la variable global en este módulo
+            CURRENT_LANGUAGE = new_language
+
+            # Crear una nueva instancia de traducción con el nuevo idioma
             translation = gettext.translation(
                 TRANSLATION_DOMAIN,
                 localedir=LOCALE_DIR,
                 languages=[new_language],
                 fallback=True
             )
-            _ = translation.gettext
+
+            # Obtener la función de traducción
+            new_gettext = translation.gettext
+
+            # Actualizar la función de traducción global
+            _ = new_gettext
+
             # Instalar la traducción globalmente
             translation.install()
 
             # Actualizar la función de traducción en todos los módulos que la usan
             import gameui
-            gameui._ = _
+            gameui._ = new_gettext
             import hexgrid
-            hexgrid._ = _
+            hexgrid._ = new_gettext
             import menu
-            menu._ = _
+            menu._ = new_gettext
             import units
-            units._ = _
+            units._ = new_gettext
+            import config
+            config._ = new_gettext
+
             # Actualizar la función de traducción en el módulo actual (game.py)
             import sys
             current_module = sys.modules[__name__]
-            current_module._ = _
+            current_module._ = new_gettext
 
             # Reinicializar units_to_deploy para que use las claves traducidas actualizadas
             if hasattr(self, 'units_to_deploy'):
                 self.units_to_deploy = self._get_initial_units()
+
+            # Actualizar todas las unidades en el tablero
+            self._update_units_on_board()
 
             # Mensaje de éxito (usando formato de cadena normal en lugar de f-string con _())
             language_changed_msg = _("Idioma cambiado a: {lang}")
@@ -442,8 +464,97 @@ class Game:
         except Exception as e:
             self.ui.add_log_message(_("Error al cambiar idioma"))
             print(f"{_('Error al cambiar idioma')}: {e}")
+            import traceback
+            traceback.print_exc()
 
-        #self._draw()
+        self._draw()
+
+    def _update_config_constants(self):
+        """Actualiza todas las constantes traducidas en config.py"""
+        import config
+
+        # Actualizar constantes de bandos
+        config.SIDE_CRUSADERS = _("CRUZADOS")
+        config.SIDE_SARACENS = _("SARRACENOS")
+
+        # Actualizar constantes de nombres de unidades
+        config.RICHARD_NAME = _("Ricardo")
+        config.INFANTRY_NAME = _("Infanteria")
+        config.KNIGHT_NAME = _("Caballero")
+        config.TEMPLAR_NAME = _("Templario")
+        config.HOSPITALLER_NAME = _("Hospitalario")
+        config.SALADIN_NAME = _("Saladino")
+        config.MAMLUK_NAME = _("Mameluco")
+        config.ARCHER_NAME = _("Arquero")
+        config.EXPLORER_NAME = _("Explorador")
+        config.BAGGAGE_NAME = _("Bagaje")
+
+        # Actualizar nombre del juego
+        config.GAME_NAME = _("game_name")
+
+        # Actualizar fases de turno
+        config.TURN_PHASES = {
+            'MOVEMENT': _('Movimiento'),
+            'COMBAT': _('Combate')
+        }
+
+        # Reconstruir el diccionario IMAGE_PATHS con las nuevas claves traducidas
+        # Guardamos las rutas originales
+        original_paths = config.IMAGE_PATHS.copy()
+
+        # Actualizamos las entradas que usan constantes traducidas
+        config.IMAGE_PATHS.update({
+            config.RICHARD_NAME: original_paths.get(_("Ricardo"), original_paths.get("Ricardo")),
+            config.TEMPLAR_NAME: original_paths.get(_("Templario"), original_paths.get("Templario")),
+            config.HOSPITALLER_NAME: original_paths.get(_("Hospitalario"), original_paths.get("Hospitalario")),
+            config.KNIGHT_NAME: original_paths.get(_("Caballero"), original_paths.get("Caballero")),
+            config.INFANTRY_NAME: original_paths.get(_("Infanteria"), original_paths.get("Infanteria")),
+            config.BAGGAGE_NAME: original_paths.get(_("Bagaje"), original_paths.get("Bagaje")),
+            config.SALADIN_NAME: original_paths.get(_("Saladino"), original_paths.get("Saladino")),
+            config.MAMLUK_NAME: original_paths.get(_("Mameluco"), original_paths.get("Mameluco")),
+            config.ARCHER_NAME: original_paths.get(_("Arquero"), original_paths.get("Arquero")),
+            config.EXPLORER_NAME: original_paths.get(_("Explorador"), original_paths.get("Explorador")),
+        })
+
+    def _update_units_on_board(self):
+        """Actualiza todas las unidades en el tablero con los nuevos valores traducidos"""
+        if not hasattr(self, 'grid') or not self.grid:
+            return
+
+        # Importar las constantes traducidas
+        import translated_constants as tc
+
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                unit = self.grid.grid[row][col]
+                if unit:
+                    # Actualizar el lado de la unidad
+                    if unit.side == SIDE_CRUSADERS or unit.side == _("CRUZADOS"):
+                        unit.side = tc.SIDE_CRUSADERS
+                    elif unit.side == SIDE_SARACENS or unit.side == _("SARRACENOS"):
+                        unit.side = tc.SIDE_SARACENS
+
+                    # Actualizar el image_key basado en su clase
+                    if isinstance(unit, Infanteria):
+                        unit.image_key = tc.INFANTRY_NAME
+                    elif isinstance(unit, Caballero):
+                        unit.image_key = tc.KNIGHT_NAME
+                    elif isinstance(unit, Templario):
+                        unit.image_key = tc.TEMPLAR_NAME
+                    elif isinstance(unit, Hospitalario):
+                        unit.image_key = tc.HOSPITALLER_NAME
+                    elif isinstance(unit, Ricardo):
+                        unit.image_key = tc.RICHARD_NAME
+                    elif isinstance(unit, Bagaje):
+                        unit.image_key = tc.BAGGAGE_NAME
+                    elif isinstance(unit, Saladino):
+                        unit.image_key = tc.SALADIN_NAME
+                    elif isinstance(unit, Mameluco):
+                        unit.image_key = tc.MAMLUK_NAME
+                    elif isinstance(unit, Arquero):
+                        unit.image_key = tc.ARCHER_NAME
+                    elif isinstance(unit, Explorador):
+                        unit.image_key = tc.EXPLORER_NAME
 
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
@@ -477,7 +588,7 @@ class Game:
             language = 'es'  # Idioma por defecto si hay algún error
 
         if(CURRENT_LANGUAGE != language):
-            self._change_language()
+            self._change_language(language)
 
         # Mensaje de log
         print(_("Valores predeterminados restaurados"))
@@ -507,7 +618,7 @@ class Game:
             if self.units_to_deploy[self.player_side]:
                 self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
                 self.ui.add_log_message(
-                    _("Colocado {unit}. Siguiente unidad lista.").format(unit=self.current_deploying_unit.image_key)
+                    _("Colocado {unit}. Siguiente unidad lista.").format(unit=_(self.current_deploying_unit.image_key))
                 )
             else:
                 self.current_deploying_unit = None
@@ -801,7 +912,7 @@ class Game:
         self.grid.add_unit(row, col, unit)
 
         # Mensaje de log para depuración
-        self.ui.add_log_message(_("IA despliega {unit_type} en ({row},{col})").format(unit_type=unit.image_key, row=row, col=col))
+        self.ui.add_log_message(_("IA despliega {unit_type} en ({row},{col})").format(unit_type=_(unit.image_key), row=row, col=col))
 
         if not self.units_to_deploy[self.ai_side]:
             self.state = "PLAYER_TURN"

@@ -6,6 +6,7 @@ _ = gettext.gettext  # type: callable
 
 from typing import TYPE_CHECKING
 from config import *
+import translated_constants as tc
 
 if TYPE_CHECKING:
     from hexgrid import HexGrid  # Solo para type checking, no causa importación real
@@ -75,7 +76,7 @@ class Unit:
             return False
 
         # Solo se puede cargar contra unidades sarracenas
-        if objetivo.side != SIDE_SARACENS:
+        if objetivo.side != tc.SIDE_SARACENS:
             return False
 
         # Verificar si tenemos un hexágono de carga definido
@@ -162,7 +163,7 @@ class Unit:
 class Ricardo(Unit):
     """Líder de los cruzados."""
     def __init__(self):
-        super().__init__(RICHARD_NAME, SIDE_CRUSADERS)
+        super().__init__(tc.RICHARD_NAME, tc.SIDE_CRUSADERS)
         self.power = 2
         self.original_speed = 2
         self.speed = self.original_speed
@@ -172,7 +173,7 @@ class Ricardo(Unit):
 class Templario(Unit):
     """Caballeros Templarios (élite)."""
     def __init__(self):
-        super().__init__(TEMPLAR_NAME, SIDE_CRUSADERS)
+        super().__init__(tc.TEMPLAR_NAME, tc.SIDE_CRUSADERS)
         self.power = 4
         self.original_speed = 2
         self.speed = self.original_speed
@@ -180,7 +181,7 @@ class Templario(Unit):
 class Hospitalario(Unit):
     """Caballeros Hospitalarios (élite)."""
     def __init__(self):
-        super().__init__(HOSPITALLER_NAME, SIDE_CRUSADERS)
+        super().__init__(tc.HOSPITALLER_NAME, tc.SIDE_CRUSADERS)
         self.power = 4
         self.original_speed = 2
         self.speed = self.original_speed
@@ -188,7 +189,7 @@ class Hospitalario(Unit):
 class Caballero(Unit):
     """Caballeros estándar."""
     def __init__(self):
-        super().__init__(KNIGHT_NAME, SIDE_CRUSADERS)
+        super().__init__(tc.KNIGHT_NAME, tc.SIDE_CRUSADERS)
         self.power = 3
         self.original_speed = 2
         self.speed = self.original_speed
@@ -196,7 +197,7 @@ class Caballero(Unit):
 class Infanteria(Unit):
     """Soldados de infantería básicos."""
     def __init__(self):
-        super().__init__(INFANTRY_NAME, SIDE_CRUSADERS)
+        super().__init__(tc.INFANTRY_NAME, tc.SIDE_CRUSADERS)
         self.power = 2
         self.original_speed = 1
         self.speed = self.original_speed
@@ -205,7 +206,7 @@ class Infanteria(Unit):
 class Bagaje(Unit):
     """Carros de suministros (no combaten)."""
     def __init__(self):
-        super().__init__(BAGGAGE_NAME, SIDE_CRUSADERS)
+        super().__init__(tc.BAGGAGE_NAME, tc.SIDE_CRUSADERS)
         self.power = 1
         self.original_speed = 1
         self.speed = self.original_speed
@@ -218,7 +219,7 @@ class Bagaje(Unit):
 class Saladino(Unit):
     """Líder de los sarracenos."""
     def __init__(self):
-        super().__init__(SALADIN_NAME, SIDE_SARACENS)
+        super().__init__(tc.SALADIN_NAME, tc.SIDE_SARACENS)
         self.power = 2
         self.original_speed = 3
         self.speed = self.original_speed
@@ -228,7 +229,7 @@ class Saladino(Unit):
 class Mameluco(Unit):
     """Caballería pesada sarracena."""
     def __init__(self):
-        super().__init__(MAMLUK_NAME, SIDE_SARACENS)
+        super().__init__(tc.MAMLUK_NAME, tc.SIDE_SARACENS)
         self.power = 3
         self.original_speed = 3
         self.speed = self.original_speed
@@ -236,7 +237,7 @@ class Mameluco(Unit):
 class Arquero(Unit):
     """Arqueros a caballo."""
     def __init__(self):
-        super().__init__(ARCHER_NAME, SIDE_SARACENS)
+        super().__init__(tc.ARCHER_NAME, tc.SIDE_SARACENS)
         self.power = 2
         self.original_speed = 3
         self.speed = self.original_speed
@@ -244,7 +245,7 @@ class Arquero(Unit):
 class Explorador(Unit):
     """Unidades rápidas de reconocimiento."""
     def __init__(self):
-        super().__init__(EXPLORER_NAME, SIDE_SARACENS)
+        super().__init__(tc.EXPLORER_NAME, tc.SIDE_SARACENS)
         self.power = 1
         self.original_speed = 3
         self.speed = self.original_speed

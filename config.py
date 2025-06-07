@@ -1,5 +1,4 @@
 # config.py (versión optimizada)
-import json
 import os
 import gettext
 import locale
