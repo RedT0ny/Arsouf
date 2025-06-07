@@ -439,20 +439,22 @@ class Game:
             current_module = sys.modules[__name__]
             current_module._ = _
 
-            # Reiniciar componentes que dependen del idioma
-            self.setup_menu = None
-            self.side_selection_menu = None
+            # # Reiniciar componentes que dependen del idioma
+            # self.setup_menu = None
+            # self.side_selection_menu = None
+            #
+            # # Recargar los componentes necesarios para el estado actual
+            # if self.state == GAME_STATES["SETUP_MENU"]:
+            #     self._load_setup_menu()
+            # elif self.state == GAME_STATES["SELECT_SIDE"]:
+            #     self._load_setup_menu()
+            #     self._load_side_selection_menu()
+            # elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"],
+            #                    GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+            #     self._load_setup_menu()
+            #     self._load_side_selection_menu()
 
-            # Recargar los componentes necesarios para el estado actual
-            if self.state == GAME_STATES["SETUP_MENU"]:
-                self._load_setup_menu()
-            elif self.state == GAME_STATES["SELECT_SIDE"]:
-                self._load_setup_menu()
-                self._load_side_selection_menu()
-            elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
-                               GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
-                self._load_setup_menu()
-                self._load_side_selection_menu()
+            self._load_setup_menu()
 
             # Mensaje de éxito (usando formato de cadena normal en lugar de f-string con _())
             language_changed_msg = _("Idioma cambiado a: {lang}")
@@ -469,7 +471,7 @@ class Game:
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
         global DISPLAY_SCALING, SCREEN_WIDTH, SCREEN_HEIGHT, CURRENT_LANGUAGE
-        DISPLAY_SCALING = 0.75
+        DISPLAY_SCALING = 0.5
         SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
         SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 
@@ -478,8 +480,8 @@ class Game:
 
         # Reiniciar componentes que dependen del tamaño de la pantalla
         self.setup_menu = None
-        self.side_selection_menu = None
-        self.tablero_escalado = None
+        # self.side_selection_menu = None
+        # self.tablero_escalado = None
 
         # Intentar obtener el idioma del sistema
         try:
@@ -499,20 +501,21 @@ class Game:
             self._change_language(language)
         else:
             # Recargar los componentes necesarios para el estado actual
-            if self.state == GAME_STATES["SETUP_MENU"]:
-                self._load_setup_menu()
-            elif self.state == GAME_STATES["SELECT_SIDE"]:
-                self._load_setup_menu()
-                self._load_side_selection_menu()
-            elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
-                               GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
-                self._load_setup_menu()
-                self._load_side_selection_menu()
-                self._load_board()
-                if self.grid is not None:
-                    self._load_grid()
-                if self.ui is not None:
-                    self._load_ui()
+            self._load_setup_menu()
+            # if self.state == GAME_STATES["SETUP_MENU"]:
+            #     self._load_setup_menu()
+            # elif self.state == GAME_STATES["SELECT_SIDE"]:
+            #     self._load_setup_menu()
+            #     self._load_side_selection_menu()
+            # elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"],
+            #                    GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+            #     self._load_setup_menu()
+            #     self._load_side_selection_menu()
+            #     self._load_board()
+            #     if self.grid is not None:
+            #         self._load_grid()
+            #     if self.ui is not None:
+            #         self._load_ui()
 
         # Mensaje de log
         print(_("Valores predeterminados restaurados"))
@@ -912,6 +915,9 @@ class Game:
                                     new_row=new_row,
                                     new_col=new_col
                                 )) #TODO: Identificar instancia específica de unidad (e.g. Explorador 1..)
+
+                            # Añadir un retraso de medio segundo para ralentizar el movimiento de la IA
+                            pygame.time.delay(500)
 
             else:
                 # Cuando se completa la fase de movimiento, pasar a la fase de combate
@@ -1838,6 +1844,9 @@ class Game:
             # Marcar la unidad como ya atacó este turno
             if hasattr(self, '_ai_attacked_units_this_turn'):
                 self._ai_attacked_units_this_turn.add((row, col))
+
+            # Añadir un retraso de 1 segundo para ralentizar el combate de la IA
+            pygame.time.delay(1000)
 
     def _select_combat_target(self, attacker, possible_targets):
         """Selecciona el mejor objetivo para atacar según prioridades estratégicas."""
