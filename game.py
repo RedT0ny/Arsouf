@@ -26,7 +26,7 @@ class Game:
         self.intro_start_time = pygame.time.get_ticks()
         self.intro_duration = 207000  # 3:27 minutos en milisegundos (duración de la música de intro)
 
-        # Cargar sonidos
+        # Cargar sonidos (necesarios para la intro)
         self.sounds = self._load_sounds()
 
         # Fases del turno
@@ -43,38 +43,23 @@ class Game:
         self.game_over = False
         self.winner = None
 
-        # Inicializar
+        # Inicializar pantalla (necesaria para la intro)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(f"{_('game_name')} {VERSION}")
 
-        # Cargar y escalar tablero
-        board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
-
-        # Usar ESCALA de config.py para mantener consistencia con el tamaño de los hexágonos
-        self.tablero_escalado = pygame.transform.smoothscale(
-            board_img,
-            (int(TABLERO_REAL_WIDTH * ESCALA), int(TABLERO_REAL_HEIGHT * ESCALA))
-        )
-
-        # Inicializar componentes
-        self.grid = HexGrid()
-        self.ui = GameUI(self)
-
-        # Inicializar menús
-        self.setup_menu = SetupMenu(self.screen)
-        self.side_selection_menu = SideSelectionMenu(self.screen)
-
+        # Inicializar el reloj (necesario para el bucle principal)
         self.clock = pygame.time.Clock()
         self.running = True
 
-        # Cargar imágenes de unidades
-        self.images = self._load_images()
-
-        # Unidades por colocar
-        self.units_to_deploy = self._get_initial_units()
+        # Inicializar variables que se usarán más tarde
+        self.tablero_escalado = None
+        self.grid = None
+        self.ui = None
+        self.setup_menu = None
+        self.side_selection_menu = None
+        self.images = None
+        self.units_to_deploy = None
         self.current_deploying_unit = None
-
-        # Movimiento
         self.selected_unit = None
         self.possible_moves = []
         self.moved_units = set()  # Unidades que ya han movido en este turno
@@ -83,7 +68,7 @@ class Game:
         self.last_moved_unit_pos = None  # Tupla con (posición original, posición nueva) de la última unidad movida
 
     @staticmethod
-    def _load_images():
+    def _load_unit_images():
         global size
         images = {}
         for key, path in IMAGE_PATHS.items():
@@ -98,38 +83,38 @@ class Game:
                 images[key] = pygame.Surface((size, size), pygame.SRCALPHA)
                 pygame.draw.circle(images[key], (0, 255, 0), (size // 2, size // 2), size // 2)
 
-        # Cargar la imagen de portada
-        try:
-            cover_img = pygame.image.load(IMAGE_PATHS["cover"]).convert_alpha()
-            # Escalar la imagen de portada manteniendo la relación de aspecto
-            img_width, img_height = cover_img.get_size()
-            aspect_ratio = img_width / img_height
-
-            # Calcular las dimensiones para mantener la relación de aspecto
-            if SCREEN_WIDTH / SCREEN_HEIGHT > aspect_ratio:
-                # La pantalla es más ancha que la imagen
-                new_width = int(SCREEN_HEIGHT * aspect_ratio)
-                new_height = SCREEN_HEIGHT
-            else:
-                # La pantalla es más alta que la imagen
-                new_width = SCREEN_WIDTH
-                new_height = int(SCREEN_WIDTH / aspect_ratio)
-
-            # Escalar la imagen manteniendo la relación de aspecto
-            scaled_img = pygame.transform.scale(cover_img, (new_width, new_height))
-
-            # Crear una superficie del tamaño de la pantalla
-            images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            images["cover"].fill((0, 0, 0))  # Fondo negro
-
-            # Centrar la imagen en la pantalla
-            x_offset = (SCREEN_WIDTH - new_width) // 2
-            y_offset = (SCREEN_HEIGHT - new_height) // 2
-            images["cover"].blit(scaled_img, (x_offset, y_offset))
-        except Exception as e:
-            print(f"{_('Error loading cover:')} {e}")
-            images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            images["cover"].fill((0, 0, 0))
+        # # Cargar la imagen de portada
+        # try:
+        #     cover_img = pygame.image.load(IMAGE_PATHS["cover"]).convert_alpha()
+        #     # Escalar la imagen de portada manteniendo la relación de aspecto
+        #     img_width, img_height = cover_img.get_size()
+        #     aspect_ratio = img_width / img_height
+        #
+        #     # Calcular las dimensiones para mantener la relación de aspecto
+        #     if SCREEN_WIDTH / SCREEN_HEIGHT > aspect_ratio:
+        #         # La pantalla es más ancha que la imagen
+        #         new_width = int(SCREEN_HEIGHT * aspect_ratio)
+        #         new_height = SCREEN_HEIGHT
+        #     else:
+        #         # La pantalla es más alta que la imagen
+        #         new_width = SCREEN_WIDTH
+        #         new_height = int(SCREEN_WIDTH / aspect_ratio)
+        #
+        #     # Escalar la imagen manteniendo la relación de aspecto
+        #     scaled_img = pygame.transform.scale(cover_img, (new_width, new_height))
+        #
+        #     # Crear una superficie del tamaño de la pantalla
+        #     images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        #     images["cover"].fill((0, 0, 0))
+        #
+        #     # Centrar la imagen en la pantalla
+        #     x_offset = (SCREEN_WIDTH - new_width) // 2
+        #     y_offset = (SCREEN_HEIGHT - new_height) // 2
+        #     images["cover"].blit(scaled_img, (x_offset, y_offset))
+        # except Exception as e:
+        #     print(f"{_('Error loading cover:')} {e}")
+        #     images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        #     images["cover"].fill((0, 0, 0))
 
         return images
 
@@ -158,17 +143,14 @@ class Game:
     @staticmethod
     def _get_initial_units():
         """Devuelve las unidades iniciales para cada bando."""
-        # Importar las constantes traducidas
-        import translated_constants as tc
-
         return {
-            tc.SIDE_CRUSADERS: [
+            SIDE_CRUSADERS: [
                 Ricardo(), Templario(), Hospitalario(),
                 Caballero(), Caballero(), Caballero(),
                 *[Infanteria() for _ in range(6)],
                 *[Bagaje() for _ in range(4)]
             ],
-            tc.SIDE_SARACENS: [
+            SIDE_SARACENS: [
                 Saladino(),
                 *[Mameluco() for _ in range(4)],
                 *[Arquero() for _ in range(6)],
@@ -320,12 +302,44 @@ class Game:
                     return row, col
         return None
 
+    def _load_grid(self):
+        """Carga el grid hexagonal"""
+        if self.grid is None:
+            self.grid = HexGrid()
+
+    def _load_ui(self):
+        """Carga la interfaz de usuario"""
+        if self.ui is None:
+            self.ui = GameUI(self)
+
+    def _load_images(self):
+        """Carga las imágenes de las unidades"""
+        if self.images is None:
+            self.images = self._load_unit_images()
+
+    def _load_units(self):
+        """Carga las unidades iniciales"""
+        if self.units_to_deploy is None:
+            self.units_to_deploy = self._get_initial_units()
+
     def _start_game(self, player_side):
+        # Cargar componentes necesarios para el juego
+        self._load_board()
+        self._load_grid()
+        self._load_ui()
+        self._load_images()
+        self._load_units()
+
         self.player_side = player_side
         self.ai_side = SIDE_SARACENS if player_side == SIDE_CRUSADERS else SIDE_CRUSADERS
         self.state = GAME_STATES["DEPLOY_PLAYER"]
         self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
         self.ui.add_log_message(_("Jugando como {player_side}. Comienza el despliegue.").format(player_side=_(self.player_side)))
+
+    def _load_side_selection_menu(self):
+        """Carga el menú de selección de bando"""
+        if self.side_selection_menu is None:
+            self.side_selection_menu = SideSelectionMenu(self.screen)
 
     def _handle_setup_menu(self, event):
         """Maneja las interacciones con el menú de configuración."""
@@ -345,6 +359,7 @@ class Game:
                 self._load_rules()
             elif action == "SELECT_SIDE":
                 # Ir a la pantalla de selección de bando
+                self._load_side_selection_menu()
                 self.state = GAME_STATES["SELECT_SIDE"]
             elif action == "QUIT":
                 # Salir del juego
@@ -353,19 +368,20 @@ class Game:
 
     def _load_board(self):
         """Carga y escala el tablero según la escala actual."""
-        # Cargar la imagen del tablero
-        board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
+        if self.tablero_escalado is None:
+            # Cargar la imagen del tablero
+            board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
 
-        # Escalar el tablero según la escala actual
-        self.tablero_escalado = pygame.transform.smoothscale(
-            board_img,
-            (int(TABLERO_REAL_WIDTH * ESCALA), int(TABLERO_REAL_HEIGHT * ESCALA))
-        )
+            # Escalar el tablero según la escala actual
+            self.tablero_escalado = pygame.transform.smoothscale(
+                board_img,
+                (int(TABLERO_REAL_WIDTH * ESCALA), int(TABLERO_REAL_HEIGHT * ESCALA))
+            )
 
     def _change_display_scale(self):
         """Cambia la escala de pantalla."""
         global DISPLAY_SCALING
-        # Ciclar entre diferentes escalas (75%, 100%, 125%, 150%)
+        # Ciclar entre diferentes escalas (40%, 50%, 60%, 75%)
         scales = [0.4, 0.5, 0.6, 0.75]
         current_index = scales.index(DISPLAY_SCALING) if DISPLAY_SCALING in scales else 0
         next_index = (current_index + 1) % len(scales)
@@ -379,12 +395,26 @@ class Game:
         # Recrear la pantalla con las nuevas dimensiones
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-        # Actualizar los menús con la nueva pantalla
-        self.setup_menu = SetupMenu(self.screen)
-        self.side_selection_menu = SideSelectionMenu(self.screen)
+        # Reiniciar componentes que dependen del tamaño de la pantalla
+        self.setup_menu = None
+        self.side_selection_menu = None
+        self.tablero_escalado = None
 
-        # Recargar y escalar el tablero
-        self._load_board()
+        # Recargar los componentes necesarios para el estado actual
+        if self.state == GAME_STATES["SETUP_MENU"]:
+            self._load_setup_menu()
+        elif self.state == GAME_STATES["SELECT_SIDE"]:
+            self._load_setup_menu()
+            self._load_side_selection_menu()
+        elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
+                           GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+            self._load_setup_menu()
+            self._load_side_selection_menu()
+            self._load_board()
+            if self.grid is not None:
+                self._load_grid()
+            if self.ui is not None:
+                self._load_ui()
 
         # Mensaje de log en consola
         print(_("Escala de pantalla cambiada a {scale}%").format(scale=int(DISPLAY_SCALING * 100)))
@@ -394,10 +424,12 @@ class Game:
         global CURRENT_LANGUAGE, _
 
         # Lista de idiomas disponibles
-        available_languages = ['es', 'en']
+        available_languages = AVAILABLE_LANGUAGES
 
         # Determinar si el idioma solicitado está entre los disponibles
-        if language in available_languages:
+        if language == CURRENT_LANGUAGE:
+            return False
+        elif language in available_languages:
             new_language = language
         else:
             # Obtener el siguiente idioma en la lista
@@ -406,122 +438,116 @@ class Game:
             new_language = available_languages[next_index]
 
         # Debug: Verificar que el idioma ha cambiado
-        print(f"Changing language from {CURRENT_LANGUAGE} to {new_language}")
+        print(f"Debug: Changing language from {CURRENT_LANGUAGE} to {new_language}")
 
+        # Actualizar la variable global en config.py
+        CURRENT_LANGUAGE = new_language
+
+        # Cargar las traducciones para el nuevo idioma
         try:
-            # Actualizar las constantes traducidas en el módulo translated_constants
-            import translated_constants as tc
-            tc.update_constants(new_language)
-
-            # Actualizar la variable global en este módulo
-            CURRENT_LANGUAGE = new_language
-
-            # Crear una nueva instancia de traducción con el nuevo idioma
             translation = gettext.translation(
                 TRANSLATION_DOMAIN,
                 localedir=LOCALE_DIR,
                 languages=[new_language],
                 fallback=True
             )
-
-            # Obtener la función de traducción
-            new_gettext = translation.gettext
-
-            # Actualizar la función de traducción global
-            _ = new_gettext
-
+            _ = translation.gettext
             # Instalar la traducción globalmente
             translation.install()
 
             # Actualizar la función de traducción en todos los módulos que la usan
             import gameui
-            gameui._ = new_gettext
+            gameui._ = _
             import hexgrid
-            hexgrid._ = new_gettext
+            hexgrid._ = _
             import menu
-            menu._ = new_gettext
+            menu._ = _
             import units
-            units._ = new_gettext
+            units._ = _
             import config
-            config._ = new_gettext
-
+            config._ = _
             # Actualizar la función de traducción en el módulo actual (game.py)
             import sys
             current_module = sys.modules[__name__]
-            current_module._ = new_gettext
+            current_module._ = _
 
-            # Reinicializar units_to_deploy para que use las claves traducidas actualizadas
-            if hasattr(self, 'units_to_deploy'):
-                self.units_to_deploy = self._get_initial_units()
+            # Actualizar las constantes traducidas en el módulo translated_constants
+            import translated_constants as tc
+            tc.update_constants(new_language)
 
-            # Actualizar todas las unidades en el tablero
-            self._update_units_on_board()
+            # Recargar el módulo config.py para actualizar las constantes traducidas
+            import importlib
+            importlib.reload(sys.modules['config'])
+
+            # Re-importar las constantes actualizadas de config.py
+            from config import (SIDE_CRUSADERS, SIDE_SARACENS, RICHARD_NAME, INFANTRY_NAME,
+                              KNIGHT_NAME, TEMPLAR_NAME, HOSPITALLER_NAME, SALADIN_NAME,
+                              MAMLUK_NAME, ARCHER_NAME, EXPLORER_NAME, BAGGAGE_NAME,
+                              GAME_NAME, TURN_PHASES)
+
+            # Actualizar las constantes globales en este módulo
+            globals().update({
+                'SIDE_CRUSADERS': SIDE_CRUSADERS,
+                'SIDE_SARACENS': SIDE_SARACENS,
+                'RICHARD_NAME': RICHARD_NAME,
+                'INFANTRY_NAME': INFANTRY_NAME,
+                'KNIGHT_NAME': KNIGHT_NAME,
+                'TEMPLAR_NAME': TEMPLAR_NAME,
+                'HOSPITALLER_NAME': HOSPITALLER_NAME,
+                'SALADIN_NAME': SALADIN_NAME,
+                'MAMLUK_NAME': MAMLUK_NAME,
+                'ARCHER_NAME': ARCHER_NAME,
+                'EXPLORER_NAME': EXPLORER_NAME,
+                'BAGGAGE_NAME': BAGGAGE_NAME,
+                'GAME_NAME': GAME_NAME,
+                'TURN_PHASES': TURN_PHASES
+            })
+
+            # Recargar también units.py para que use las nuevas constantes de config.py
+            importlib.reload(sys.modules['units'])
+
+            # Reiniciar componentes que dependen del idioma
+            self.setup_menu = None
+            self.side_selection_menu = None
+
+            # Si estamos en una fase avanzada del juego, reiniciar unidades
+            if self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
+                             GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+                self.units_to_deploy = None
+                self._load_units()
+                # Actualizar las unidades existentes en el tablero
+                self._update_units_on_board()
+
+            # Recargar los componentes necesarios para el estado actual
+            if self.state == GAME_STATES["SETUP_MENU"]:
+                self._load_setup_menu()
+            elif self.state == GAME_STATES["SELECT_SIDE"]:
+                self._load_setup_menu()
+                self._load_side_selection_menu()
+            elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
+                               GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+                self._load_setup_menu()
+                self._load_side_selection_menu()
 
             # Mensaje de éxito (usando formato de cadena normal en lugar de f-string con _())
             language_changed_msg = _("Idioma cambiado a: {lang}")
-            self.ui.add_log_message(language_changed_msg.format(lang=new_language))
+            if self.ui is not None:
+                self.ui.add_log_message(language_changed_msg.format(lang=new_language))
             print(f"{_('Idioma cambiado a:')} {new_language}")
+            return True
         except Exception as e:
-            self.ui.add_log_message(_("Error al cambiar idioma"))
+            if self.ui is not None:
+                self.ui.add_log_message(_("Error al cambiar idioma"))
             print(f"{_('Error al cambiar idioma')}: {e}")
-            import traceback
-            traceback.print_exc()
-
-        self._draw()
-
-    def _update_config_constants(self):
-        """Actualiza todas las constantes traducidas en config.py"""
-        import config
-
-        # Actualizar constantes de bandos
-        config.SIDE_CRUSADERS = _("CRUZADOS")
-        config.SIDE_SARACENS = _("SARRACENOS")
-
-        # Actualizar constantes de nombres de unidades
-        config.RICHARD_NAME = _("Ricardo")
-        config.INFANTRY_NAME = _("Infanteria")
-        config.KNIGHT_NAME = _("Caballero")
-        config.TEMPLAR_NAME = _("Templario")
-        config.HOSPITALLER_NAME = _("Hospitalario")
-        config.SALADIN_NAME = _("Saladino")
-        config.MAMLUK_NAME = _("Mameluco")
-        config.ARCHER_NAME = _("Arquero")
-        config.EXPLORER_NAME = _("Explorador")
-        config.BAGGAGE_NAME = _("Bagaje")
-
-        # Actualizar nombre del juego
-        config.GAME_NAME = _("game_name")
-
-        # Actualizar fases de turno
-        config.TURN_PHASES = {
-            'MOVEMENT': _('Movimiento'),
-            'COMBAT': _('Combate')
-        }
-
-        # Reconstruir el diccionario IMAGE_PATHS con las nuevas claves traducidas
-        # Guardamos las rutas originales
-        original_paths = config.IMAGE_PATHS.copy()
-
-        # Actualizamos las entradas que usan constantes traducidas
-        config.IMAGE_PATHS.update({
-            config.RICHARD_NAME: original_paths.get(_("Ricardo"), original_paths.get("Ricardo")),
-            config.TEMPLAR_NAME: original_paths.get(_("Templario"), original_paths.get("Templario")),
-            config.HOSPITALLER_NAME: original_paths.get(_("Hospitalario"), original_paths.get("Hospitalario")),
-            config.KNIGHT_NAME: original_paths.get(_("Caballero"), original_paths.get("Caballero")),
-            config.INFANTRY_NAME: original_paths.get(_("Infanteria"), original_paths.get("Infanteria")),
-            config.BAGGAGE_NAME: original_paths.get(_("Bagaje"), original_paths.get("Bagaje")),
-            config.SALADIN_NAME: original_paths.get(_("Saladino"), original_paths.get("Saladino")),
-            config.MAMLUK_NAME: original_paths.get(_("Mameluco"), original_paths.get("Mameluco")),
-            config.ARCHER_NAME: original_paths.get(_("Arquero"), original_paths.get("Arquero")),
-            config.EXPLORER_NAME: original_paths.get(_("Explorador"), original_paths.get("Explorador")),
-        })
+            return False
+        #self._draw()
 
     def _update_units_on_board(self):
         """Actualiza todas las unidades en el tablero con los nuevos valores traducidos"""
         if not hasattr(self, 'grid') or not self.grid:
             return
 
-        # Importar las constantes traducidas
+        # Importar las constantes actualizadas
         import translated_constants as tc
 
         for row in range(self.grid.rows):
@@ -529,9 +555,9 @@ class Game:
                 unit = self.grid.grid[row][col]
                 if unit:
                     # Actualizar el lado de la unidad
-                    if unit.side == SIDE_CRUSADERS or unit.side == _("CRUZADOS"):
+                    if unit.side == tc.SIDE_CRUSADERS or unit.side.startswith("CRUZADOS"):
                         unit.side = tc.SIDE_CRUSADERS
-                    elif unit.side == SIDE_SARACENS or unit.side == _("SARRACENOS"):
+                    elif unit.side == tc.SIDE_SARACENS or unit.side.startswith("SARRACENOS"):
                         unit.side = tc.SIDE_SARACENS
 
                     # Actualizar el image_key basado en su clase
@@ -566,14 +592,11 @@ class Game:
         # Recrear la pantalla con las dimensiones predeterminadas
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-        # Actualizar los menús con la nueva pantalla
-        self.setup_menu = SetupMenu(self.screen)
-        self.side_selection_menu = SideSelectionMenu(self.screen)
+        # Reiniciar componentes que dependen del tamaño de la pantalla
+        self.setup_menu = None
+        self.side_selection_menu = None
+        self.tablero_escalado = None
 
-        # Recargar y escalar el tablero
-        self._load_board()
-
-        # Cambiar el idioma si no es el predeterminado
         # Intentar obtener el idioma del sistema
         try:
             current_locale, encoding = locale.getlocale()
@@ -587,8 +610,25 @@ class Game:
         except (ValueError, AttributeError):
             language = 'es'  # Idioma por defecto si hay algún error
 
-        if(CURRENT_LANGUAGE != language):
+        # Cambiar el idioma si no es el predeterminado
+        if CURRENT_LANGUAGE != language:
             self._change_language(language)
+        else:
+            # Recargar los componentes necesarios para el estado actual
+            if self.state == GAME_STATES["SETUP_MENU"]:
+                self._load_setup_menu()
+            elif self.state == GAME_STATES["SELECT_SIDE"]:
+                self._load_setup_menu()
+                self._load_side_selection_menu()
+            elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
+                               GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+                self._load_setup_menu()
+                self._load_side_selection_menu()
+                self._load_board()
+                if self.grid is not None:
+                    self._load_grid()
+                if self.ui is not None:
+                    self._load_ui()
 
         # Mensaje de log
         print(_("Valores predeterminados restaurados"))
@@ -1979,8 +2019,14 @@ class Game:
                         return True
         return False
 
+    def _load_setup_menu(self):
+        """Carga el menú de configuración"""
+        if self.setup_menu is None:
+            self.setup_menu = SetupMenu(self.screen)
+
     def _end_intro(self):
         """Finaliza la pantalla de introducción y pasa al menú de configuración"""
+        self._load_setup_menu()
         self.state = GAME_STATES["SETUP_MENU"]
 
     def _play_music(self, music_key):
@@ -2011,11 +2057,77 @@ class Game:
         pass
 
     def _draw(self):
-        self.ui.draw_game(self)
+        # Cargar la UI para todos los estados del juego
+        if self.ui is None:
+            self._load_ui()
+
+        # Para estados iniciales, asegurarse de que los componentes necesarios estén cargados
+        if self.state == GAME_STATES["INTRO"]:
+            # Cargar la imagen de portada si es necesario
+            if self.images is None or "cover" not in self.images:
+                self._load_cover_image()
+        elif self.state == GAME_STATES["SETUP_MENU"]:
+            # Para el menú de configuración, solo necesitamos cargar ese componente
+            if self.setup_menu is None:
+                self._load_setup_menu()
+        elif self.state == GAME_STATES["SELECT_SIDE"]:
+            # Para el menú de selección de bando, solo necesitamos cargar ese componente
+            if self.side_selection_menu is None:
+                self._load_side_selection_menu()
+
+        # Dibujar el juego usando la UI
+        if self.ui is not None:
+            self.ui.draw_game(self)
+        else:
+            # Fallback en caso de que la UI no se haya podido cargar
+            self.screen.fill(COLOR_BG)
+            if self.state == GAME_STATES["INTRO"] and self.images is not None and "cover" in self.images:
+                self.screen.blit(self.images["cover"], (0, 0))
+
         pygame.display.flip()
+
+    def _load_cover_image(self):
+        """Carga solo la imagen de portada"""
+        if self.images is None:
+            self.images = {}
+
+        try:
+            cover_img = pygame.image.load(IMAGE_PATHS["cover"]).convert_alpha()
+            # Escalar la imagen de portada manteniendo la relación de aspecto
+            img_width, img_height = cover_img.get_size()
+            aspect_ratio = img_width / img_height
+
+            # Calcular las dimensiones para mantener la relación de aspecto
+            if SCREEN_WIDTH / SCREEN_HEIGHT > aspect_ratio:
+                # La pantalla es más ancha que la imagen
+                new_width = int(SCREEN_HEIGHT * aspect_ratio)
+                new_height = SCREEN_HEIGHT
+            else:
+                # La pantalla es más alta que la imagen
+                new_width = SCREEN_WIDTH
+                new_height = int(SCREEN_WIDTH / aspect_ratio)
+
+            # Escalar la imagen manteniendo la relación de aspecto
+            scaled_img = pygame.transform.scale(cover_img, (new_width, new_height))
+
+            # Crear una superficie del tamaño de la pantalla
+            self.images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            self.images["cover"].fill((0, 0, 0))  # Fondo negro
+
+            # Centrar la imagen en la pantalla
+            x_offset = (SCREEN_WIDTH - new_width) // 2
+            y_offset = (SCREEN_HEIGHT - new_height) // 2
+            self.images["cover"].blit(scaled_img, (x_offset, y_offset))
+        except Exception as e:
+            print(f"{_('Error loading cover:')} {e}")
+            self.images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            self.images["cover"].fill((0, 0, 0))  # Fondo negro
 
     def run(self):
         """Bucle principal del juego."""
+        # Cargar la imagen de portada para la intro
+        self._load_cover_image()
+
         # Iniciar la música de introducción
         self._play_music("arabesque")
 
@@ -2026,6 +2138,25 @@ class Game:
             if self.game_over:
                 self._handle_game_over()
             else:
+                # Cargar componentes según el estado actual
+                if self.state == GAME_STATES["SETUP_MENU"] and self.setup_menu is None:
+                    self._load_setup_menu()
+                elif self.state == GAME_STATES["SELECT_SIDE"] and self.side_selection_menu is None:
+                    self._load_side_selection_menu()
+                elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
+                                   GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+                    # Asegurarse de que todos los componentes necesarios estén cargados
+                    if self.grid is None:
+                        self._load_grid()
+                    if self.ui is None:
+                        self._load_ui()
+                    if self.tablero_escalado is None:
+                        self._load_board()
+                    if self.images is None:
+                        self._load_images()
+                    if self.units_to_deploy is None:
+                        self._load_units()
+
                 # Restaurar la lógica original de despliegue
                 if self.state == GAME_STATES["DEPLOY_AI"]:
                     self._ai_deploy_units()

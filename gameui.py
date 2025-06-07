@@ -314,7 +314,6 @@ class GameUI:
         self.game.screen.blit(quit_text, (quit_rect.centerx - quit_text.get_width()//2, 
                                         quit_rect.centery - quit_text.get_height()//2))
 
-        pygame.display.flip()
         return scale_rect, language_rect, defaults_rect, rules_rect, side_rect, quit_rect
 
     def draw_side_selection(self):
@@ -339,7 +338,6 @@ class GameUI:
         self.game.screen.blit(sarracenos_text, (sarracenos_rect.centerx - sarracenos_text.get_width()//2, 
                                              sarracenos_rect.centery - sarracenos_text.get_height()//2))
 
-        pygame.display.flip()
         return cruzados_rect, sarracenos_rect
 
     def _get_selected_unit(self):
@@ -631,29 +629,43 @@ class GameUI:
 
     def draw_intro(self, game):
         """Dibuja la pantalla de introducción"""
-        # Cargar la fuente para el texto de introducción
-        intro_font = pygame.font.Font(FONT_PATHS["abbasy"], 120)
+        try:
+            # Asegurarse de que la imagen de portada esté cargada
+            if not hasattr(game, 'images') or game.images is None or "cover" not in game.images:
+                # Si no hay imagen de portada, solo dibujar un fondo negro
+                game.screen.fill(COLOR_BG)
+            else:
+                # Dibujar la imagen de portada a pantalla completa
+                game.screen.blit(game.images["cover"], (0, 0))
 
-        # Crear el texto
-        intro_text = GAME_NAME
-        intro_text_surface = intro_font.render(intro_text, True, WHITE)
+            # Cargar la fuente para el texto de introducción
+            try:
+                intro_font = pygame.font.Font(FONT_PATHS["abbasy"], 120)
+            except Exception as e:
+                # Si no se puede cargar la fuente, usar una fuente del sistema
+                print(f"Error loading font: {e}")
+                intro_font = pygame.font.SysFont('Arial', 80, bold=True)
 
-        # Obtener rectángulo del texto para centrarlo
-        intro_text_rect = intro_text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 120))
+            # Crear el texto con el nombre del juego
+            intro_text = GAME_NAME
+            intro_text_surface = intro_font.render(intro_text, True, WHITE)
 
-        # Dibujar la imagen de portada a pantalla completa
-        game.screen.blit(game.images["cover"], (0, 0))
+            # Obtener rectángulo del texto para centrarlo
+            intro_text_rect = intro_text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 120))
 
-        # Dibujar el texto encima
-        game.screen.blit(intro_text_surface, intro_text_rect)
+            # Dibujar el texto encima
+            game.screen.blit(intro_text_surface, intro_text_rect)
 
-        # Verificar si han pasado los 3m 27s segundos de duración máxima
-        current_time = pygame.time.get_ticks()
-        if current_time - game.intro_start_time >= game.intro_duration:
-            game._end_intro()
-
-        # Actualizar la pantalla
-        pygame.display.flip()
+            # Verificar si han pasado los 3m 27s segundos de duración máxima
+            if hasattr(game, 'intro_start_time') and hasattr(game, 'intro_duration'):
+                current_time = pygame.time.get_ticks()
+                if current_time - game.intro_start_time >= game.intro_duration:
+                    game._end_intro()
+        except Exception as e:
+            # En caso de error, mostrar un mensaje en la consola
+            print(f"Error drawing intro screen: {e}")
+            # Y dibujar un fondo negro como fallback
+            game.screen.fill(COLOR_BG)
 
     def draw_game_over(self, game):
         """Dibuja la pantalla de fin de juego"""
@@ -699,56 +711,68 @@ class GameUI:
         # 1. Dibujar fondo
         game.screen.fill(COLOR_BG)
 
-        # 2. Dibujar tablero (fondo)
-        pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
-        game.screen.blit(game.tablero_escalado, (pos_x, pos_y))
-
-        # 3. Dibujar indicador de último movimiento si existe (para función de deshacer)
-        if hasattr(game, 'last_moved_unit_pos') and game.last_moved_unit_pos:
-            row, col = game.last_moved_unit_pos[0]  # Posición original
-            x, y = game.grid.hex_to_pixel(row, col)
-            x += pos_x
-            y += pos_y
-
-            s = pygame.Surface((HEX_MIN_SIZE, HEX_MIN_SIZE), pygame.SRCALPHA)
-            pygame.draw.circle(s, (255, 0, 0, 180), (HEX_MIN_SIZE//2, HEX_MIN_SIZE//2), HEX_MIN_SIZE//3)
-            game.screen.blit(s, (x - HEX_MIN_SIZE//2, y - HEX_MIN_SIZE//2))
-
-        # 4. Debug hex grid (opcional)
-        if __debug__: 
-            game.grid.draw_hex_debug(game.screen, pos_x, pos_y)
-
-        # 5. Dibujar unidades
-        game.grid.draw(game.screen, game.images, pos_x, pos_y)
-
-        # 6. Dibujar movimientos posibles si estamos en fase de movimiento
-        if game.selected_unit and game.possible_moves:
-            self.draw_possible_moves(game.possible_moves, game.grid, pos_x, pos_y)
-
-        # 7. Dibujar objetivos de combate si estamos en fase de combate
-        if game.state == "PLAYER_TURN" and game.turn_phase == TURN_PHASES["COMBAT"]:
-            self.draw_combat_targets()
-
-        # 8. Dibujar UI
-        self.draw_log_panel()
-        self.draw_panel()
-        self.draw_deployment_zones()
-
-        # 9. Dibujar información de progreso hacia la victoria
-        self.draw_victory_progress(game)
-
-        # 10. Dibujar pantalla de menú de configuración si es necesario
-        if game.state == GAME_STATES["SETUP_MENU"]:
-            self.draw_setup_menu()
-
-        # 11. Dibujar pantalla de selección si es necesario
-        if game.state == GAME_STATES["SELECT_SIDE"]:
-            self.draw_side_selection()
-
-        # 12. Dibujar pantalla de introducción si es necesario
+        # Renderizar según el estado del juego
         if game.state == GAME_STATES["INTRO"]:
+            # Dibujar pantalla de introducción
             self.draw_intro(game)
+        elif game.state == GAME_STATES["SETUP_MENU"]:
+            # Dibujar menú de configuración
+            self.draw_setup_menu()
+            # Dibujar panel de log si está disponible
+            if hasattr(self, 'log_messages'):
+                self.draw_log_panel()
+        elif game.state == GAME_STATES["SELECT_SIDE"]:
+            # Dibujar menú de selección de bando
+            self.draw_side_selection()
+            # Dibujar panel de log si está disponible
+            if hasattr(self, 'log_messages'):
+                self.draw_log_panel()
+        else:
+            # Estados que requieren el tablero y las unidades
+            # (DEPLOY_PLAYER, DEPLOY_AI, PLAYER_TURN, AI_TURN)
 
-        # 13. Dibujar pantalla de fin de juego si es necesario
+            # 2. Dibujar tablero (fondo)
+            if game.tablero_escalado is not None:
+                pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
+                game.screen.blit(game.tablero_escalado, (pos_x, pos_y))
+
+                # 3. Dibujar indicador de último movimiento si existe (para función de deshacer)
+                if hasattr(game, 'last_moved_unit_pos') and game.last_moved_unit_pos:
+                    row, col = game.last_moved_unit_pos[0]  # Posición original
+                    x, y = game.grid.hex_to_pixel(row, col)
+                    x += pos_x
+                    y += pos_y
+
+                    s = pygame.Surface((HEX_MIN_SIZE, HEX_MIN_SIZE), pygame.SRCALPHA)
+                    pygame.draw.circle(s, (255, 0, 0, 180), (HEX_MIN_SIZE//2, HEX_MIN_SIZE//2), HEX_MIN_SIZE//3)
+                    game.screen.blit(s, (x - HEX_MIN_SIZE//2, y - HEX_MIN_SIZE//2))
+
+                # 4. Debug hex grid (opcional)
+                if __debug__ and game.grid is not None: 
+                    game.grid.draw_hex_debug(game.screen, pos_x, pos_y)
+
+                # 5. Dibujar unidades
+                if game.grid is not None and game.images is not None:
+                    game.grid.draw(game.screen, game.images, pos_x, pos_y)
+
+                # 6. Dibujar movimientos posibles si estamos en fase de movimiento
+                if game.selected_unit and game.possible_moves:
+                    self.draw_possible_moves(game.possible_moves, game.grid, pos_x, pos_y)
+
+                # 7. Dibujar objetivos de combate si estamos en fase de combate
+                if game.state == "PLAYER_TURN" and game.turn_phase == TURN_PHASES["COMBAT"]:
+                    self.draw_combat_targets()
+
+                # 8. Dibujar zonas de despliegue
+                self.draw_deployment_zones()
+
+                # 9. Dibujar información de progreso hacia la victoria
+                self.draw_victory_progress(game)
+
+            # 10. Dibujar UI común para todos los estados de juego activo
+            self.draw_log_panel()
+            self.draw_panel()
+
+        # 11. Dibujar pantalla de fin de juego si es necesario (sobre cualquier otro estado)
         if game.game_over:
             self.draw_game_over(game)

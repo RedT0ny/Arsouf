@@ -6,6 +6,10 @@ import locale
 # Configuración de internacionalización
 LOCALE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'locale')
 TRANSLATION_DOMAIN = 'messages'
+AVAILABLE_LANGUAGES = [
+    d for d in os.listdir(LOCALE_DIR)
+    if os.path.isdir(os.path.join(LOCALE_DIR, d))
+]
 
 # Intentar obtener el idioma del sistema
 try:
