@@ -3,6 +3,9 @@ import sys
 import os
 import pygame
 import gettext
+
+import config
+
 _ = gettext.gettext  # type: callable
 import random
 
@@ -82,39 +85,6 @@ class Game:
                 print(f"{_('Error loading')} {path}: {e}")
                 images[key] = pygame.Surface((size, size), pygame.SRCALPHA)
                 pygame.draw.circle(images[key], (0, 255, 0), (size // 2, size // 2), size // 2)
-
-        # # Cargar la imagen de portada
-        # try:
-        #     cover_img = pygame.image.load(IMAGE_PATHS["cover"]).convert_alpha()
-        #     # Escalar la imagen de portada manteniendo la relación de aspecto
-        #     img_width, img_height = cover_img.get_size()
-        #     aspect_ratio = img_width / img_height
-        #
-        #     # Calcular las dimensiones para mantener la relación de aspecto
-        #     if SCREEN_WIDTH / SCREEN_HEIGHT > aspect_ratio:
-        #         # La pantalla es más ancha que la imagen
-        #         new_width = int(SCREEN_HEIGHT * aspect_ratio)
-        #         new_height = SCREEN_HEIGHT
-        #     else:
-        #         # La pantalla es más alta que la imagen
-        #         new_width = SCREEN_WIDTH
-        #         new_height = int(SCREEN_WIDTH / aspect_ratio)
-        #
-        #     # Escalar la imagen manteniendo la relación de aspecto
-        #     scaled_img = pygame.transform.scale(cover_img, (new_width, new_height))
-        #
-        #     # Crear una superficie del tamaño de la pantalla
-        #     images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        #     images["cover"].fill((0, 0, 0))
-        #
-        #     # Centrar la imagen en la pantalla
-        #     x_offset = (SCREEN_WIDTH - new_width) // 2
-        #     y_offset = (SCREEN_HEIGHT - new_height) // 2
-        #     images["cover"].blit(scaled_img, (x_offset, y_offset))
-        # except Exception as e:
-        #     print(f"{_('Error loading cover:')} {e}")
-        #     images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        #     images["cover"].fill((0, 0, 0))
 
         return images
 
@@ -232,7 +202,7 @@ class Game:
             # Verificar si es un clic derecho y hay un atacante seleccionado
             if event.button == 3 and self.combat_attacker:
                 # Cancelar la selección del atacante
-                self.ui.add_log_message(_("Selección de {} cancelada").format(self.combat_attacker.image_key))
+                self.ui.add_log_message(_("Selección de {} cancelada").format(_(self.combat_attacker.image_key)))
                 self.combat_attacker = None
                 self.combat_targets = []
                 return
@@ -314,8 +284,8 @@ class Game:
 
     def _load_images(self):
         """Carga las imágenes de las unidades"""
-        if self.images is None:
-            self.images = self._load_unit_images()
+        #if self.images is None:
+        self.images = self._load_unit_images()
 
     def _load_units(self):
         """Carga las unidades iniciales"""
@@ -464,59 +434,14 @@ class Game:
             menu._ = _
             import units
             units._ = _
-            import config
-            config._ = _
             # Actualizar la función de traducción en el módulo actual (game.py)
             import sys
             current_module = sys.modules[__name__]
             current_module._ = _
 
-            # Actualizar las constantes traducidas en el módulo translated_constants
-            import translated_constants as tc
-            tc.update_constants(new_language)
-
-            # Recargar el módulo config.py para actualizar las constantes traducidas
-            import importlib
-            importlib.reload(sys.modules['config'])
-
-            # Re-importar las constantes actualizadas de config.py
-            from config import (SIDE_CRUSADERS, SIDE_SARACENS, RICHARD_NAME, INFANTRY_NAME,
-                              KNIGHT_NAME, TEMPLAR_NAME, HOSPITALLER_NAME, SALADIN_NAME,
-                              MAMLUK_NAME, ARCHER_NAME, EXPLORER_NAME, BAGGAGE_NAME,
-                              GAME_NAME, TURN_PHASES)
-
-            # Actualizar las constantes globales en este módulo
-            globals().update({
-                'SIDE_CRUSADERS': SIDE_CRUSADERS,
-                'SIDE_SARACENS': SIDE_SARACENS,
-                'RICHARD_NAME': RICHARD_NAME,
-                'INFANTRY_NAME': INFANTRY_NAME,
-                'KNIGHT_NAME': KNIGHT_NAME,
-                'TEMPLAR_NAME': TEMPLAR_NAME,
-                'HOSPITALLER_NAME': HOSPITALLER_NAME,
-                'SALADIN_NAME': SALADIN_NAME,
-                'MAMLUK_NAME': MAMLUK_NAME,
-                'ARCHER_NAME': ARCHER_NAME,
-                'EXPLORER_NAME': EXPLORER_NAME,
-                'BAGGAGE_NAME': BAGGAGE_NAME,
-                'GAME_NAME': GAME_NAME,
-                'TURN_PHASES': TURN_PHASES
-            })
-
-            # Recargar también units.py para que use las nuevas constantes de config.py
-            importlib.reload(sys.modules['units'])
-
             # Reiniciar componentes que dependen del idioma
             self.setup_menu = None
             self.side_selection_menu = None
-
-            # Si estamos en una fase avanzada del juego, reiniciar unidades
-            if self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
-                             GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
-                self.units_to_deploy = None
-                self._load_units()
-                # Actualizar las unidades existentes en el tablero
-                self._update_units_on_board()
 
             # Recargar los componentes necesarios para el estado actual
             if self.state == GAME_STATES["SETUP_MENU"]:
@@ -540,47 +465,6 @@ class Game:
                 self.ui.add_log_message(_("Error al cambiar idioma"))
             print(f"{_('Error al cambiar idioma')}: {e}")
             return False
-        #self._draw()
-
-    def _update_units_on_board(self):
-        """Actualiza todas las unidades en el tablero con los nuevos valores traducidos"""
-        if not hasattr(self, 'grid') or not self.grid:
-            return
-
-        # Importar las constantes actualizadas
-        import translated_constants as tc
-
-        for row in range(self.grid.rows):
-            for col in range(self.grid.cols):
-                unit = self.grid.grid[row][col]
-                if unit:
-                    # Actualizar el lado de la unidad
-                    if unit.side == tc.SIDE_CRUSADERS or unit.side.startswith("CRUZADOS"):
-                        unit.side = tc.SIDE_CRUSADERS
-                    elif unit.side == tc.SIDE_SARACENS or unit.side.startswith("SARRACENOS"):
-                        unit.side = tc.SIDE_SARACENS
-
-                    # Actualizar el image_key basado en su clase
-                    if isinstance(unit, Infanteria):
-                        unit.image_key = tc.INFANTRY_NAME
-                    elif isinstance(unit, Caballero):
-                        unit.image_key = tc.KNIGHT_NAME
-                    elif isinstance(unit, Templario):
-                        unit.image_key = tc.TEMPLAR_NAME
-                    elif isinstance(unit, Hospitalario):
-                        unit.image_key = tc.HOSPITALLER_NAME
-                    elif isinstance(unit, Ricardo):
-                        unit.image_key = tc.RICHARD_NAME
-                    elif isinstance(unit, Bagaje):
-                        unit.image_key = tc.BAGGAGE_NAME
-                    elif isinstance(unit, Saladino):
-                        unit.image_key = tc.SALADIN_NAME
-                    elif isinstance(unit, Mameluco):
-                        unit.image_key = tc.MAMLUK_NAME
-                    elif isinstance(unit, Arquero):
-                        unit.image_key = tc.ARCHER_NAME
-                    elif isinstance(unit, Explorador):
-                        unit.image_key = tc.EXPLORER_NAME
 
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
@@ -658,7 +542,7 @@ class Game:
             if self.units_to_deploy[self.player_side]:
                 self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
                 self.ui.add_log_message(
-                    _("Colocado {unit}. Siguiente unidad lista.").format(unit=_(self.current_deploying_unit.image_key))
+                    _("Colocado {}. Siguiente unidad lista.").format(_(self.current_deploying_unit.image_key))
                 )
             else:
                 self.current_deploying_unit = None
@@ -737,14 +621,14 @@ class Game:
                     self._play_sound("cancel_move")
                     # Eliminar la unidad de moved_units
                     self.moved_units.remove((moved_row, moved_col))
-                    self.ui.add_log_message(_("{unit_type} ha vuelto a su posición original").format(unit_type=moved_unit.image_key))
+                    self.ui.add_log_message(_("{} ha vuelto a su posición original").format(_(moved_unit.image_key)))
                     self.last_moved_unit_pos = None
                     return
             return
 
         if not self.selected_unit and unit and self._is_player_unit(unit):
             if (row, col) in self.moved_units:
-                self.ui.add_log_message(_("Ya has movido a {unit_type} este turno").format(unit_type=unit.image_key))
+                self.ui.add_log_message(_("Ya has movido a {} este turno").format(_(unit.image_key)))
                 return
 
             # Reproducir sonido de selección
@@ -762,7 +646,7 @@ class Game:
                 self._unit_reaches_arsouf(moved_unit)
                 # Eliminar la unidad del tablero original
                 self.grid.grid[old_row][old_col] = None
-                self.ui.add_log_message(_("{unit_type} ha llegado a Arsouf!").format(unit_type=moved_unit.image_key))
+                self.ui.add_log_message(_("{} ha llegado a Arsouf!").format(_(moved_unit.image_key)))
                 # Verificar condición de victoria
                 self._check_win_condition()
             else:
@@ -814,8 +698,8 @@ class Game:
                         # Establecer el hexágono de carga
                         moved_unit.charging_hex = (next_row, next_col)
                         self.ui.add_log_message(_("{unit_type} cargando sobre {target} en ({next_row},{next_col})!").format(
-                            unit_type=moved_unit.image_key,
-                            target=target_unit.image_key,
+                            unit_type=_(moved_unit.image_key),
+                            target=_(target_unit.image_key),
                             next_row=next_row,
                             next_col=next_col
                         ))
@@ -1011,7 +895,7 @@ class Game:
                             self._unit_reaches_arsouf(unit)
                             # Eliminar la unidad del tablero original
                             self.grid.grid[row][col] = None
-                            self.ui.add_log_message(_("{unit_type} ha llegado a Arsouf!").format(unit_type=unit.image_key))
+                            self.ui.add_log_message(_("{} ha llegado a Arsouf!").format(_(unit.image_key)))
                             # Verificar condición de victoria
                             self._check_win_condition()
                         else:
@@ -1022,7 +906,7 @@ class Game:
                                 self._ai_moved_units_this_turn.add((row, col))
                             self.ui.add_log_message(
                                 _("{unit_type} mueve desde ({row},{col}) hasta ({new_row}, {new_col})").format(
-                                    unit_type=unit.image_key,
+                                    unit_type=_(unit.image_key),
                                     row=row,
                                     col=col,
                                     new_row=new_row,
@@ -1095,7 +979,7 @@ class Game:
             self.ui.add_log_message(_("¡Bagaje ha llegado a Arsouf! ({count}/2)").format(count=self.units_in_arsouf[BAGGAGE_NAME]))
         else:
             self.units_in_arsouf["other"] += 1
-            self.ui.add_log_message(_("¡{unit_type} ha llegado a Arsouf! ({count}/2)").format(unit_type=unit.image_key, count=self.units_in_arsouf['other']))
+            self.ui.add_log_message(_("¡{unit_type} ha llegado a Arsouf! ({count}/2)").format(unit_type=_(unit.image_key), count=self.units_in_arsouf['other']))
 
     def _check_win_condition(self):
         """Verifica si se ha cumplido la condición de victoria"""
@@ -1161,7 +1045,7 @@ class Game:
             if unit and unit.side == self.player_side and unit.health == 2:
                 # Verificar si la unidad ya atacó este turno
                 if (row, col) in self.attacked_units:
-                    self.ui.add_log_message(_("{unit_type} ya ha atacado este turno").format(unit_type=unit.image_key))
+                    self.ui.add_log_message(_("{} ya ha atacado este turno").format(_(unit.image_key)))
                     return
 
                 # Obtener enemigos adyacentes primero
@@ -1169,7 +1053,7 @@ class Game:
 
                 # Verificar si hay enemigos adyacentes
                 if not self.combat_targets:
-                    self.ui.add_log_message(_("No hay enemigos adyacentes para que {unit_type} ataque").format(unit_type=unit.image_key))
+                    self.ui.add_log_message(_("No hay enemigos adyacentes para que {} ataque").format(_(unit.image_key)))
                     # No seleccionar la unidad si no hay objetivos
                     self.combat_attacker = None
                 else:
@@ -1177,7 +1061,7 @@ class Game:
                     # Reproducir sonido de selección
                     self._play_sound("select")
                     self.combat_attacker = unit
-                    self.ui.add_log_message(_("{unit_type} seleccionado. Elige objetivo. (Cancelar con click derecho)").format(unit_type=unit.image_key))
+                    self.ui.add_log_message(_("{} seleccionado. Elige objetivo. (Cancelar con click derecho)").format(_(unit.image_key)))
             else:
                 self.ui.add_log_message(_("Selecciona una unidad aliada sana para atacar"))
         else:
@@ -1197,13 +1081,13 @@ class Game:
                     if is_charging:
                         self.ui.add_log_message(
                             _("¡Carga exitosa! {attacker_type} cargó contra {defender_type} y lo hirió").format(
-                                attacker_type=self.combat_attacker.image_key,
-                                defender_type=unit.image_key))
+                                attacker_type=_(self.combat_attacker.image_key),
+                                defender_type=_(unit.image_key)))
                     else:
                         self.ui.add_log_message(
                             _("¡Ataque exitoso! {attacker_type} hirió a {defender_type}").format(
-                                attacker_type=self.combat_attacker.image_key,
-                                defender_type=unit.image_key))
+                                attacker_type=_(self.combat_attacker.image_key),
+                                defender_type=_(unit.image_key)))
                 else:
                     # Reproducir sonido de ataque fallido
                     self._play_sound("failed_attack")
@@ -1212,12 +1096,11 @@ class Game:
                     if is_charging:
                         self.ui.add_log_message(
                             _("¡Carga fallida! {attacker_type} cargó contra {defender_type} pero no logró herirlo").format(
-                                attacker_type=self.combat_attacker.image_key,
-                                defender_type=unit.image_key))
+                                attacker_type=_(self.combat_attacker.image_key),
+                                defender_type=_(unit.image_key)))
                     else:
                         self.ui.add_log_message(
-                            _("¡Ataque fallido! {unit_type} resistió el ataque").format(
-                                unit_type=unit.image_key))
+                            _("¡Ataque fallido! {} resistió el ataque").format(_(unit.image_key)))
 
                 # Marcar la unidad como ya atacó este turno
                 self.attacked_units.add((self.combat_attacker.row, self.combat_attacker.col))
@@ -1950,7 +1833,7 @@ class Game:
                     f"{_('¡IA ataca!')} {_(unit.image_key)} {_('hirió a')} {_(target.image_key)}")
             else:
                 self.ui.add_log_message(
-                    f"{_('¡Ataque fallido de IA!')} {target.image_key} {_('resistió el ataque de')} {_(unit.image_key)}")
+                    f"{_('¡Ataque fallido de IA!')} {_(target.image_key)} {_('resistió el ataque de')} {_(unit.image_key)}")
 
             # Marcar la unidad como ya atacó este turno
             if hasattr(self, '_ai_attacked_units_this_turn'):

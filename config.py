@@ -11,18 +11,22 @@ AVAILABLE_LANGUAGES = [
     if os.path.isdir(os.path.join(LOCALE_DIR, d))
 ]
 
-# Intentar obtener el idioma del sistema
-try:
-    current_locale, encoding = locale.getlocale()
-    if current_locale is None:
-        language = 'es'  # Idioma por defecto: español
-    else:
-        language = current_locale.split('_')[0]
-        # Asegurarse de que el idioma sea uno de los disponibles
-        if language not in ['es', 'en']:
-            language = 'es'  # Si no es un idioma soportado, usar español
-except (ValueError, AttributeError):
-    language = 'es'  # Idioma por defecto si hay algún error
+#Si estoy recargando el módulo después de un cambio de idioma, asegúrate de que gettext no esté instalado globalmente
+if 'CURRENT_LANGUAGE' not in globals():
+    # Intentar obtener el idioma del sistema
+    try:
+        current_locale, encoding = locale.getlocale()
+        if current_locale is None:
+            language = 'es'  # Idioma por defecto: español
+        else:
+            language = current_locale.split('_')[0]
+            # Asegurarse de que el idioma sea uno de los disponibles
+            if language not in ['es', 'en']:
+                language = 'es'  # Si no es un idioma soportado, usar español
+    except (ValueError, AttributeError):
+        language = 'es'  # Idioma por defecto si hay algún error
+else:
+    language = CURRENT_LANGUAGE
 
 # Configurar gettext
 try:
@@ -88,7 +92,7 @@ HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["der
 HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 4. Configuración de pantalla
-DISPLAY_SCALING = 0.5  # Factor de escala para la pantalla (0.75 = 75% del tamaño original)
+DISPLAY_SCALING = 0.75  # Factor de escala para la pantalla (0.75 = 75% del tamaño original)
 SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
 SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60
@@ -182,17 +186,17 @@ IMAGE_PATHS = {
     "reglas": os.path.join(ASSETS_DIR, "img", "Reglas.jpg"),
     "rules": os.path.join(ASSETS_DIR, "img", "Rules.jpg"),
     # Cruzados
-    RICHARD_NAME: os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
-    TEMPLAR_NAME: os.path.join(ASSETS_DIR, "img", "Templario.svg"),
-    HOSPITALLER_NAME: os.path.join(ASSETS_DIR, "img", "Hospitalario.svg"),
-    KNIGHT_NAME: os.path.join(ASSETS_DIR, "img", "Caballero.svg"),
-    INFANTRY_NAME: os.path.join(ASSETS_DIR, "img", "Infanteria.svg"),
-    BAGGAGE_NAME: os.path.join(ASSETS_DIR, "img", "Bagaje.svg"),
+    "Ricardo": os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
+    "Templario": os.path.join(ASSETS_DIR, "img", "Templario.svg"),
+    "Hospitalario": os.path.join(ASSETS_DIR, "img", "Hospitalario.svg"),
+    "Caballero": os.path.join(ASSETS_DIR, "img", "Caballero.svg"),
+    "Infanteria": os.path.join(ASSETS_DIR, "img", "Infanteria.svg"),
+    "Bagaje": os.path.join(ASSETS_DIR, "img", "Bagaje.svg"),
     # Sarracenos
-    SALADIN_NAME: os.path.join(ASSETS_DIR, "img", "Saladino.svg"),
-    MAMLUK_NAME: os.path.join(ASSETS_DIR, "img", "Mameluco.svg"),
-    ARCHER_NAME: os.path.join(ASSETS_DIR, "img", "Arquero.svg"),
-    EXPLORER_NAME: os.path.join(ASSETS_DIR, "img", "Explorador.svg"),
+    "Saladino": os.path.join(ASSETS_DIR, "img", "Saladino.svg"),
+    "Mameluco": os.path.join(ASSETS_DIR, "img", "Mameluco.svg"),
+    "Arquero": os.path.join(ASSETS_DIR, "img", "Arquero.svg"),
+    "Explorador": os.path.join(ASSETS_DIR, "img", "Explorador.svg"),
 }
 
 # Archivos de audio
