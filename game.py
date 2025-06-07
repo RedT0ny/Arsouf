@@ -348,14 +348,20 @@ class Game:
                 (int(TABLERO_REAL_WIDTH * ESCALA), int(TABLERO_REAL_HEIGHT * ESCALA))
             )
 
-    def _change_display_scale(self):
+    def _change_display_scale(self, scale: float = None):
         """Cambia la escala de pantalla."""
         global DISPLAY_SCALING
         # Ciclar entre diferentes escalas (40%, 50%, 60%, 75%)
         scales = [0.4, 0.5, 0.6, 0.75]
-        current_index = scales.index(DISPLAY_SCALING) if DISPLAY_SCALING in scales else 0
-        next_index = (current_index + 1) % len(scales)
-        DISPLAY_SCALING = scales[next_index]
+
+        if scale == DISPLAY_SCALING:
+            return False
+        elif scale in scales:
+            DISPLAY_SCALING = scale
+        else:
+            current_index = scales.index(DISPLAY_SCALING) if DISPLAY_SCALING in scales else 0
+            next_index = (current_index + 1) % len(scales)
+            DISPLAY_SCALING = scales[next_index]
 
         # Actualizar dimensiones de pantalla
         global SCREEN_WIDTH, SCREEN_HEIGHT, ESCALA, BOTON_WIDTH, BOTON_HEIGHT, TITULO_Y, OPCIONES_Y, OPCIONES_ESPACIADO
@@ -443,9 +449,6 @@ class Game:
             next_index = (current_index + 1) % len(available_languages)
             new_language = available_languages[next_index]
 
-        # Debug: Verificar que el idioma ha cambiado
-        print(f"Debug: Changing language from {CURRENT_LANGUAGE} to {new_language}")
-
         # Actualizar la variable global en config.py
         CURRENT_LANGUAGE = new_language
 
@@ -506,18 +509,9 @@ class Game:
 
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
-        global DISPLAY_SCALING, SCREEN_WIDTH, SCREEN_HEIGHT, CURRENT_LANGUAGE
-        DISPLAY_SCALING = 0.5
-        SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
-        SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 
-        # Recrear la pantalla con las dimensiones predeterminadas
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-        # Reiniciar componentes que dependen del tamaño de la pantalla
-        self.setup_menu = None
-        # self.side_selection_menu = None
-        # self.tablero_escalado = None
+        if DISPLAY_SCALING != 0.5:
+            self._change_display_scale(0.5)
 
         # Intentar obtener el idioma del sistema
         try:
@@ -538,20 +532,6 @@ class Game:
         else:
             # Recargar los componentes necesarios para el estado actual
             self._load_setup_menu()
-            # if self.state == GAME_STATES["SETUP_MENU"]:
-            #     self._load_setup_menu()
-            # elif self.state == GAME_STATES["SELECT_SIDE"]:
-            #     self._load_setup_menu()
-            #     self._load_side_selection_menu()
-            # elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"],
-            #                    GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
-            #     self._load_setup_menu()
-            #     self._load_side_selection_menu()
-            #     self._load_board()
-            #     if self.grid is not None:
-            #         self._load_grid()
-            #     if self.ui is not None:
-            #         self._load_ui()
 
         # Mensaje de log
         print(_("Valores predeterminados restaurados"))
