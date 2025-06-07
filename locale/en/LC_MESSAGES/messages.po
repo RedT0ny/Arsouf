@@ -126,7 +126,7 @@ msgid "Error loading rules file"
 msgstr "Error loading rules file"
 
 #: game.py:205
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Selección de {} cancelada"
 msgstr "Selection of {} cancelled"
 
@@ -201,17 +201,17 @@ msgid "Click fuera del tablero o entre hexágonos"
 msgstr "Click outside board or in border between hexagons"
 
 #: game.py:624
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "{} ha vuelto a su posición original"
 msgstr "{} returned to their original position"
 
 #: game.py:631
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Ya has movido a {} este turno"
 msgstr "{} has already moved this turn"
 
 #: game.py:649 game.py:898
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "{} ha llegado a Arsouf!"
 msgstr "{} reached Arsouf!"
 
@@ -261,17 +261,17 @@ msgid "¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."
 msgstr "SARACENS WIN! Crusaders cannot reach Arsouf."
 
 #: game.py:1048
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "{} ya ha atacado este turno"
 msgstr "{} has already attacked this turn"
 
 #: game.py:1056
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "No hay enemigos adyacentes para que {} ataque"
 msgstr "No adjacent enemies for {} to attack"
 
 #: game.py:1064
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "{} seleccionado. Elige objetivo. (Cancelar con click derecho)"
 msgstr "{} selected. Choose target. (Right-click to cancel)"
 
@@ -301,7 +301,7 @@ msgstr ""
 "damage them"
 
 #: game.py:1103
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "¡Ataque fallido! {} resistió el ataque"
 msgstr "Attack failed! {} resisted the attack"
 
@@ -490,4 +490,3 @@ msgstr "Coordinates ({row}, {col}) out of grid {rows}x{cols}"
 #, python-brace-format
 msgid "¡Advertencia: Sobreescribiendo unidad en ({row}, {col})!"
 msgstr "Warning: Overwriting unit at ({row}, {col})!"
-
