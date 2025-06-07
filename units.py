@@ -6,7 +6,6 @@ _ = gettext.gettext  # type: callable
 
 from typing import TYPE_CHECKING
 from config import *
-import translated_constants as tc
 
 if TYPE_CHECKING:
     from hexgrid import HexGrid  # Solo para type checking, no causa importación real
