@@ -257,88 +257,15 @@ class GameUI:
 
     def draw_setup_menu(self):
         """Dibuja la pantalla del menú de configuración."""
-        self.game.screen.fill(COLOR_BG)
-
-        # Título
-        title = self.font.render(_("Menú de Configuración"), True, COLOR_TEXTO)
-        self.game.screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, TITULO_Y))
-
-        # Botones del menú
-        button_y = OPCIONES_Y
-        button_spacing = 70  # Espacio entre botones
-
-        # 1. Botón de escala de pantalla
-        scale_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        pygame.draw.rect(self.game.screen, (100, 150, 200), scale_rect)
-        scale_text = self.font.render(f"{_('Escala de pantalla')}: {int(DISPLAY_SCALING * 100)}%", True, COLOR_TEXTO)
-        self.game.screen.blit(scale_text, (scale_rect.centerx - scale_text.get_width()//2, 
-                                         scale_rect.centery - scale_text.get_height()//2))
-        button_y += button_spacing
-
-        # 2. Botón de idioma
-        language_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        pygame.draw.rect(self.game.screen, (150, 100, 200), language_rect)
-        language_text = self.font.render(_("Idioma"), True, COLOR_TEXTO)
-        self.game.screen.blit(language_text, (language_rect.centerx - language_text.get_width()//2, 
-                                            language_rect.centery - language_text.get_height()//2))
-        button_y += button_spacing
-
-        # 3. Botón de valores predeterminados
-        defaults_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        pygame.draw.rect(self.game.screen, (200, 150, 100), defaults_rect)
-        defaults_text = self.font.render(_("Valores predeterminados"), True, COLOR_TEXTO)
-        self.game.screen.blit(defaults_text, (defaults_rect.centerx - defaults_text.get_width()//2, 
-                                            defaults_rect.centery - defaults_text.get_height()//2))
-        button_y += button_spacing
-
-        # 4. Botón de ver reglas
-        rules_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        pygame.draw.rect(self.game.screen, COLOR_CRUZADOS, rules_rect)
-        rules_text = self.font.render(_("Ver Reglas"), True, COLOR_TEXTO)
-        self.game.screen.blit(rules_text, (rules_rect.centerx - rules_text.get_width()//2, 
-                                        rules_rect.centery - rules_text.get_height()//2))
-        button_y += button_spacing
-
-        # 5. Botón de selección de bando
-        side_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        pygame.draw.rect(self.game.screen, (100, 200, 150), side_rect)
-        side_text = self.font.render(_("Seleccionar bando"), True, COLOR_TEXTO)
-        self.game.screen.blit(side_text, (side_rect.centerx - side_text.get_width()//2, 
-                                        side_rect.centery - side_text.get_height()//2))
-        button_y += button_spacing
-
-        # 6. Botón de salir
-        quit_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        pygame.draw.rect(self.game.screen, COLOR_BOTON_CANCELAR, quit_rect)
-        quit_text = self.font.render(_("Salir"), True, COLOR_TEXTO)
-        self.game.screen.blit(quit_text, (quit_rect.centerx - quit_text.get_width()//2, 
-                                        quit_rect.centery - quit_text.get_height()//2))
-
-        return scale_rect, language_rect, defaults_rect, rules_rect, side_rect, quit_rect
+        # Usar el objeto setup_menu del juego para dibujar el menú
+        # Esto asegura que se use la versión actualizada después de cambiar la escala
+        return self.game.setup_menu.draw()
 
     def draw_side_selection(self):
         """Dibuja la pantalla de selección de lado."""
-        self.game.screen.fill(COLOR_BG)
-
-        # Título
-        title = self.font.render(_("Selecciona tu bando:"), True, COLOR_TEXTO)
-        self.game.screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, TITULO_Y))
-
-        # Botón Cruzados
-        cruzados_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, OPCIONES_Y, BOTON_WIDTH, BOTON_HEIGHT)
-        pygame.draw.rect(self.game.screen, COLOR_CRUZADOS, cruzados_rect)
-        cruzados_text = self.font.render(_("Jugar como Cruzados"), True, COLOR_TEXTO)
-        self.game.screen.blit(cruzados_text, (cruzados_rect.centerx - cruzados_text.get_width()//2, 
-                                            cruzados_rect.centery - cruzados_text.get_height()//2))
-
-        # Botón Sarracenos
-        sarracenos_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, OPCIONES_Y + OPCIONES_ESPACIADO, BOTON_WIDTH, BOTON_HEIGHT)
-        pygame.draw.rect(self.game.screen, COLOR_SARRACENOS, sarracenos_rect)
-        sarracenos_text = self.font.render(_("Jugar como Sarracenos"), True, COLOR_TEXTO)
-        self.game.screen.blit(sarracenos_text, (sarracenos_rect.centerx - sarracenos_text.get_width()//2, 
-                                             sarracenos_rect.centery - sarracenos_text.get_height()//2))
-
-        return cruzados_rect, sarracenos_rect
+        # Usar el objeto side_selection_menu del juego para dibujar el menú
+        # Esto asegura que se use la versión actualizada después de cambiar la escala
+        return self.game.side_selection_menu.draw()
 
     def _get_selected_unit(self):
         """Obtiene la unidad actualmente seleccionada (movimiento o combate)."""
@@ -719,14 +646,14 @@ class GameUI:
             # Dibujar menú de configuración
             self.draw_setup_menu()
             # Dibujar panel de log si está disponible
-            if hasattr(self, 'log_messages'):
-                self.draw_log_panel()
+            # if hasattr(self, 'log_messages'):
+            #     self.draw_log_panel()
         elif game.state == GAME_STATES["SELECT_SIDE"]:
             # Dibujar menú de selección de bando
             self.draw_side_selection()
             # Dibujar panel de log si está disponible
-            if hasattr(self, 'log_messages'):
-                self.draw_log_panel()
+            # if hasattr(self, 'log_messages'):
+            #     self.draw_log_panel()
         else:
             # Estados que requieren el tablero y las unidades
             # (DEPLOY_PLAYER, DEPLOY_AI, PLAYER_TURN, AI_TURN)

@@ -358,9 +358,42 @@ class Game:
         DISPLAY_SCALING = scales[next_index]
 
         # Actualizar dimensiones de pantalla
-        global SCREEN_WIDTH, SCREEN_HEIGHT
+        global SCREEN_WIDTH, SCREEN_HEIGHT, ESCALA, BOTON_WIDTH, BOTON_HEIGHT, TITULO_Y, OPCIONES_Y, OPCIONES_ESPACIADO
         SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
         SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
+
+        # Ajustar el ancho y alto de los botones según la escala
+        # Usamos los valores base (260 y 50) y los ajustamos según la escala
+        # pero mantenemos un mínimo para asegurar que el texto quepa
+        BOTON_WIDTH = max(260 * DISPLAY_SCALING / 0.75, 200)
+        BOTON_HEIGHT = max(50 * DISPLAY_SCALING / 0.75, 40)
+
+        # Ajustar las posiciones verticales del título y los botones
+        # Usamos los valores base (200 y 300) y los ajustamos según la escala
+        TITULO_Y = int(200 * DISPLAY_SCALING / 0.75)
+        OPCIONES_Y = int(300 * DISPLAY_SCALING / 0.75)
+
+        # Ajustar el espaciado entre opciones
+        # Usamos el valor base (100) y lo ajustamos según la escala
+        OPCIONES_ESPACIADO = int(100 * DISPLAY_SCALING / 0.75)
+
+        # Recalcular ESCALA basado en las nuevas dimensiones
+        AVAILABLE_WIDTH = SCREEN_WIDTH - PANEL_WIDTH
+        AVAILABLE_HEIGHT = SCREEN_HEIGHT - LOG_PANEL_HEIGHT
+        ESCALA = min(AVAILABLE_WIDTH / TABLERO_REAL_WIDTH, AVAILABLE_HEIGHT / TABLERO_REAL_HEIGHT)
+
+        # Recalcular dimensiones de hexágonos
+        global HEX_HEIGHT, HEX_WIDTH, HEX_SIZE, HEX_MIN_SIZE, MARGENES_ESCALADOS
+        HEX_HEIGHT = int(HEX_REAL_HEIGHT * ESCALA)
+        HEX_WIDTH = int(HEX_REAL_WIDTH * ESCALA)
+        HEX_SIZE = HEX_WIDTH  # Mantenemos HEX_SIZE para compatibilidad
+        HEX_MIN_SIZE = min(HEX_WIDTH, HEX_HEIGHT)
+
+        # Recalcular márgenes escalados
+        MARGENES_ESCALADOS = {
+            "superior": int(MARGENES["superior"] * ESCALA),
+            "izquierdo": int(MARGENES["izquierdo"] * ESCALA)
+        }
 
         # Recrear la pantalla con las nuevas dimensiones
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -369,22 +402,25 @@ class Game:
         self.setup_menu = None
         self.side_selection_menu = None
         self.tablero_escalado = None
+        self.ui = None
 
-        # Recargar los componentes necesarios para el estado actual
-        if self.state == GAME_STATES["SETUP_MENU"]:
-            self._load_setup_menu()
-        elif self.state == GAME_STATES["SELECT_SIDE"]:
-            self._load_setup_menu()
-            self._load_side_selection_menu()
-        elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
-                           GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
-            self._load_setup_menu()
-            self._load_side_selection_menu()
-            self._load_board()
-            if self.grid is not None:
-                self._load_grid()
-            if self.ui is not None:
-                self._load_ui()
+        # # Recargar los componentes necesarios para el estado actual
+        # if self.state == GAME_STATES["SETUP_MENU"]:
+        #     self._load_setup_menu()
+        # elif self.state == GAME_STATES["SELECT_SIDE"]:
+        #     self._load_setup_menu()
+        #     self._load_side_selection_menu()
+        # elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"],
+        #                    GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+        #     self._load_setup_menu()
+        #     self._load_side_selection_menu()
+        #     self._load_board()
+        #     if self.grid is not None:
+        #         self._load_grid()
+        #     if self.ui is not None:
+        #         self._load_ui()
+        self._load_setup_menu()
+        self._load_ui()
 
         # Mensaje de log en consola
         print(_("Escala de pantalla cambiada a {scale}%").format(scale=int(DISPLAY_SCALING * 100)))

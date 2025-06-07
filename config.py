@@ -11,22 +11,22 @@ AVAILABLE_LANGUAGES = [
     if os.path.isdir(os.path.join(LOCALE_DIR, d))
 ]
 
-#Si estoy recargando el módulo después de un cambio de idioma, asegúrate de que gettext no esté instalado globalmente
-if 'CURRENT_LANGUAGE' not in globals():
-    # Intentar obtener el idioma del sistema
-    try:
-        current_locale, encoding = locale.getlocale()
-        if current_locale is None:
-            language = 'es'  # Idioma por defecto: español
-        else:
-            language = current_locale.split('_')[0]
-            # Asegurarse de que el idioma sea uno de los disponibles
-            if language not in ['es', 'en']:
-                language = 'es'  # Si no es un idioma soportado, usar español
-    except (ValueError, AttributeError):
-        language = 'es'  # Idioma por defecto si hay algún error
-else:
-    language = CURRENT_LANGUAGE
+# #Si estoy recargando el módulo después de un cambio de idioma, asegúrate de que gettext no esté instalado globalmente
+# if 'CURRENT_LANGUAGE' not in globals():
+# Intentar obtener el idioma del sistema
+try:
+    current_locale, encoding = locale.getlocale()
+    if current_locale is None:
+        language = 'es'  # Idioma por defecto: español
+    else:
+        language = current_locale.split('_')[0]
+        # Asegurarse de que el idioma sea uno de los disponibles
+        if language not in ['es', 'en']:
+            language = 'es'  # Si no es un idioma soportado, usar español
+except (ValueError, AttributeError):
+    language = 'es'  # Idioma por defecto si hay algún error
+# else:
+#     language = CURRENT_LANGUAGE
 
 # Configurar gettext
 try:

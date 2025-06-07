@@ -11,8 +11,10 @@ class Menu:
     """
     def __init__(self, screen):
         self.screen = screen
-        self.font = pygame.font.SysFont('Arial', 24)
-    
+        # Ajustar el tamaño de la fuente según la escala de pantalla
+        font_size = int(24 * DISPLAY_SCALING / 0.75)
+        self.font = pygame.font.SysFont('Arial', font_size)
+
     def draw_button(self, rect, text, color, text_color=COLOR_TEXTO):
         """Dibuja un botón con texto centrado."""
         pygame.draw.rect(self.screen, color, rect)
@@ -28,7 +30,7 @@ class SetupMenu(Menu):
     """
     def __init__(self, screen):
         super().__init__(screen)
-    
+
     def draw(self):
         """Dibuja el menú de configuración."""
         self.screen.fill(COLOR_BG)
@@ -39,7 +41,8 @@ class SetupMenu(Menu):
 
         # Botones del menú
         button_y = OPCIONES_Y
-        button_spacing = 70  # Espacio entre botones
+        # Ajustar el espaciado de botones según la escala de pantalla
+        button_spacing = int(70 * DISPLAY_SCALING / 0.75)  # Espacio entre botones
 
         # 1. Botón de escala de pantalla
         scale_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
@@ -72,7 +75,7 @@ class SetupMenu(Menu):
 
         pygame.display.flip()
         return scale_rect, language_rect, defaults_rect, rules_rect, side_rect, quit_rect
-    
+
     def handle_event(self, event):
         """Maneja las interacciones con el menú de configuración."""
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -101,7 +104,7 @@ class SideSelectionMenu(Menu):
     """
     def __init__(self, screen):
         super().__init__(screen)
-    
+
     def draw(self):
         """Dibuja la pantalla de selección de lado."""
         self.screen.fill(COLOR_BG)
@@ -120,7 +123,7 @@ class SideSelectionMenu(Menu):
 
         pygame.display.flip()
         return cruzados_rect, sarracenos_rect
-    
+
     def handle_event(self, event):
         """Maneja la selección de bando."""
         if event.type == pygame.MOUSEBUTTONDOWN:
