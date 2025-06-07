@@ -33,8 +33,8 @@ try:
     # Instalar la traducción globalmente
     translation.install()
 except Exception as e:
-    print(f"{_("Error al cargar traducciones:")} {e}")
     _ = gettext.gettext  # Fallback a gettext básico
+    print(f"{_("Error al cargar traducciones:")} {e}")
 
 # Variable global para el idioma actual
 CURRENT_LANGUAGE = language
