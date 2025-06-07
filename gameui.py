@@ -382,8 +382,9 @@ class GameUI:
 
         # 2. Información de la unidad actual para despliegue
         if hasattr(self.game, 'current_deploying_unit') and self.game.current_deploying_unit:
-            unit_name = type(self.game.current_deploying_unit).__name__
-            unit_info = f"{_('Coloca')}: {_(unit_name[:12])}" if len(unit_name) > 12 else f"{_('Coloca')}: {_(unit_name)}"
+            unit_name = self.game.current_deploying_unit.image_key
+            # unit_info = f"{_('Coloca')}: {_(unit_name[:12])}" if len(unit_name) > 12 else f"{_('Coloca')}: {_(unit_name)}"
+            unit_info = f"{_('Coloca')}: {_(unit_name)}"
             unit_text = self.font.render(unit_info, True, COLOR_TEXTO)
 
             # Ajustar texto si es muy largo
@@ -455,7 +456,7 @@ class GameUI:
         max_width = content_rect.width
 
         # Título: Tipo de unidad
-        unit_name = type(unit).__name__
+        unit_name = unit.image_key
         title_font = pygame.font.SysFont('Arial', 20, bold=True)
         title_text = title_font.render(_(unit_name), True, COLOR_TEXTO)
 
@@ -480,7 +481,7 @@ class GameUI:
         line_height = info_font_size + 4
 
         # Bando
-        side_color = COLOR_CRUZADOS if unit.side == _("CRUZADOS") else COLOR_SARRACENOS
+        side_color = COLOR_CRUZADOS if unit.side == SIDE_CRUSADERS else COLOR_SARRACENOS
         side_text = self._render_fitted_text(f"{_('Bando')}: {_(unit.side)}", max_width, side_color, info_font_size)
         self.game.screen.blit(side_text, (content_rect.x, y_offset))
         y_offset += line_height
@@ -525,7 +526,7 @@ class GameUI:
         if self.game.state not in ["DEPLOY_PLAYER", "DEPLOY_AI"]:
             return
 
-        if self.game.player_side == _("CRUZADOS"):
+        if self.game.player_side == SIDE_CRUSADERS:
             # Cruzados: últimas 4 columnas, primeras 4 filas
             player_zone = self._calculate_zone(HEX_COLS - 4, 0, 4, 4)
             ai_zone = self._calculate_zone(0, HEX_ROWS - 2, 8, 2)
@@ -621,7 +622,7 @@ class GameUI:
 
         # Dibujar progreso de bagajes
         font = pygame.font.SysFont('Arial', 14)
-        text_bagaje = font.render(f"{_('Bagajes')}: {game.units_in_arsouf[_('Bagaje')]}/2", True, (255, 255, 255))
+        text_bagaje = font.render(f"{_('Bagajes')}: {game.units_in_arsouf[BAGGAGE_NAME]}/2", True, (255, 255, 255))
         game.screen.blit(text_bagaje, (panel_x + 10, panel_y + 35))
 
         # Dibujar progreso de otras unidades
@@ -631,14 +632,14 @@ class GameUI:
     def draw_intro(self, game):
         """Dibuja la pantalla de introducción"""
         # Cargar la fuente para el texto de introducción
-        intro_font = pygame.font.Font(FONT_PATHS["abbasy"], 144)
+        intro_font = pygame.font.Font(FONT_PATHS["abbasy"], 120)
 
         # Crear el texto
         intro_text = GAME_NAME
         intro_text_surface = intro_font.render(intro_text, True, WHITE)
 
         # Obtener rectángulo del texto para centrarlo
-        intro_text_rect = intro_text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 200))
+        intro_text_rect = intro_text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 120))
 
         # Dibujar la imagen de portada a pantalla completa
         game.screen.blit(game.images["cover"], (0, 0))
@@ -677,7 +678,7 @@ class GameUI:
 
         # Dibujar mensaje de victoria
         font = pygame.font.SysFont('Arial', 20)
-        if game.winner == _("CRUZADOS"):
+        if game.winner == SIDE_CRUSADERS:
             text_winner = font.render(_("¡Victoria de los Cruzados!"), True, (255, 255, 255))
             text_reason = font.render(_("Han llegado suficientes unidades a Arsouf"), True, (255, 255, 255))
         else:

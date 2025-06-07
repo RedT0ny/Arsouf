@@ -39,6 +39,20 @@ except Exception as e:
 # Variable global para el idioma actual
 CURRENT_LANGUAGE = language
 
+# Centralizar cadenas traducibles
+SIDE_CRUSADERS = _("CRUZADOS")
+SIDE_SARACENS = _("SARRACENOS")
+RICHARD_NAME = _("Ricardo")
+INFANTRY_NAME = _("Infanteria")
+KNIGHT_NAME = _("Caballero")
+TEMPLAR_NAME = _("Templario")
+HOSPITALLER_NAME = _("Hospitalario")
+SALADIN_NAME = _("Saladino")
+MAMLUK_NAME = _("Mameluco")
+ARCHER_NAME = _("Arquero")
+EXPLORER_NAME = _("Explorador")
+BAGGAGE_NAME = _("Bagaje")
+
 # ------------------------------
 # CONFIGURACIÓN DEL JUEGO
 # ------------------------------
@@ -165,17 +179,17 @@ IMAGE_PATHS = {
     "reglas": os.path.join(ASSETS_DIR, "img", "Reglas.jpg"),
     "rules": os.path.join(ASSETS_DIR, "img", "Rules.jpg"),
     # Cruzados
-    _("Ricardo"): os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
-    _("Templario"): os.path.join(ASSETS_DIR, "img", "Templario.svg"),
-    _("Hospitalario"): os.path.join(ASSETS_DIR, "img", "Hospitalario.svg"),
-    _("Caballero"): os.path.join(ASSETS_DIR, "img", "Caballero.svg"),
-    _("Infanteria"): os.path.join(ASSETS_DIR, "img", "Infanteria.svg"),
-    _("Bagaje"): os.path.join(ASSETS_DIR, "img", "Bagaje.svg"),
+    RICHARD_NAME: os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
+    TEMPLAR_NAME: os.path.join(ASSETS_DIR, "img", "Templario.svg"),
+    HOSPITALLER_NAME: os.path.join(ASSETS_DIR, "img", "Hospitalario.svg"),
+    KNIGHT_NAME: os.path.join(ASSETS_DIR, "img", "Caballero.svg"),
+    INFANTRY_NAME: os.path.join(ASSETS_DIR, "img", "Infanteria.svg"),
+    BAGGAGE_NAME: os.path.join(ASSETS_DIR, "img", "Bagaje.svg"),
     # Sarracenos
-    _("Saladino"): os.path.join(ASSETS_DIR, "img", "Saladino.svg"),
-    _("Mameluco"): os.path.join(ASSETS_DIR, "img", "Mameluco.svg"),
-    _("Arquero"): os.path.join(ASSETS_DIR, "img", "Arquero.svg"),
-    _("Explorador"): os.path.join(ASSETS_DIR, "img", "Explorador.svg"),
+    SALADIN_NAME: os.path.join(ASSETS_DIR, "img", "Saladino.svg"),
+    MAMLUK_NAME: os.path.join(ASSETS_DIR, "img", "Mameluco.svg"),
+    ARCHER_NAME: os.path.join(ASSETS_DIR, "img", "Arquero.svg"),
+    EXPLORER_NAME: os.path.join(ASSETS_DIR, "img", "Explorador.svg"),
 }
 
 # Archivos de audio

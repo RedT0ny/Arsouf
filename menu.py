@@ -128,7 +128,7 @@ class SideSelectionMenu(Menu):
             mouse_pos = pygame.mouse.get_pos()
 
             if cruzados_rect.collidepoint(mouse_pos):
-                return _("CRUZADOS")
+                return SIDE_CRUSADERS
             elif sarracenos_rect.collidepoint(mouse_pos):
-                return _("SARRACENOS")
+                return SIDE_SARACENS
         return None

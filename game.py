@@ -37,7 +37,7 @@ class Game:
         # Objetivos del juego
         self.arsouf_hexes = [(1, 0), (1, 1)]  # Hexágonos de Arsouf
         self.units_in_arsouf = {
-            _("Bagaje"): 0,  # Contador de unidades de bagaje en Arsouf
+            BAGGAGE_NAME: 0,  # Contador de unidades de bagaje en Arsouf
             "other": 0    # Contador de otras unidades en Arsouf
         }
         self.game_over = False
@@ -87,7 +87,7 @@ class Game:
         global size
         images = {}
         for key, path in IMAGE_PATHS.items():
-            if key == "board" or key == "cover": continue
+            if key in {"board","cover","reglas","rules"}: continue
             try:
                 img = pygame.image.load(path).convert_alpha()
                 # Usar el tamaño más pequeño entre ancho y alto para que las unidades quepan bien en los hexágonos
@@ -159,13 +159,13 @@ class Game:
     def _get_initial_units():
         """Devuelve las unidades iniciales para cada bando."""
         return {
-            _("CRUZADOS"): [
+            SIDE_CRUSADERS: [
                 Ricardo(), Templario(), Hospitalario(),
                 Caballero(), Caballero(), Caballero(),
                 *[Infanteria() for _ in range(6)],
                 *[Bagaje() for _ in range(4)]
             ],
-            _("SARRACENOS"): [
+            SIDE_SARACENS: [
                 Saladino(),
                 *[Mameluco() for _ in range(4)],
                 *[Arquero() for _ in range(6)],
@@ -247,7 +247,7 @@ class Game:
             # Verificar si es un clic derecho y hay un atacante seleccionado
             if event.button == 3 and self.combat_attacker:
                 # Cancelar la selección del atacante
-                self.ui.add_log_message(_("Selección de {} cancelada").format(type(self.combat_attacker).__name__))
+                self.ui.add_log_message(_("Selección de {} cancelada").format(self.combat_attacker.image_key))
                 self.combat_attacker = None
                 self.combat_targets = []
                 return
@@ -319,7 +319,7 @@ class Game:
 
     def _start_game(self, player_side):
         self.player_side = player_side
-        self.ai_side = _("SARRACENOS") if player_side == _("CRUZADOS") else _("CRUZADOS")
+        self.ai_side = SIDE_SARACENS if player_side == SIDE_CRUSADERS else SIDE_CRUSADERS
         self.state = GAME_STATES["DEPLOY_PLAYER"]
         self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
         self.ui.add_log_message(_("Jugando como {player_side}. Comienza el despliegue.").format(player_side=self.player_side))
@@ -386,17 +386,21 @@ class Game:
         # Mensaje de log en consola
         print(_("Escala de pantalla cambiada a {scale}%").format(scale=int(DISPLAY_SCALING * 100)))
 
-    def _change_language(self):
+    def _change_language(self, language: str =None):
         """Cambia el idioma del juego."""
         global CURRENT_LANGUAGE, _
 
         # Lista de idiomas disponibles
         available_languages = ['es', 'en']
 
-        # Obtener el siguiente idioma en la lista
-        current_index = available_languages.index(CURRENT_LANGUAGE) if CURRENT_LANGUAGE in available_languages else 0
-        next_index = (current_index + 1) % len(available_languages)
-        new_language = available_languages[next_index]
+        # Determinar si el idioma solicitado está entre los disponibles
+        if language in available_languages:
+            new_language = language
+        else:
+            # Obtener el siguiente idioma en la lista
+            current_index = available_languages.index(CURRENT_LANGUAGE) if CURRENT_LANGUAGE in available_languages else 0
+            next_index = (current_index + 1) % len(available_languages)
+            new_language = available_languages[next_index]
 
         # Actualizar la variable global en config.py
         CURRENT_LANGUAGE = new_language
@@ -438,6 +442,8 @@ class Game:
         except Exception as e:
             self.ui.add_log_message(_("Error al cambiar idioma"))
             print(f"{_('Error al cambiar idioma')}: {e}")
+
+        #self._draw()
 
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
@@ -501,7 +507,7 @@ class Game:
             if self.units_to_deploy[self.player_side]:
                 self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
                 self.ui.add_log_message(
-                    _("Colocado {unit}. Siguiente unidad lista.").format(unit=type(self.current_deploying_unit).__name__)
+                    _("Colocado {unit}. Siguiente unidad lista.").format(unit=self.current_deploying_unit.image_key)
                 )
             else:
                 self.current_deploying_unit = None
@@ -580,14 +586,14 @@ class Game:
                     self._play_sound("cancel_move")
                     # Eliminar la unidad de moved_units
                     self.moved_units.remove((moved_row, moved_col))
-                    self.ui.add_log_message(_("{unit_type} ha vuelto a su posición original").format(unit_type=type(moved_unit).__name__))
+                    self.ui.add_log_message(_("{unit_type} ha vuelto a su posición original").format(unit_type=moved_unit.image_key))
                     self.last_moved_unit_pos = None
                     return
             return
 
         if not self.selected_unit and unit and self._is_player_unit(unit):
             if (row, col) in self.moved_units:
-                self.ui.add_log_message(_("Ya has movido a {unit_type} este turno").format(unit_type=type(unit).__name__))
+                self.ui.add_log_message(_("Ya has movido a {unit_type} este turno").format(unit_type=unit.image_key))
                 return
 
             # Reproducir sonido de selección
@@ -600,12 +606,12 @@ class Game:
             moved_unit = self.grid.grid[old_row][old_col]
 
             # Verificar si es una unidad cruzada llegando a Arsouf
-            if moved_unit.side == _("CRUZADOS") and (row, col) in self.arsouf_hexes:
+            if moved_unit.side == SIDE_CRUSADERS and (row, col) in self.arsouf_hexes:
                 # Unidad llega a Arsouf
                 self._unit_reaches_arsouf(moved_unit)
                 # Eliminar la unidad del tablero original
                 self.grid.grid[old_row][old_col] = None
-                self.ui.add_log_message(_("{unit_type} ha llegado a Arsouf!").format(unit_type=type(moved_unit).__name__))
+                self.ui.add_log_message(_("{unit_type} ha llegado a Arsouf!").format(unit_type=moved_unit.image_key))
                 # Verificar condición de victoria
                 self._check_win_condition()
             else:
@@ -653,12 +659,12 @@ class Game:
                 if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
                     # Verificar si hay una unidad sarracena en ese hexágono
                     target_unit = self.grid.get_unit(next_row, next_col)
-                    if target_unit and target_unit.side == _("SARRACENOS"):
+                    if target_unit and target_unit.side == SIDE_SARACENS:
                         # Establecer el hexágono de carga
                         moved_unit.charging_hex = (next_row, next_col)
                         self.ui.add_log_message(_("{unit_type} cargando sobre {target} en ({next_row},{next_col})!").format(
-                            unit_type=type(moved_unit).__name__,
-                            target=type(target_unit).__name__,
+                            unit_type=moved_unit.image_key,
+                            target=target_unit.image_key,
                             next_row=next_row,
                             next_col=next_col
                         ))
@@ -683,7 +689,7 @@ class Game:
             return
 
         # Estrategia específica según el bando de la IA
-        if self.ai_side == _("CRUZADOS"):
+        if self.ai_side == SIDE_CRUSADERS:
             # Estrategia para Cruzados: proteger bagajes cerca del borde derecho
 
             # Buscar unidades de bagaje para desplegar primero
@@ -795,7 +801,7 @@ class Game:
         self.grid.add_unit(row, col, unit)
 
         # Mensaje de log para depuración
-        self.ui.add_log_message(_("IA despliega {unit_type} en ({row},{col})").format(unit_type=type(unit).__name__, row=row, col=col))
+        self.ui.add_log_message(_("IA despliega {unit_type} en ({row},{col})").format(unit_type=unit.image_key, row=row, col=col))
 
         if not self.units_to_deploy[self.ai_side]:
             self.state = "PLAYER_TURN"
@@ -816,7 +822,7 @@ class Game:
             ]
 
             # Ordenar unidades según prioridad estratégica
-            if self.ai_side == _("CRUZADOS"):
+            if self.ai_side == SIDE_CRUSADERS:
                 # Para Cruzados: primero mover Ricardo y unidades fuertes, luego infantería, bagajes al final
                 leaders = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Ricardo)]
                 strong_units = [(r, c, u) for r, c, u in all_ai_units
@@ -849,12 +855,12 @@ class Game:
                         new_row, new_col = self._choose_strategic_move(row, col, unit, self.possible_moves)
 
                         # Verificar si es una unidad cruzada llegando a Arsouf
-                        if unit.side == _("CRUZADOS") and (new_row, new_col) in self.arsouf_hexes:
+                        if unit.side == SIDE_CRUSADERS and (new_row, new_col) in self.arsouf_hexes:
                             # Unidad llega a Arsouf
                             self._unit_reaches_arsouf(unit)
                             # Eliminar la unidad del tablero original
                             self.grid.grid[row][col] = None
-                            self.ui.add_log_message(_("{unit_type} ha llegado a Arsouf!").format(unit_type=type(unit).__name__))
+                            self.ui.add_log_message(_("{unit_type} ha llegado a Arsouf!").format(unit_type=unit.image_key))
                             # Verificar condición de victoria
                             self._check_win_condition()
                         else:
@@ -864,7 +870,14 @@ class Game:
                             if hasattr(self, '_ai_moved_units_this_turn'):
                                 self._ai_moved_units_this_turn.add((row, col))
                             self.ui.add_log_message(
-                                f"[{type(unit).__name__} mueve desde ({row},{col}) hasta ({new_row}, {new_col})") #TODO: Identificar instancia específica de unidad (p.ej. Explorador 1..)
+                                _("{unit_type} mueve desde ({row},{col}) hasta ({new_row}, {new_col})").format(
+                                    unit_type=unit.image_key,
+                                    row=row,
+                                    col=col,
+                                    new_row=new_row,
+                                    new_col=new_col
+                                )) #TODO: Identificar instancia específica de unidad (e.g. Explorador 1..)
+
             else:
                 # Cuando se completa la fase de movimiento, pasar a la fase de combate
                 self.turn_phase = TURN_PHASES["COMBAT"]
@@ -927,22 +940,22 @@ class Game:
     def _unit_reaches_arsouf(self, unit):
         """Registra una unidad que ha llegado a Arsouf"""
         if isinstance(unit, Bagaje):
-            self.units_in_arsouf[_("Bagaje")] += 1
-            self.ui.add_log_message(_("¡Bagaje ha llegado a Arsouf! ({count}/2)").format(count=self.units_in_arsouf[_('Bagaje')]))
+            self.units_in_arsouf[BAGGAGE_NAME] += 1
+            self.ui.add_log_message(_("¡Bagaje ha llegado a Arsouf! ({count}/2)").format(count=self.units_in_arsouf[BAGGAGE_NAME]))
         else:
             self.units_in_arsouf["other"] += 1
-            self.ui.add_log_message(_("¡{unit_type} ha llegado a Arsouf! ({count}/2)").format(unit_type=type(unit).__name__, count=self.units_in_arsouf['other']))
+            self.ui.add_log_message(_("¡{unit_type} ha llegado a Arsouf! ({count}/2)").format(unit_type=unit.image_key, count=self.units_in_arsouf['other']))
 
     def _check_win_condition(self):
         """Verifica si se ha cumplido la condición de victoria"""
         # Victoria de los Cruzados: 2 bagajes y 2 otras unidades en Arsouf
-        if self.units_in_arsouf[_("Bagaje")] >= 2 and self.units_in_arsouf["other"] >= 2:
+        if self.units_in_arsouf[BAGGAGE_NAME] >= 2 and self.units_in_arsouf["other"] >= 2:
             self.game_over = True
-            self.winner = _("CRUZADOS")
+            self.winner = SIDE_CRUSADERS
             self.ui.add_log_message(_("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf."))
 
             # Reproducir música de victoria o derrota según el bando del jugador
-            if self.player_side == _("CRUZADOS"):
+            if self.player_side == SIDE_CRUSADERS:
                 self._play_music("victory")
             else:
                 self._play_music("defeat")
@@ -950,30 +963,30 @@ class Game:
         # Victoria de los Sarracenos: imposibilidad de que los Cruzados ganen
         # Esto se verificaría si no quedan suficientes unidades cruzadas en el tablero
         crusader_units = self._count_remaining_crusader_units()
-        remaining_bagaje = crusader_units[_("Bagaje")]
+        remaining_bagaje = crusader_units[BAGGAGE_NAME]
         remaining_other = crusader_units["other"]
 
-        if remaining_bagaje + self.units_in_arsouf[_("Bagaje")] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
+        if remaining_bagaje + self.units_in_arsouf[BAGGAGE_NAME] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
             self.game_over = True
-            self.winner = _("SARRACENOS")
+            self.winner = SIDE_SARACENS
             self.ui.add_log_message(_("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."))
 
             # Reproducir música de victoria o derrota según el bando del jugador
-            if self.player_side == _("SARRACENOS"):
+            if self.player_side == SIDE_SARACENS:
                 self._play_music("victory")
             else:
                 self._play_music("defeat")
 
     def _count_remaining_crusader_units(self):
         """Cuenta las unidades cruzadas restantes en el tablero"""
-        remaining = {_("Bagaje"): 0, "other": 0}
+        remaining = {BAGGAGE_NAME: 0, "other": 0}
 
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
                 unit = self.grid.grid[row][col]
-                if unit and unit.side == _("CRUZADOS"):
+                if unit and unit.side == SIDE_CRUSADERS:
                     if isinstance(unit, Bagaje):
-                        remaining[_("Bagaje")] += 1
+                        remaining[BAGGAGE_NAME] += 1
                     else:
                         remaining["other"] += 1
 
@@ -997,7 +1010,7 @@ class Game:
             if unit and unit.side == self.player_side and unit.health == 2:
                 # Verificar si la unidad ya atacó este turno
                 if (row, col) in self.attacked_units:
-                    self.ui.add_log_message(_("{unit_type} ya ha atacado este turno").format(unit_type=type(unit).__name__))
+                    self.ui.add_log_message(_("{unit_type} ya ha atacado este turno").format(unit_type=unit.image_key))
                     return
 
                 # Obtener enemigos adyacentes primero
@@ -1005,7 +1018,7 @@ class Game:
 
                 # Verificar si hay enemigos adyacentes
                 if not self.combat_targets:
-                    self.ui.add_log_message(_("No hay enemigos adyacentes para que {unit_type} ataque").format(unit_type=type(unit).__name__))
+                    self.ui.add_log_message(_("No hay enemigos adyacentes para que {unit_type} ataque").format(unit_type=unit.image_key))
                     # No seleccionar la unidad si no hay objetivos
                     self.combat_attacker = None
                 else:
@@ -1013,7 +1026,7 @@ class Game:
                     # Reproducir sonido de selección
                     self._play_sound("select")
                     self.combat_attacker = unit
-                    self.ui.add_log_message(_("{unit_type} seleccionado. Elige objetivo. (Cancelar con click derecho)").format(unit_type=type(unit).__name__))
+                    self.ui.add_log_message(_("{unit_type} seleccionado. Elige objetivo. (Cancelar con click derecho)").format(unit_type=unit.image_key))
             else:
                 self.ui.add_log_message(_("Selecciona una unidad aliada sana para atacar"))
         else:
@@ -1021,7 +1034,7 @@ class Game:
             if unit and unit in self.combat_targets:
                 # Realizar ataque
                 is_charging = False
-                if isinstance(self.combat_attacker, (Caballero, Templario, Hospitalario)) and unit.side == _("SARRACENOS"):
+                if isinstance(self.combat_attacker, (Caballero, Templario, Hospitalario)) and unit.side == SIDE_SARACENS:
                     # Verificar si es posible una carga
                     is_charging = self.combat_attacker.charge(unit, self.grid)
 
@@ -1033,13 +1046,13 @@ class Game:
                     if is_charging:
                         self.ui.add_log_message(
                             _("¡Carga exitosa! {attacker_type} cargó contra {defender_type} y lo hirió").format(
-                                attacker_type=type(self.combat_attacker).__name__, 
-                                defender_type=type(unit).__name__))
+                                attacker_type=self.combat_attacker.image_key,
+                                defender_type=unit.image_key))
                     else:
                         self.ui.add_log_message(
                             _("¡Ataque exitoso! {attacker_type} hirió a {defender_type}").format(
-                                attacker_type=type(self.combat_attacker).__name__, 
-                                defender_type=type(unit).__name__))
+                                attacker_type=self.combat_attacker.image_key,
+                                defender_type=unit.image_key))
                 else:
                     # Reproducir sonido de ataque fallido
                     self._play_sound("failed_attack")
@@ -1048,12 +1061,12 @@ class Game:
                     if is_charging:
                         self.ui.add_log_message(
                             _("¡Carga fallida! {attacker_type} cargó contra {defender_type} pero no logró herirlo").format(
-                                attacker_type=type(self.combat_attacker).__name__, 
-                                defender_type=type(unit).__name__))
+                                attacker_type=self.combat_attacker.image_key,
+                                defender_type=unit.image_key))
                     else:
                         self.ui.add_log_message(
                             _("¡Ataque fallido! {unit_type} resistió el ataque").format(
-                                unit_type=type(unit).__name__))
+                                unit_type=unit.image_key))
 
                 # Marcar la unidad como ya atacó este turno
                 self.attacked_units.add((self.combat_attacker.row, self.combat_attacker.col))
@@ -1066,7 +1079,7 @@ class Game:
 
     def _choose_strategic_move(self, row, col, unit, possible_moves):
         """Elige un movimiento estratégico según el tipo de unidad y el bando."""
-        if self.ai_side == _("CRUZADOS"):
+        if self.ai_side == SIDE_CRUSADERS:
             # Estrategia para Cruzados
             if isinstance(unit, Bagaje):
                 # Bagajes: Priorizar movimiento hacia Arsouf
@@ -1275,7 +1288,7 @@ class Game:
             dist_to_protect = ((r - avg_r) ** 2 + (c - avg_c) ** 2) ** 0.5
 
             # Posición relativa respecto al enemigo (preferir posiciones que estén entre el enemigo y las unidades a proteger)
-            enemy_direction = -1 if self.ai_side == _("CRUZADOS") else 1  # Dirección aproximada del enemigo
+            enemy_direction = -1 if self.ai_side == SIDE_CRUSADERS else 1  # Dirección aproximada del enemigo
             relative_position = c * enemy_direction  # Valor más alto = más cerca del enemigo
 
             # Combinar factores: queremos estar cerca pero no demasiado
@@ -1294,7 +1307,7 @@ class Game:
             return None
 
         # Determinar dirección hacia el enemigo
-        enemy_col_direction = -1 if self.ai_side == _("CRUZADOS") else 1  # Izquierda para Cruzados, Derecha para Sarracenos
+        enemy_col_direction = -1 if self.ai_side == SIDE_CRUSADERS else 1  # Izquierda para Cruzados, Derecha para Sarracenos
 
         # Evaluar movimientos por avance hacia el enemigo
         move_scores = {}
@@ -1346,7 +1359,7 @@ class Game:
         move_scores = {}
         for r, c in possible_moves:
             # Avance hacia el enemigo
-            forward_score = (r - row) if self.ai_side == _("SARRACENOS") else (row - r)
+            forward_score = (r - row) if self.ai_side == SIDE_SARACENS else (row - r)
 
             # Movimiento lateral (flanqueo)
             lateral_movement = abs(c - col)
@@ -1489,7 +1502,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == _("CRUZADOS"):
+                if unit and unit.side == SIDE_CRUSADERS:
                     crusader_units.append((r, c))
 
         if not crusader_units:
@@ -1553,7 +1566,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == _("CRUZADOS") and isinstance(unit, Bagaje):
+                if unit and unit.side == SIDE_CRUSADERS and isinstance(unit, Bagaje):
                     baggage_positions.append((r, c))
 
         return baggage_positions
@@ -1565,7 +1578,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == _("CRUZADOS"):
+                if unit and unit.side == SIDE_CRUSADERS:
                     crusader_units.append((r, c))
 
         if not crusader_units:
@@ -1724,7 +1737,7 @@ class Game:
             return []
 
         # Ordenar unidades según prioridad estratégica para combate
-        if self.ai_side == _("CRUZADOS"):
+        if self.ai_side == SIDE_CRUSADERS:
             # Para Cruzados: priorizar unidades fuertes y proteger bagajes
             # 1. Caballeros y unidades de élite
             strong_units = [(r, c, u) for r, c, u in combat_ready_units
@@ -1783,10 +1796,10 @@ class Game:
         if target:
             if unit.attack(target, self.grid):
                 self.ui.add_log_message(
-                    f"{_('¡IA ataca!')} {_(type(unit).__name__)} {_('hirió a')} {_(type(target).__name__)}")
+                    f"{_('¡IA ataca!')} {_(unit.image_key)} {_('hirió a')} {_(target.image_key)}")
             else:
                 self.ui.add_log_message(
-                    f"{_('¡Ataque fallido de IA!')} {type(target).__name__} {_('resistió el ataque de')} {_(type(unit).__name__)}")
+                    f"{_('¡Ataque fallido de IA!')} {target.image_key} {_('resistió el ataque de')} {_(unit.image_key)}")
 
             # Marcar la unidad como ya atacó este turno
             if hasattr(self, '_ai_attacked_units_this_turn'):
@@ -1824,7 +1837,7 @@ class Game:
                 score += 5
 
             # Estrategias específicas según el bando
-            if self.ai_side == _("CRUZADOS"):
+            if self.ai_side == SIDE_CRUSADERS:
                 # Priorizar unidades que amenazan a los bagajes
                 if isinstance(target, Explorador) or isinstance(target, Mameluco):
                     score += 3
