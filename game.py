@@ -36,6 +36,8 @@ class Game:
         self.combat_targets = []  # Posibles objetivos de ataque
 
         # Objetivos del juego
+        self.turn_count = 1  # Contador de turnos, empieza en 1
+        self.max_turns = config.MAX_TURNS  # Máximo de turnos permitidos
         self.arsouf_hexes = [(1, 0), (1, 1)]  # Hexágonos de Arsouf
         self.units_in_arsouf = {
             config.BAGGAGE_NAME: 0,  # Contador de unidades de bagaje en Arsouf
@@ -950,6 +952,7 @@ class Game:
         self.state = config.GAME_STATES["PLAYER_TURN"]
         self.turn_phase = config.TURN_PHASES["MOVEMENT"]  # Reset to movement phase for player's turn
         self.ui.add_log_message(_("Turno del ordenador finalizado. ¡Te toca!"))
+        self.ui.add_log_message(_("Turno actual: {turn} / {max_turns}").format(turn=self.turn_count, max_turns=self.max_turns))
         # Limpiar variables de estado del turno de la IA
         if hasattr(self, '_ai_turn_initialized'):
             del self._ai_turn_initialized
@@ -963,6 +966,7 @@ class Game:
         self._check_unit_recovery()
         self.selected_unit = None
         self.possible_moves = []
+        self.turn_count += 1  # Incrementa el contador de turnos aquí
         self._check_win_condition()
 
     def _unit_reaches_arsouf(self, unit):
@@ -994,7 +998,7 @@ class Game:
         remaining_bagaje = crusader_units[config.BAGGAGE_NAME]
         remaining_other = crusader_units["other"]
 
-        if remaining_bagaje + self.units_in_arsouf[config.BAGGAGE_NAME] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
+        if remaining_bagaje + self.units_in_arsouf[config.BAGGAGE_NAME] < 2 or remaining_other + self.units_in_arsouf["other"] < 2 or self.turn_count > self.max_turns:
             self.game_over = True
             self.winner = config.SIDE_SARACENS
             self.ui.add_log_message(_("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."))

@@ -366,9 +366,9 @@ class GameUI:
         if game.state == "SELECT_SIDE" or game.state == "DEPLOY_PLAYER" or game.state == "DEPLOY_AI":
             return
         panel_width = 200
-        panel_height = 80
+        panel_height = 100
         panel_x = config.SCREEN_WIDTH - config.PANEL_WIDTH + 50
-        panel_y = config.SCREEN_HEIGHT - 170
+        panel_y = config.SCREEN_HEIGHT - 190
         s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
         s.fill((0, 0, 0, 180))
         game.screen.blit(s, (panel_x, panel_y))
@@ -376,10 +376,12 @@ class GameUI:
         text_title = font_title.render(_("Progreso hacia Arsouf"), True, config.COLOR_TEXTO)
         game.screen.blit(text_title, (panel_x + 10, panel_y + 10))
         font = pygame.font.SysFont('Arial', 14)
+        text_turn = font.render(f"{_('Turno')}: {game.turn_count} / {game.max_turns}", True, config.COLOR_TEXTO)
+        game.screen.blit(text_turn, (panel_x + 10, panel_y + 35))
         text_bagaje = font.render(f"{_('Bagajes')}: {game.units_in_arsouf[config.BAGGAGE_NAME]}/2", True, config.COLOR_TEXTO)
-        game.screen.blit(text_bagaje, (panel_x + 10, panel_y + 35))
+        game.screen.blit(text_bagaje, (panel_x + 10, panel_y + 55))
         text_other = font.render(f"{_('Otras unidades')}: {game.units_in_arsouf['other']}/2", True, config.COLOR_TEXTO)
-        game.screen.blit(text_other, (panel_x + 10, panel_y + 55))
+        game.screen.blit(text_other, (panel_x + 10, panel_y + 75))
 
     def draw_intro(self, game):
         try:
@@ -419,10 +421,10 @@ class GameUI:
         font = pygame.font.SysFont('Arial', 20)
         if game.winner == config.SIDE_CRUSADERS:
             text_winner = font.render(_("¡Victoria de los Cruzados!"), True, (255, 255, 255))
-            text_reason = font.render(_("Han llegado suficientes unidades a Arsouf"), True, (255, 255, 255))
+            text_reason = font.render(_("Han llegado a Arsouf"), True, (255, 255, 255))
         else:
             text_winner = font.render(_("¡Victoria de los Sarracenos!"), True, (255, 255, 255))
-            text_reason = font.render(_("Han impedido que los Cruzados lleguen a Arsouf"), True, (255, 255, 255))
+            text_reason = font.render(_("Los Cruzados no han llegado a Arsouf"), True, (255, 255, 255))
         game.screen.blit(text_winner, (panel_x + (panel_width - text_winner.get_width())//2, panel_y + 80))
         game.screen.blit(text_reason, (panel_x + (panel_width - text_reason.get_width())//2, panel_y + 120))
         font_exit = pygame.font.SysFont('Arial', 16)

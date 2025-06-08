@@ -259,6 +259,8 @@ TURN_PHASES = {
     'COMBAT': _('Combate')
 }
 
+MAX_TURNS = 50  # Número máximo de turnos por partida
+
 # ------------------------------
 # VALIDACIÓN DE CONFIG
 # ------------------------------
