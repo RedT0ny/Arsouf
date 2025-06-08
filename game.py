@@ -638,6 +638,14 @@ class Game:
                     self._play_sound("move")
                     self.moved_units.add((row, col))
                     self.last_moved_unit_pos = ((old_row, old_col), (row, col))  # Guardar posiciones original y nueva
+                    self.ui.add_log_message(
+                        _("Mueves {unit_type} desde ({row},{col}) hasta ({new_row}, {new_col})").format(
+                            unit_type=_(moved_unit.image_key),
+                            row=old_row,
+                            col=old_col,
+                            new_row=row,
+                            new_col=col
+                        ))  # TODO: Identificar instancia específica de unidad (e.g. Explorador 1..)
                     self._set_charging_hex(old_row, old_col, row, col)
 
             self.selected_unit = None

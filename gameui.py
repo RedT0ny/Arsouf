@@ -367,7 +367,7 @@ class GameUI:
             return
         panel_width = 200
         panel_height = 80
-        panel_x = config.SCREEN_WIDTH - config.PANEL_WIDTH + 20
+        panel_x = config.SCREEN_WIDTH - config.PANEL_WIDTH + 50
         panel_y = config.SCREEN_HEIGHT - 170
         s = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
         s.fill((0, 0, 0, 180))
@@ -458,8 +458,9 @@ class GameUI:
                 if game.state == "PLAYER_TURN" and game.turn_phase == config.TURN_PHASES["COMBAT"]:
                     self.draw_combat_targets()
                 self.draw_deployment_zones()
-                self.draw_victory_progress(game)
+                #self.draw_victory_progress(game)
             self.draw_log_panel()
             self.draw_panel()
+            self.draw_victory_progress(game)
         if game.game_over:
             self.draw_game_over(game)
