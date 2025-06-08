@@ -252,7 +252,7 @@ class GameUI:
             text = ""
         return self._render_fitted_text(text, max_width)
 
-    def _render_fitted_text(self, text, max_width, color=None, font_size=24):
+    def _render_fitted_text(self, text, max_width, color=None, font_size=20):
         if color is None:
             color = config.COLOR_TEXTO
         font = pygame.font.SysFont('Arial', font_size)
