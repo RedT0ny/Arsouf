@@ -24,7 +24,7 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          pyinstaller --onefile --name arsouf --icon=arsouf.ico --add-data "assets;assets" main.py
+          pyinstaller --onefile --name arsouf --icon=arsouf.ico --add-data "assets;assets" --add-data "locale;locale" --add-data "other_module.py;." main.py
 
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
