@@ -651,9 +651,6 @@ class GameUI:
         elif game.state == GAME_STATES["SELECT_SIDE"]:
             # Dibujar menú de selección de bando
             self.draw_side_selection()
-            # Dibujar panel de log si está disponible
-            # if hasattr(self, 'log_messages'):
-            #     self.draw_log_panel()
         else:
             # Estados que requieren el tablero y las unidades
             # (DEPLOY_PLAYER, DEPLOY_AI, PLAYER_TURN, AI_TURN)

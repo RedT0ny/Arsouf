@@ -4,8 +4,6 @@ import os
 import pygame
 import gettext
 
-import config
-
 _ = gettext.gettext  # type: callable
 import random
 
@@ -410,21 +408,6 @@ class Game:
         self.tablero_escalado = None
         self.ui = None
 
-        # # Recargar los componentes necesarios para el estado actual
-        # if self.state == GAME_STATES["SETUP_MENU"]:
-        #     self._load_setup_menu()
-        # elif self.state == GAME_STATES["SELECT_SIDE"]:
-        #     self._load_setup_menu()
-        #     self._load_side_selection_menu()
-        # elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"],
-        #                    GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
-        #     self._load_setup_menu()
-        #     self._load_side_selection_menu()
-        #     self._load_board()
-        #     if self.grid is not None:
-        #         self._load_grid()
-        #     if self.ui is not None:
-        #         self._load_ui()
         self._load_setup_menu()
         self._load_ui()
 
@@ -477,21 +460,6 @@ class Game:
             import sys
             current_module = sys.modules[__name__]
             current_module._ = _
-
-            # # Reiniciar componentes que dependen del idioma
-            # self.setup_menu = None
-            # self.side_selection_menu = None
-            #
-            # # Recargar los componentes necesarios para el estado actual
-            # if self.state == GAME_STATES["SETUP_MENU"]:
-            #     self._load_setup_menu()
-            # elif self.state == GAME_STATES["SELECT_SIDE"]:
-            #     self._load_setup_menu()
-            #     self._load_side_selection_menu()
-            # elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"],
-            #                    GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
-            #     self._load_setup_menu()
-            #     self._load_side_selection_menu()
 
             self._load_setup_menu()
 
