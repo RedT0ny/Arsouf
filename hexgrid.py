@@ -3,30 +3,30 @@ from collections import deque
 
 import pygame
 import math
+import config
 import gettext
 _ = gettext.gettext
 
 from typing import List, Tuple, Optional  # Añadir estas importaciones
 from units import *
-from config import COMBAT_COLORS, HEX_WIDTH, HEX_HEIGHT, HEX_ROWS, HEX_COLS, MARGENES_ESCALADOS, ROAD_HEXES, FORBIDDEN_HEXES, RIVER_BARRIERS, FORD_HEX
 
 class HexGrid:
     def __init__(self) -> None:
-        self.rows = HEX_ROWS
-        self.cols = HEX_COLS
+        self.rows = config.HEX_ROWS
+        self.cols = config.HEX_COLS
 
-        self.grid = [[None for _ in range(HEX_COLS)] for _ in range(HEX_ROWS)]
+        self.grid = [[None for _ in range(config.HEX_COLS)] for _ in range(config.HEX_ROWS)]
 
         # Geometría hexagonal (usando dimensiones reales)
-        self.hex_width = HEX_WIDTH   # Ancho del hexágono (104px escalado)
-        self.hex_height = HEX_HEIGHT  # Altura del hexágono (120px escalado)
+        self.hex_width = config.HEX_WIDTH   # Ancho del hexágono (104px escalado)
+        self.hex_height = config.HEX_HEIGHT  # Altura del hexágono (120px escalado)
 
         # Factor de superposición vertical para hexágonos
         self.vertical_overlap_factor = 0.75
 
         # Offsets para alineación visual (ajustar según necesidad)
-        self.offset_x = MARGENES_ESCALADOS["izquierdo"] + int(self.hex_width * 0.5)
-        self.offset_y = MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)
+        self.offset_x = config.MARGENES_ESCALADOS["izquierdo"] + int(self.hex_width * 0.5)
+        self.offset_y = config.MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)
 
     def hex_to_pixel(self, row, col) -> tuple[int, int]:
         """
@@ -50,8 +50,8 @@ class HexGrid:
         Añade una unidad al grid hexagonal y actualiza su posición.
 
         Parámetros:
-            row (int): Fila del grid (0 a HEX_ROWS-1)
-            col (int): Columna del grid (0 a HEX_COLS-1)
+            row (int): Fila del grid (0 a config.HEX_ROWS-1)
+            col (int): Columna del grid (0 a config.HEX_COLS-1)
             unit (Unit): Instancia de la unidad (Ricardo, Templario, etc.)
 
         Ejemplo:
@@ -86,7 +86,7 @@ class HexGrid:
 
         # Ajusta velocidad de unidades a pie (slow) en carretera
         effective_speed = speed
-        if hasattr(unit, 'slow') and (row, col) in ROAD_HEXES:
+        if hasattr(unit, 'slow') and (row, col) in config.ROAD_HEXES:
             effective_speed += 1  # Bonus por empezar en carretera
 
         from collections import deque
@@ -128,7 +128,7 @@ class HexGrid:
             # 1. Verificar límites y hexágonos prohibidos
             if not (0 <= nr < self.rows and 0 <= nc < self.cols):
                 continue
-            if (nr, nc) in FORBIDDEN_HEXES:
+            if (nr, nc) in config.FORBIDDEN_HEXES:
                 continue
 
             # Verificar si hay una unidad enemiga en la casilla (no se puede saltar sobre enemigos)
@@ -142,15 +142,15 @@ class HexGrid:
 
             # 3. Aplicar modificadores de terreno
             # a) Barreras de río
-            if move_pair in RIVER_BARRIERS:
-                if FORD_HEX not in current_path and FORD_HEX != (row, col) and FORD_HEX != (nr, nc):
+            if move_pair in config.RIVER_BARRIERS:
+                if config.FORD_HEX not in current_path and config.FORD_HEX != (row, col) and config.FORD_HEX != (nr, nc):
                     continue # Bloquear movimiento
                 cost = 2 # Penalización por cruzar río
 
             # Modificadores para unidades slow
             if hasattr(unit, 'slow'):
-                on_road_start = (row, col) in ROAD_HEXES
-                on_road_end = (nr, nc) in ROAD_HEXES
+                on_road_start = (row, col) in config.ROAD_HEXES
+                on_road_end = (nr, nc) in config.ROAD_HEXES
 
                 # Bonus: movimiento más rápido EN carretera
                 if on_road_start and on_road_end:
@@ -179,9 +179,9 @@ class HexGrid:
     def is_in_deployment_zone(self, row, col, side):
         """Determina si una posición está en la zona de despliegue."""
         if side == SIDE_CRUSADERS:
-            return col >= HEX_COLS - 4 and row < 4
+            return col >= config.HEX_COLS - 4 and row < 4
         else:
-            return col < 8 and row >= HEX_ROWS - 2
+            return col < 8 and row >= config.HEX_ROWS - 2
 
     # En hexgrid.py
     def get_adjacent_enemies(self, row, col, side):
@@ -289,10 +289,10 @@ class HexGrid:
                             img_height = img.get_height()
 
                             # Dibujar líneas diagonales (aspa)
-                            pygame.draw.line(screen, COMBAT_COLORS['wounded'], 
+                            pygame.draw.line(screen, config.COMBAT_COLORS['wounded'], 
                                            (img_x + 0.25*img_width, img_y + 0.25*img_height),
                                            (img_x + 0.75*img_width, img_y + 0.75*img_height), 3)
-                            pygame.draw.line(screen, COMBAT_COLORS['wounded'], 
+                            pygame.draw.line(screen, config.COMBAT_COLORS['wounded'], 
                                            (img_x + 0.75*img_width, img_y + 0.25*img_height),
                                            (img_x + 0.25*img_width, img_y + 0.75*img_height), 3)
 
@@ -306,6 +306,8 @@ class HexGrid:
             tablero_x: Offset horizontal del tablero (opcional)
             tablero_y: Offset vertical del tablero (opcional)
         """
+        if not config.DEBUG_MODE:
+            return
         for row in range(self.rows):
             for col in range(self.cols):
                 # Obtener el centro del hexágono

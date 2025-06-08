@@ -3,6 +3,7 @@ import sys
 import os
 import pygame
 import gettext
+import config
 
 _ = gettext.gettext  # type: callable
 import random
@@ -11,7 +12,6 @@ from hexgrid import HexGrid
 from gameui import GameUI
 from menu import SetupMenu, SideSelectionMenu
 from units import *
-from config import *
 
 class Game:
     def __init__(self):
@@ -19,7 +19,7 @@ class Game:
         pygame.mixer.init()  # Inicializar el sistema de audio
 
         # Estados del juego
-        self.state = GAME_STATES["INTRO"]  # Comenzar con la pantalla de introducción
+        self.state = config.GAME_STATES["INTRO"]  # Comenzar con la pantalla de introducción
         self.player_side = None
         self.ai_side = None
 
@@ -31,21 +31,21 @@ class Game:
         self.sounds = self._load_sounds()
 
         # Fases del turno
-        self.turn_phase = TURN_PHASES["MOVEMENT"]  # Fase actual del turno (movimiento o combate)
+        self.turn_phase = config.TURN_PHASES["MOVEMENT"]  # Fase actual del turno (movimiento o combate)
         self.combat_attacker = None  # Unidad seleccionada para atacar
         self.combat_targets = []  # Posibles objetivos de ataque
 
         # Objetivos del juego
         self.arsouf_hexes = [(1, 0), (1, 1)]  # Hexágonos de Arsouf
         self.units_in_arsouf = {
-            BAGGAGE_NAME: 0,  # Contador de unidades de bagaje en Arsouf
+            config.BAGGAGE_NAME: 0,  # Contador de unidades de bagaje en Arsouf
             "other": 0    # Contador de otras unidades en Arsouf
         }
         self.game_over = False
         self.winner = None
 
         # Inicializar pantalla (necesaria para la intro)
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption(f"{_('game_name')} {VERSION}")
 
         # Inicializar el reloj (necesario para el bucle principal)
@@ -72,12 +72,12 @@ class Game:
     def _load_unit_images():
         global size
         images = {}
-        for key, path in IMAGE_PATHS.items():
+        for key, path in config.IMAGE_PATHS.items():
             if key in {"board","cover","reglas","rules"}: continue
             try:
                 img = pygame.image.load(path).convert_alpha()
                 # Usar el tamaño más pequeño entre ancho y alto para que las unidades quepan bien en los hexágonos
-                size = int(min(HEX_WIDTH, HEX_HEIGHT) * 0.85)
+                size = int(min(config.HEX_WIDTH, config.HEX_HEIGHT) * 0.85)
                 images[key] = pygame.transform.smoothscale(img, (size, size))
             except Exception as e:
                 print(f"{_('Error loading')} {path}: {e}")
@@ -89,7 +89,7 @@ class Game:
     @staticmethod
     def _load_sounds():
         sounds = {}
-        for key, path in AUDIO_PATHS.items():
+        for key, path in config.AUDIO_PATHS.items():
             try:
                 if key in ["arabesque", "victory", "defeat"]:
                     # Estos son archivos de música que se reproducirán con pygame.mixer.music
@@ -104,7 +104,7 @@ class Game:
     @staticmethod
     def _load_rules():
         try:
-            os.startfile(IMAGE_PATHS["rules"] if CURRENT_LANGUAGE == 'en' else IMAGE_PATHS["reglas"])
+            os.startfile(config.IMAGE_PATHS["rules"] if CURRENT_LANGUAGE == 'en' else config.IMAGE_PATHS["reglas"])
         except AttributeError:  # Para otros sistemas operativos
             print(_('Error loading rules file'))
 
@@ -112,13 +112,13 @@ class Game:
     def _get_initial_units():
         """Devuelve las unidades iniciales para cada bando."""
         return {
-            SIDE_CRUSADERS: [
+            config.SIDE_CRUSADERS: [
                 Ricardo(), Templario(), Hospitalario(),
                 Caballero(), Caballero(), Caballero(),
                 *[Infanteria() for _ in range(6)],
                 *[Bagaje() for _ in range(4)]
             ],
-            SIDE_SARACENS: [
+            config.SIDE_SARACENS: [
                 Saladino(),
                 *[Mameluco() for _ in range(4)],
                 *[Arquero() for _ in range(6)],
@@ -138,7 +138,7 @@ class Game:
                 self.running = False
 
             # Manejar eventos de la pantalla de introducción
-            if self.state == GAME_STATES["INTRO"]:
+            if self.state == config.GAME_STATES["INTRO"]:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # Saltar la introducción si se hace clic
                     self._end_intro()
@@ -170,24 +170,24 @@ class Game:
                     continue
 
                 # Manejo específico por estado y fase
-                if self.state == GAME_STATES["SETUP_MENU"]:
+                if self.state == config.GAME_STATES["SETUP_MENU"]:
                     self._handle_setup_menu(event)
-                elif self.state == GAME_STATES["SELECT_SIDE"]:
+                elif self.state == config.GAME_STATES["SELECT_SIDE"]:
                     self._handle_side_selection(event)
-                elif self.state == GAME_STATES["DEPLOY_PLAYER"]:
+                elif self.state == config.GAME_STATES["DEPLOY_PLAYER"]:
                     self._handle_deployment(event)
-                elif self.state == GAME_STATES["PLAYER_TURN"]:
-                    if self.turn_phase == TURN_PHASES["MOVEMENT"]:
+                elif self.state == config.GAME_STATES["PLAYER_TURN"]:
+                    if self.turn_phase == config.TURN_PHASES["MOVEMENT"]:
                         self._handle_movement_phase(event)
-                    elif self.turn_phase == TURN_PHASES["COMBAT"]:
+                    elif self.turn_phase == config.TURN_PHASES["COMBAT"]:
                         self._handle_combat_phase(event)  # Asegurar que se llama aquí
 
     def _handle_movement_phase(self, event):
         """Maneja la fase de movimiento (existente)"""
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-            pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
+            pos_x = (config.SCREEN_WIDTH - self.tablero_escalado.get_width() - config.PANEL_WIDTH) // 2
+            pos_y = (config.SCREEN_HEIGHT - self.tablero_escalado.get_height() - config.LOG_PANEL_HEIGHT) // 2
             tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
                                        self.tablero_escalado.get_height())
 
@@ -214,8 +214,8 @@ class Game:
                 return
 
             # Verificar clic en el tablero
-            pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-            pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
+            pos_x = (config.SCREEN_WIDTH - self.tablero_escalado.get_width() - config.PANEL_WIDTH) // 2
+            pos_y = (config.SCREEN_HEIGHT - self.tablero_escalado.get_height() - config.LOG_PANEL_HEIGHT) // 2
             tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
                                        self.tablero_escalado.get_height())
             if tablero_rect.collidepoint(mouse_pos):
@@ -226,16 +226,16 @@ class Game:
 
     def _end_current_phase(self):
         """Finaliza la fase actual y pasa a la siguiente"""
-        if self.state == GAME_STATES["PLAYER_TURN"]:
-            if self.turn_phase == TURN_PHASES["MOVEMENT"]:
-                self.turn_phase = TURN_PHASES["COMBAT"]
+        if self.state == config.GAME_STATES["PLAYER_TURN"]:
+            if self.turn_phase == config.TURN_PHASES["MOVEMENT"]:
+                self.turn_phase = config.TURN_PHASES["COMBAT"]
                 self.ui.add_log_message(_("Fase de combate iniciada"))
                 self.moved_units = set()  # Resetear unidades movidas
                 self.last_moved_unit_pos = None  # Resetear la última unidad movida
                 self.attacked_units = set()  # Resetear unidades atacantes
-            elif self.turn_phase == TURN_PHASES["COMBAT"]:
-                self.turn_phase = TURN_PHASES["MOVEMENT"]
-                self.state = GAME_STATES["AI_TURN"]
+            elif self.turn_phase == config.TURN_PHASES["COMBAT"]:
+                self.turn_phase = config.TURN_PHASES["MOVEMENT"]
+                self.state = config.GAME_STATES["AI_TURN"]
                 self.ui.add_log_message(_("Turno del jugador finalizado"))
                 self._check_unit_recovery()
                 self._reset_charging_flags()  # Limpiar flags de carga al final de la fase de combate
@@ -256,8 +256,8 @@ class Game:
     def _get_hex_under_mouse(self, mouse_pos):
         """Encuentra el hexágono bajo el cursor"""
         # Calcular la posición del tablero
-        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
+        pos_x = (config.SCREEN_WIDTH - self.tablero_escalado.get_width() - config.PANEL_WIDTH) // 2
+        pos_y = (config.SCREEN_HEIGHT - self.tablero_escalado.get_height() - config.LOG_PANEL_HEIGHT) // 2
 
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
@@ -266,7 +266,7 @@ class Game:
                 x += pos_x
                 y += pos_y
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
-                if distance < HEX_MIN_SIZE / 2:
+                if distance < config.HEX_MIN_SIZE / 2:
                     return row, col
         return None
 
@@ -299,8 +299,8 @@ class Game:
         self._load_units()
 
         self.player_side = player_side
-        self.ai_side = SIDE_SARACENS if player_side == SIDE_CRUSADERS else SIDE_CRUSADERS
-        self.state = GAME_STATES["DEPLOY_PLAYER"]
+        self.ai_side = config.SIDE_SARACENS if player_side == config.SIDE_CRUSADERS else config.SIDE_CRUSADERS
+        self.state = config.GAME_STATES["DEPLOY_PLAYER"]
         self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
         self.ui.add_log_message(_("Jugando como {player_side}. Comienza el despliegue.").format(player_side=_(self.player_side)))
 
@@ -328,7 +328,7 @@ class Game:
             elif action == "SELECT_SIDE":
                 # Ir a la pantalla de selección de bando
                 self._load_side_selection_menu()
-                self.state = GAME_STATES["SELECT_SIDE"]
+                self.state = config.GAME_STATES["SELECT_SIDE"]
             elif action == "QUIT":
                 # Salir del juego
                 print(_("Saliendo del juego"))
@@ -338,69 +338,64 @@ class Game:
         """Carga y escala el tablero según la escala actual."""
         if self.tablero_escalado is None:
             # Cargar la imagen del tablero
-            board_img = pygame.image.load(IMAGE_PATHS["board"]).convert_alpha()
+            board_img = pygame.image.load(config.IMAGE_PATHS["board"]).convert_alpha()
 
             # Escalar el tablero según la escala actual
             self.tablero_escalado = pygame.transform.smoothscale(
                 board_img,
-                (int(TABLERO_REAL_WIDTH * ESCALA), int(TABLERO_REAL_HEIGHT * ESCALA))
+                (int(config.TABLERO_REAL_WIDTH * config.ESCALA), int(config.TABLERO_REAL_HEIGHT * config.ESCALA))
             )
 
     def _change_display_scale(self, scale: float = None):
         """Cambia la escala de pantalla."""
-        global DISPLAY_SCALING
         # Ciclar entre diferentes escalas (40%, 50%, 60%, 75%)
         scales = [0.4, 0.5, 0.6, 0.75]
 
-        if scale == DISPLAY_SCALING:
+        import config
+
+        if scale == config.DISPLAY_SCALING:
             return False
         elif scale in scales:
-            DISPLAY_SCALING = scale
+            config.DISPLAY_SCALING = scale
         else:
-            current_index = scales.index(DISPLAY_SCALING) if DISPLAY_SCALING in scales else 0
+            current_index = scales.index(config.DISPLAY_SCALING) if config.DISPLAY_SCALING in scales else 0
             next_index = (current_index + 1) % len(scales)
-            DISPLAY_SCALING = scales[next_index]
+            config.DISPLAY_SCALING = scales[next_index]
 
         # Actualizar dimensiones de pantalla
-        global SCREEN_WIDTH, SCREEN_HEIGHT, ESCALA, BOTON_WIDTH, BOTON_HEIGHT, TITULO_Y, OPCIONES_Y, OPCIONES_ESPACIADO
-        SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
-        SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
+        config.SCREEN_WIDTH = config.TABLERO_REAL_WIDTH * config.DISPLAY_SCALING + 300
+        config.SCREEN_HEIGHT = config.TABLERO_REAL_HEIGHT * config.DISPLAY_SCALING + 170
 
         # Ajustar el ancho y alto de los botones según la escala
-        # Usamos los valores base (260 y 50) y los ajustamos según la escala
-        # pero mantenemos un mínimo para asegurar que el texto quepa
-        BOTON_WIDTH = max(260 * DISPLAY_SCALING / 0.75, 200)
-        BOTON_HEIGHT = max(50 * DISPLAY_SCALING / 0.75, 40)
+        config.MENU_BUTTON_WIDTH = max(260 * config.DISPLAY_SCALING / 0.75, 200)
+        config.MENU_BUTTON_HEIGHT = max(50 * config.DISPLAY_SCALING / 0.75, 40)
 
         # Ajustar las posiciones verticales del título y los botones
-        # Usamos los valores base (200 y 300) y los ajustamos según la escala
-        TITULO_Y = int(200 * DISPLAY_SCALING / 0.75)
-        OPCIONES_Y = int(300 * DISPLAY_SCALING / 0.75)
+        config.TITLE_Y = int(200 * config.DISPLAY_SCALING / 0.75)
+        config.OPTIONS_Y = int(300 * config.DISPLAY_SCALING / 0.75)
 
         # Ajustar el espaciado entre opciones
-        # Usamos el valor base (100) y lo ajustamos según la escala
-        OPCIONES_ESPACIADO = int(100 * DISPLAY_SCALING / 0.75)
+        config.OPTIONS_SPACING = int(100 * config.DISPLAY_SCALING / 0.75)
 
         # Recalcular ESCALA basado en las nuevas dimensiones
-        AVAILABLE_WIDTH = SCREEN_WIDTH - PANEL_WIDTH
-        AVAILABLE_HEIGHT = SCREEN_HEIGHT - LOG_PANEL_HEIGHT
-        ESCALA = min(AVAILABLE_WIDTH / TABLERO_REAL_WIDTH, AVAILABLE_HEIGHT / TABLERO_REAL_HEIGHT)
+        config.AVAILABLE_WIDTH = config.SCREEN_WIDTH - config.PANEL_WIDTH
+        config.AVAILABLE_HEIGHT = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+        config.ESCALA = min(config.AVAILABLE_WIDTH / config.TABLERO_REAL_WIDTH, config.AVAILABLE_HEIGHT / config.TABLERO_REAL_HEIGHT)
 
         # Recalcular dimensiones de hexágonos
-        global HEX_HEIGHT, HEX_WIDTH, HEX_SIZE, HEX_MIN_SIZE, MARGENES_ESCALADOS
-        HEX_HEIGHT = int(HEX_REAL_HEIGHT * ESCALA)
-        HEX_WIDTH = int(HEX_REAL_WIDTH * ESCALA)
-        HEX_SIZE = HEX_WIDTH  # Mantenemos HEX_SIZE para compatibilidad
-        HEX_MIN_SIZE = min(HEX_WIDTH, HEX_HEIGHT)
+        config.HEX_HEIGHT = int(config.HEX_REAL_HEIGHT * config.ESCALA)
+        config.HEX_WIDTH = int(config.HEX_REAL_WIDTH * config.ESCALA)
+        config.HEX_SIZE = config.HEX_WIDTH  # Mantenemos config.HEX_SIZE para compatibilidad
+        config.HEX_MIN_SIZE = min(config.HEX_WIDTH, config.HEX_HEIGHT)
 
         # Recalcular márgenes escalados
-        MARGENES_ESCALADOS = {
-            "superior": int(MARGENES["superior"] * ESCALA),
-            "izquierdo": int(MARGENES["izquierdo"] * ESCALA)
+        config.MARGENES_ESCALADOS = {
+            "superior": int(config.MARGENES["superior"] * config.ESCALA),
+            "izquierdo": int(config.MARGENES["izquierdo"] * config.ESCALA)
         }
 
         # Recrear la pantalla con las nuevas dimensiones
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
 
         # Reiniciar componentes que dependen del tamaño de la pantalla
         self.setup_menu = None
@@ -412,14 +407,14 @@ class Game:
         self._load_ui()
 
         # Mensaje de log en consola
-        print(_("Escala de pantalla cambiada a {scale}%").format(scale=int(DISPLAY_SCALING * 100)))
+        print(_("Escala de pantalla cambiada a {scale}%").format(scale=int(config.DISPLAY_SCALING * 100)))
 
     def _change_language(self, language: str =None):
         """Cambia el idioma del juego."""
         global CURRENT_LANGUAGE, _
 
         # Lista de idiomas disponibles
-        available_languages = AVAILABLE_LANGUAGES
+        available_languages = config.AVAILABLE_LANGUAGES
 
         # Determinar si el idioma solicitado está entre los disponibles
         if language == CURRENT_LANGUAGE:
@@ -478,7 +473,7 @@ class Game:
     def _restore_defaults(self):
         """Restaura los valores predeterminados."""
 
-        if DISPLAY_SCALING != 0.5:
+        if config.DISPLAY_SCALING != 0.5:
             self._change_display_scale(0.5)
 
         # Intentar obtener el idioma del sistema
@@ -539,9 +534,9 @@ class Game:
 
     def _end_player_turn(self):
         """Maneja la finalización del turno del jugador o fase de despliegue"""
-        if self.state == GAME_STATES["DEPLOY_PLAYER"] and not self.current_deploying_unit:
+        if self.state == config.GAME_STATES["DEPLOY_PLAYER"] and not self.current_deploying_unit:
             # Confirmar despliegue del jugador
-            self.state = GAME_STATES["DEPLOY_AI"]
+            self.state = config.GAME_STATES["DEPLOY_AI"]
             self.ui.add_log_message(_("Despliegue confirmado. El ordenador está desplegando"))
 
             # Limpiar selecciones
@@ -551,27 +546,27 @@ class Game:
             # Iniciar despliegue de la IA
             self._ai_deploy_units()
 
-        elif self.state == GAME_STATES["PLAYER_TURN"]:
-            if self.turn_phase == TURN_PHASES["MOVEMENT"]:
+        elif self.state == config.GAME_STATES["PLAYER_TURN"]:
+            if self.turn_phase == config.TURN_PHASES["MOVEMENT"]:
                 # Pasar a fase de combate
-                self.turn_phase = TURN_PHASES["COMBAT"]
+                self.turn_phase = config.TURN_PHASES["COMBAT"]
                 self.ui.add_log_message(_("Fase de combate iniciada"))
                 self.moved_units = set()  # Resetear unidades movidas
                 self.last_moved_unit_pos = None  # Resetear la última unidad movida
                 self.attacked_units = set()  # Resetear unidades atacantes
 
-            elif self.turn_phase == TURN_PHASES["COMBAT"]:
+            elif self.turn_phase == config.TURN_PHASES["COMBAT"]:
                 # Finalizar turno completo
-                self.turn_phase = TURN_PHASES["MOVEMENT"]
-                self.state = GAME_STATES["AI_TURN"]
+                self.turn_phase = config.TURN_PHASES["MOVEMENT"]
+                self.state = config.GAME_STATES["AI_TURN"]
                 self.current_turn_side = self.ai_side
                 self.ui.add_log_message(_("Turno del jugador finalizado"))
                 self._check_unit_recovery()
 
     def _handle_board_click(self, mouse_pos, button=1):
         # Calcular la posición del tablero
-        pos_x = (SCREEN_WIDTH - self.tablero_escalado.get_width() - PANEL_WIDTH) // 2
-        pos_y = (SCREEN_HEIGHT - self.tablero_escalado.get_height() - LOG_PANEL_HEIGHT) // 2
+        pos_x = (config.SCREEN_WIDTH - self.tablero_escalado.get_width() - config.PANEL_WIDTH) // 2
+        pos_y = (config.SCREEN_HEIGHT - self.tablero_escalado.get_height() - config.LOG_PANEL_HEIGHT) // 2
 
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
@@ -581,7 +576,7 @@ class Game:
                 y += pos_y
 
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
-                if distance < HEX_MIN_SIZE / 2:
+                if distance < config.HEX_MIN_SIZE / 2:
                     # Mensaje de debug para verificar coordenadas
                     print(_("Has hecho click en coordenadas del grid: ({row}, {col})").format(row=row, col=col))
                     print(_("Posición en píxeles: ({x}, {y})").format(x=x, y=y))
@@ -628,7 +623,7 @@ class Game:
             moved_unit = self.grid.grid[old_row][old_col]
 
             # Verificar si es una unidad cruzada llegando a Arsouf
-            if moved_unit.side == SIDE_CRUSADERS and (row, col) in self.arsouf_hexes:
+            if moved_unit.side == config.SIDE_CRUSADERS and (row, col) in self.arsouf_hexes:
                 # Unidad llega a Arsouf
                 self._unit_reaches_arsouf(moved_unit)
                 # Eliminar la unidad del tablero original
@@ -681,7 +676,7 @@ class Game:
                 if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
                     # Verificar si hay una unidad sarracena en ese hexágono
                     target_unit = self.grid.get_unit(next_row, next_col)
-                    if target_unit and target_unit.side == SIDE_SARACENS:
+                    if target_unit and target_unit.side == config.SIDE_SARACENS:
                         # Establecer el hexágono de carga
                         moved_unit.charging_hex = (next_row, next_col)
                         self.ui.add_log_message(_("{unit_type} cargando sobre {target} en ({next_row},{next_col})!").format(
@@ -697,7 +692,7 @@ class Game:
 
     def _ai_deploy_units(self):
         if not self.units_to_deploy[self.ai_side]:
-            self.state = GAME_STATES["PLAYER_TURN"]
+            self.state = config.GAME_STATES["PLAYER_TURN"]
             return
 
         # Obtener todas las posiciones válidas de despliegue
@@ -711,7 +706,7 @@ class Game:
             return
 
         # Estrategia específica según el bando de la IA
-        if self.ai_side == SIDE_CRUSADERS:
+        if self.ai_side == config.SIDE_CRUSADERS:
             # Estrategia para Cruzados: proteger bagajes cerca del borde derecho
 
             # Buscar unidades de bagaje para desplegar primero
@@ -721,7 +716,7 @@ class Game:
                 self.units_to_deploy[self.ai_side].remove(unit)
 
                 # Posicionar bagajes en el borde derecho (columnas altas)
-                right_edge_positions = [pos for pos in valid_positions if pos[1] >= HEX_COLS - 3]
+                right_edge_positions = [pos for pos in valid_positions if pos[1] >= config.HEX_COLS - 3]
                 if right_edge_positions:
                     row, col = random.choice(right_edge_positions)
                 else:
@@ -734,7 +729,7 @@ class Game:
                     self.units_to_deploy[self.ai_side].remove(unit)
 
                     # Posicionar infantería delante de los bagajes
-                    middle_positions = [pos for pos in valid_positions if pos[1] >= HEX_COLS - 4 and pos[1] < HEX_COLS - 2]
+                    middle_positions = [pos for pos in valid_positions if pos[1] >= config.HEX_COLS - 4 and pos[1] < config.HEX_COLS - 2]
                     if middle_positions:
                         row, col = random.choice(middle_positions)
                     else:
@@ -747,7 +742,7 @@ class Game:
                         self.units_to_deploy[self.ai_side].remove(unit)
 
                         # Posicionar a Ricardo en el centro del despliegue
-                        center_positions = [pos for pos in valid_positions if pos[1] >= HEX_COLS - 3 and pos[1] < HEX_COLS - 1]
+                        center_positions = [pos for pos in valid_positions if pos[1] >= config.HEX_COLS - 3 and pos[1] < config.HEX_COLS - 1]
                         if center_positions:
                             row, col = random.choice(center_positions)
                         else:
@@ -758,7 +753,7 @@ class Game:
                         self.units_to_deploy[self.ai_side].remove(unit)
 
                         # Posicionar caballeros en el frente
-                        front_positions = [pos for pos in valid_positions if pos[1] < HEX_COLS - 2]
+                        front_positions = [pos for pos in valid_positions if pos[1] < config.HEX_COLS - 2]
                         if front_positions and (isinstance(unit, Caballero) or isinstance(unit, Templario) or isinstance(unit, Hospitalario)):
                             row, col = random.choice(front_positions)
                         else:
@@ -811,7 +806,7 @@ class Game:
 
                         if isinstance(unit, Explorador):
                             # Posicionar exploradores en posiciones avanzadas
-                            advanced_positions = [pos for pos in valid_positions if pos[0] < HEX_ROWS - 1]
+                            advanced_positions = [pos for pos in valid_positions if pos[0] < config.HEX_ROWS - 1]
                             if advanced_positions:
                                 row, col = random.choice(advanced_positions)
                             else:
@@ -834,7 +829,7 @@ class Game:
             self.ui.add_log_message(_("Turno del ordenador - Fase de movimiento"))
             self._ai_turn_initialized = True
             self._ai_moved_units_this_turn = set()
-            self.turn_phase = TURN_PHASES["MOVEMENT"]  # Usar la variable global turn_phase
+            self.turn_phase = config.TURN_PHASES["MOVEMENT"]  # Usar la variable global turn_phase
 
             # Obtener todas las unidades de la IA
             all_ai_units = [
@@ -844,7 +839,7 @@ class Game:
             ]
 
             # Ordenar unidades según prioridad estratégica
-            if self.ai_side == SIDE_CRUSADERS:
+            if self.ai_side == config.SIDE_CRUSADERS:
                 # Para Cruzados: primero mover Ricardo y unidades fuertes, luego infantería, bagajes al final
                 leaders = [(r, c, u) for r, c, u in all_ai_units if isinstance(u, Ricardo)]
                 strong_units = [(r, c, u) for r, c, u in all_ai_units
@@ -865,7 +860,7 @@ class Game:
                 self._ai_units_to_consider = explorers + archers + mamelucos + leaders
 
         # 2. Fase de movimiento
-        if self.turn_phase == TURN_PHASES["MOVEMENT"]:
+        if self.turn_phase == config.TURN_PHASES["MOVEMENT"]:
             if hasattr(self, '_ai_units_to_consider') and self._ai_units_to_consider:
                 row, col, unit = self._ai_units_to_consider.pop()
 
@@ -877,7 +872,7 @@ class Game:
                         new_row, new_col = self._choose_strategic_move(row, col, unit, self.possible_moves)
 
                         # Verificar si es una unidad cruzada llegando a Arsouf
-                        if unit.side == SIDE_CRUSADERS and (new_row, new_col) in self.arsouf_hexes:
+                        if unit.side == config.SIDE_CRUSADERS and (new_row, new_col) in self.arsouf_hexes:
                             # Unidad llega a Arsouf
                             self._unit_reaches_arsouf(unit)
                             # Eliminar la unidad del tablero original
@@ -905,7 +900,7 @@ class Game:
 
             else:
                 # Cuando se completa la fase de movimiento, pasar a la fase de combate
-                self.turn_phase = TURN_PHASES["COMBAT"]
+                self.turn_phase = config.TURN_PHASES["COMBAT"]
                 self.ui.add_log_message(_("Turno del ordenador - Fase de combate"))
                 self._ai_attacked_units_this_turn = set()  # Inicializar conjunto de unidades que ya atacaron
 
@@ -920,7 +915,7 @@ class Game:
                 self._ai_combat_units = self._prioritize_units_for_combat(all_ai_units)
 
         # 3. Fase de combate
-        elif self.turn_phase == TURN_PHASES["COMBAT"]:
+        elif self.turn_phase == config.TURN_PHASES["COMBAT"]:
             if hasattr(self, '_ai_combat_units') and self._ai_combat_units:
                 self._execute_ai_combat()
             else:
@@ -928,8 +923,8 @@ class Game:
                 self._end_ai_turn()
 
         # 4. Finalizar turno si no quedan unidades y estamos en fase de movimiento
-        if self.turn_phase == TURN_PHASES["MOVEMENT"] and hasattr(self, '_ai_units_to_consider') and not self._ai_units_to_consider:
-            self.turn_phase = TURN_PHASES["COMBAT"]
+        if self.turn_phase == config.TURN_PHASES["MOVEMENT"] and hasattr(self, '_ai_units_to_consider') and not self._ai_units_to_consider:
+            self.turn_phase = config.TURN_PHASES["COMBAT"]
             self.ui.add_log_message(_("Turno del ordenador - Fase de combate"))
             self._ai_attacked_units_this_turn = set()  # Inicializar conjunto de unidades que ya atacaron
 
@@ -944,8 +939,8 @@ class Game:
             self._ai_combat_units = self._prioritize_units_for_combat(all_ai_units)
 
     def _end_ai_turn(self):
-        self.state = GAME_STATES["PLAYER_TURN"]
-        self.turn_phase = TURN_PHASES["MOVEMENT"]  # Reset to movement phase for player's turn
+        self.state = config.GAME_STATES["PLAYER_TURN"]
+        self.turn_phase = config.TURN_PHASES["MOVEMENT"]  # Reset to movement phase for player's turn
         self.ui.add_log_message(_("Turno del ordenador finalizado. ¡Te toca!"))
         # Limpiar variables de estado del turno de la IA
         if hasattr(self, '_ai_turn_initialized'):
@@ -965,8 +960,8 @@ class Game:
     def _unit_reaches_arsouf(self, unit):
         """Registra una unidad que ha llegado a Arsouf"""
         if isinstance(unit, Bagaje):
-            self.units_in_arsouf[BAGGAGE_NAME] += 1
-            self.ui.add_log_message(_("¡Bagaje ha llegado a Arsouf! ({count}/2)").format(count=self.units_in_arsouf[BAGGAGE_NAME]))
+            self.units_in_arsouf[config.BAGGAGE_NAME] += 1
+            self.ui.add_log_message(_("¡Bagaje ha llegado a Arsouf! ({count}/2)").format(count=self.units_in_arsouf[config.BAGGAGE_NAME]))
         else:
             self.units_in_arsouf["other"] += 1
             self.ui.add_log_message(_("¡{unit_type} ha llegado a Arsouf! ({count}/2)").format(unit_type=_(unit.image_key), count=self.units_in_arsouf['other']))
@@ -974,13 +969,13 @@ class Game:
     def _check_win_condition(self):
         """Verifica si se ha cumplido la condición de victoria"""
         # Victoria de los Cruzados: 2 bagajes y 2 otras unidades en Arsouf
-        if self.units_in_arsouf[BAGGAGE_NAME] >= 2 and self.units_in_arsouf["other"] >= 2:
+        if self.units_in_arsouf[config.BAGGAGE_NAME] >= 2 and self.units_in_arsouf["other"] >= 2:
             self.game_over = True
-            self.winner = SIDE_CRUSADERS
+            self.winner = config.SIDE_CRUSADERS
             self.ui.add_log_message(_("¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf."))
 
             # Reproducir música de victoria o derrota según el bando del jugador
-            if self.player_side == SIDE_CRUSADERS:
+            if self.player_side == config.SIDE_CRUSADERS:
                 self._play_music("victory")
             else:
                 self._play_music("defeat")
@@ -988,30 +983,30 @@ class Game:
         # Victoria de los Sarracenos: imposibilidad de que los Cruzados ganen
         # Esto se verificaría si no quedan suficientes unidades cruzadas en el tablero
         crusader_units = self._count_remaining_crusader_units()
-        remaining_bagaje = crusader_units[BAGGAGE_NAME]
+        remaining_bagaje = crusader_units[config.BAGGAGE_NAME]
         remaining_other = crusader_units["other"]
 
-        if remaining_bagaje + self.units_in_arsouf[BAGGAGE_NAME] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
+        if remaining_bagaje + self.units_in_arsouf[config.BAGGAGE_NAME] < 2 or remaining_other + self.units_in_arsouf["other"] < 2:
             self.game_over = True
-            self.winner = SIDE_SARACENS
+            self.winner = config.SIDE_SARACENS
             self.ui.add_log_message(_("¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."))
 
             # Reproducir música de victoria o derrota según el bando del jugador
-            if self.player_side == SIDE_SARACENS:
+            if self.player_side == config.SIDE_SARACENS:
                 self._play_music("victory")
             else:
                 self._play_music("defeat")
 
     def _count_remaining_crusader_units(self):
         """Cuenta las unidades cruzadas restantes en el tablero"""
-        remaining = {BAGGAGE_NAME: 0, "other": 0}
+        remaining = {config.BAGGAGE_NAME: 0, "other": 0}
 
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
                 unit = self.grid.grid[row][col]
-                if unit and unit.side == SIDE_CRUSADERS:
+                if unit and unit.side == config.SIDE_CRUSADERS:
                     if isinstance(unit, Bagaje):
-                        remaining[BAGGAGE_NAME] += 1
+                        remaining[config.BAGGAGE_NAME] += 1
                     else:
                         remaining["other"] += 1
 
@@ -1059,7 +1054,7 @@ class Game:
             if unit and unit in self.combat_targets:
                 # Realizar ataque
                 is_charging = False
-                if isinstance(self.combat_attacker, (Caballero, Templario, Hospitalario)) and unit.side == SIDE_SARACENS:
+                if isinstance(self.combat_attacker, (Caballero, Templario, Hospitalario)) and unit.side == config.SIDE_SARACENS:
                     # Verificar si es posible una carga
                     is_charging = self.combat_attacker.charge(unit, self.grid)
 
@@ -1103,7 +1098,7 @@ class Game:
 
     def _choose_strategic_move(self, row, col, unit, possible_moves):
         """Elige un movimiento estratégico según el tipo de unidad y el bando."""
-        if self.ai_side == SIDE_CRUSADERS:
+        if self.ai_side == config.SIDE_CRUSADERS:
             # Estrategia para Cruzados
             if isinstance(unit, Bagaje):
                 # Bagajes: Priorizar movimiento hacia Arsouf
@@ -1113,7 +1108,7 @@ class Game:
                     return path_to_arsouf
 
                 # Si no hay camino directo, mantenerse cerca del borde derecho y alejados de enemigos
-                right_edge_moves = [(r, c) for r, c in possible_moves if c >= HEX_COLS - 3]
+                right_edge_moves = [(r, c) for r, c in possible_moves if c >= config.HEX_COLS - 3]
                 if right_edge_moves:
                     # Evaluar seguridad: preferir posiciones con menos enemigos cercanos
                     safest_move = self._find_safest_position(right_edge_moves, unit)
@@ -1312,7 +1307,7 @@ class Game:
             dist_to_protect = ((r - avg_r) ** 2 + (c - avg_c) ** 2) ** 0.5
 
             # Posición relativa respecto al enemigo (preferir posiciones que estén entre el enemigo y las unidades a proteger)
-            enemy_direction = -1 if self.ai_side == SIDE_CRUSADERS else 1  # Dirección aproximada del enemigo
+            enemy_direction = -1 if self.ai_side == config.SIDE_CRUSADERS else 1  # Dirección aproximada del enemigo
             relative_position = c * enemy_direction  # Valor más alto = más cerca del enemigo
 
             # Combinar factores: queremos estar cerca pero no demasiado
@@ -1331,7 +1326,7 @@ class Game:
             return None
 
         # Determinar dirección hacia el enemigo
-        enemy_col_direction = -1 if self.ai_side == SIDE_CRUSADERS else 1  # Izquierda para Cruzados, Derecha para Sarracenos
+        enemy_col_direction = -1 if self.ai_side == config.SIDE_CRUSADERS else 1  # Izquierda para Cruzados, Derecha para Sarracenos
 
         # Evaluar movimientos por avance hacia el enemigo
         move_scores = {}
@@ -1383,7 +1378,7 @@ class Game:
         move_scores = {}
         for r, c in possible_moves:
             # Avance hacia el enemigo
-            forward_score = (r - row) if self.ai_side == SIDE_SARACENS else (row - r)
+            forward_score = (r - row) if self.ai_side == config.SIDE_SARACENS else (row - r)
 
             # Movimiento lateral (flanqueo)
             lateral_movement = abs(c - col)
@@ -1526,7 +1521,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == SIDE_CRUSADERS:
+                if unit and unit.side == config.SIDE_CRUSADERS:
                     crusader_units.append((r, c))
 
         if not crusader_units:
@@ -1590,7 +1585,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == SIDE_CRUSADERS and isinstance(unit, Bagaje):
+                if unit and unit.side == config.SIDE_CRUSADERS and isinstance(unit, Bagaje):
                     baggage_positions.append((r, c))
 
         return baggage_positions
@@ -1602,7 +1597,7 @@ class Game:
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 unit = self.grid.grid[r][c]
-                if unit and unit.side == SIDE_CRUSADERS:
+                if unit and unit.side == config.SIDE_CRUSADERS:
                     crusader_units.append((r, c))
 
         if not crusader_units:
@@ -1761,7 +1756,7 @@ class Game:
             return []
 
         # Ordenar unidades según prioridad estratégica para combate
-        if self.ai_side == SIDE_CRUSADERS:
+        if self.ai_side == config.SIDE_CRUSADERS:
             # Para Cruzados: priorizar unidades fuertes y proteger bagajes
             # 1. Caballeros y unidades de élite
             strong_units = [(r, c, u) for r, c, u in combat_ready_units
@@ -1864,7 +1859,7 @@ class Game:
                 score += 5
 
             # Estrategias específicas según el bando
-            if self.ai_side == SIDE_CRUSADERS:
+            if self.ai_side == config.SIDE_CRUSADERS:
                 # Priorizar unidades que amenazan a los bagajes
                 if isinstance(target, Explorador) or isinstance(target, Mameluco):
                     score += 3
@@ -1903,7 +1898,7 @@ class Game:
     def _end_intro(self):
         """Finaliza la pantalla de introducción y pasa al menú de configuración"""
         self._load_setup_menu()
-        self.state = GAME_STATES["SETUP_MENU"]
+        self.state = config.GAME_STATES["SETUP_MENU"]
 
     def _play_music(self, music_key):
         """Reproduce música de fondo"""
@@ -1938,15 +1933,15 @@ class Game:
             self._load_ui()
 
         # Para estados iniciales, asegurarse de que los componentes necesarios estén cargados
-        if self.state == GAME_STATES["INTRO"]:
+        if self.state == config.GAME_STATES["INTRO"]:
             # Cargar la imagen de portada si es necesario
             if self.images is None or "cover" not in self.images:
                 self._load_cover_image()
-        elif self.state == GAME_STATES["SETUP_MENU"]:
+        elif self.state == config.GAME_STATES["SETUP_MENU"]:
             # Para el menú de configuración, solo necesitamos cargar ese componente
             if self.setup_menu is None:
                 self._load_setup_menu()
-        elif self.state == GAME_STATES["SELECT_SIDE"]:
+        elif self.state == config.GAME_STATES["SELECT_SIDE"]:
             # Para el menú de selección de bando, solo necesitamos cargar ese componente
             if self.side_selection_menu is None:
                 self._load_side_selection_menu()
@@ -1957,7 +1952,7 @@ class Game:
         else:
             # Fallback en caso de que la UI no se haya podido cargar
             self.screen.fill(COLOR_BG)
-            if self.state == GAME_STATES["INTRO"] and self.images is not None and "cover" in self.images:
+            if self.state == config.GAME_STATES["INTRO"] and self.images is not None and "cover" in self.images:
                 self.screen.blit(self.images["cover"], (0, 0))
 
         pygame.display.flip()
@@ -1968,35 +1963,35 @@ class Game:
             self.images = {}
 
         try:
-            cover_img = pygame.image.load(IMAGE_PATHS["cover"]).convert_alpha()
+            cover_img = pygame.image.load(config.IMAGE_PATHS["cover"]).convert_alpha()
             # Escalar la imagen de portada manteniendo la relación de aspecto
             img_width, img_height = cover_img.get_size()
             aspect_ratio = img_width / img_height
 
             # Calcular las dimensiones para mantener la relación de aspecto
-            if SCREEN_WIDTH / SCREEN_HEIGHT > aspect_ratio:
+            if config.SCREEN_WIDTH / config.SCREEN_HEIGHT > aspect_ratio:
                 # La pantalla es más ancha que la imagen
-                new_width = int(SCREEN_HEIGHT * aspect_ratio)
-                new_height = SCREEN_HEIGHT
+                new_width = int(config.SCREEN_HEIGHT * aspect_ratio)
+                new_height = config.SCREEN_HEIGHT
             else:
                 # La pantalla es más alta que la imagen
-                new_width = SCREEN_WIDTH
-                new_height = int(SCREEN_WIDTH / aspect_ratio)
+                new_width = config.SCREEN_WIDTH
+                new_height = int(config.SCREEN_WIDTH / aspect_ratio)
 
             # Escalar la imagen manteniendo la relación de aspecto
             scaled_img = pygame.transform.scale(cover_img, (new_width, new_height))
 
             # Crear una superficie del tamaño de la pantalla
-            self.images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            self.images["cover"] = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
             self.images["cover"].fill((0, 0, 0))  # Fondo negro
 
             # Centrar la imagen en la pantalla
-            x_offset = (SCREEN_WIDTH - new_width) // 2
-            y_offset = (SCREEN_HEIGHT - new_height) // 2
+            x_offset = (config.SCREEN_WIDTH - new_width) // 2
+            y_offset = (config.SCREEN_HEIGHT - new_height) // 2
             self.images["cover"].blit(scaled_img, (x_offset, y_offset))
         except Exception as e:
             print(f"{_('Error loading cover:')} {e}")
-            self.images["cover"] = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            self.images["cover"] = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
             self.images["cover"].fill((0, 0, 0))  # Fondo negro
 
     def run(self):
@@ -2015,12 +2010,12 @@ class Game:
                 self._handle_game_over()
             else:
                 # Cargar componentes según el estado actual
-                if self.state == GAME_STATES["SETUP_MENU"] and self.setup_menu is None:
+                if self.state == config.GAME_STATES["SETUP_MENU"] and self.setup_menu is None:
                     self._load_setup_menu()
-                elif self.state == GAME_STATES["SELECT_SIDE"] and self.side_selection_menu is None:
+                elif self.state == config.GAME_STATES["SELECT_SIDE"] and self.side_selection_menu is None:
                     self._load_side_selection_menu()
-                elif self.state in [GAME_STATES["DEPLOY_PLAYER"], GAME_STATES["DEPLOY_AI"], 
-                                   GAME_STATES["PLAYER_TURN"], GAME_STATES["AI_TURN"]]:
+                elif self.state in [config.GAME_STATES["DEPLOY_PLAYER"], config.GAME_STATES["DEPLOY_AI"], 
+                                   config.GAME_STATES["PLAYER_TURN"], config.GAME_STATES["AI_TURN"]]:
                     # Asegurarse de que todos los componentes necesarios estén cargados
                     if self.grid is None:
                         self._load_grid()
@@ -2034,13 +2029,13 @@ class Game:
                         self._load_units()
 
                 # Restaurar la lógica original de despliegue
-                if self.state == GAME_STATES["DEPLOY_AI"]:
+                if self.state == config.GAME_STATES["DEPLOY_AI"]:
                     self._ai_deploy_units()
-                elif self.state == GAME_STATES["AI_TURN"]:
+                elif self.state == config.GAME_STATES["AI_TURN"]:
                     self._ai_turn()
 
                 # Detener la música de introducción cuando comienza el movimiento del jugador
-                if self.state == GAME_STATES["PLAYER_TURN"] and self.turn_phase == TURN_PHASES["MOVEMENT"]:
+                if self.state == config.GAME_STATES["PLAYER_TURN"] and self.turn_phase == config.TURN_PHASES["MOVEMENT"]:
                     if pygame.mixer.music.get_busy():
                         self._stop_music()
 

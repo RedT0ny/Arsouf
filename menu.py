@@ -2,7 +2,7 @@
 import pygame
 import gettext
 _ = gettext.gettext
-from config import *
+import config
 
 class Menu:
     """
@@ -12,11 +12,13 @@ class Menu:
     def __init__(self, screen):
         self.screen = screen
         # Ajustar el tamaño de la fuente según la escala de pantalla
-        font_size = int(24 * DISPLAY_SCALING / 0.75)
+        font_size = int(24 * config.DISPLAY_SCALING / 0.75)
         self.font = pygame.font.SysFont('Arial', font_size)
 
-    def draw_button(self, rect, text, color, text_color=COLOR_TEXTO):
+    def draw_button(self, rect, text, color, text_color=None):
         """Dibuja un botón con texto centrado."""
+        if text_color is None:
+            text_color = config.COLOR_TEXTO
         pygame.draw.rect(self.screen, color, rect)
         button_text = self.font.render(_(text), True, text_color)
         self.screen.blit(button_text, (rect.centerx - button_text.get_width()//2, 
@@ -33,45 +35,45 @@ class SetupMenu(Menu):
 
     def draw(self):
         """Dibuja el menú de configuración."""
-        self.screen.fill(COLOR_BG)
+        self.screen.fill(config.COLOR_BG)
 
         # Título
-        title = self.font.render(_("Menú de Configuración"), True, COLOR_TEXTO)
-        self.screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, TITULO_Y))
+        title = self.font.render(_("Menú de Configuración"), True, config.COLOR_TEXTO)
+        self.screen.blit(title, (config.SCREEN_WIDTH//2 - title.get_width()//2, config.TITLE_Y))
 
         # Botones del menú
-        button_y = OPCIONES_Y
+        button_y = config.OPTIONS_Y
         # Ajustar el espaciado de botones según la escala de pantalla
-        button_spacing = int(70 * DISPLAY_SCALING / 0.75)  # Espacio entre botones
+        button_spacing = int(70 * config.DISPLAY_SCALING / 0.75)  # Espacio entre botones
 
         # 1. Botón de escala de pantalla
-        scale_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        self.draw_button(scale_rect, f"{_('Escala de pantalla')}: {int(DISPLAY_SCALING * 100)}%", (100, 150, 200))
+        scale_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, button_y, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
+        self.draw_button(scale_rect, f"{_('Escala de pantalla')}: {int(config.DISPLAY_SCALING * 100)}%", (100, 150, 200))
         button_y += button_spacing
 
         # 2. Botón de idioma
-        language_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        language_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, button_y, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
         self.draw_button(language_rect, _("Idioma"), (150, 100, 200))
         button_y += button_spacing
 
         # 3. Botón de valores predeterminados
-        defaults_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        defaults_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, button_y, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
         self.draw_button(defaults_rect, _("Valores predeterminados"), (200, 150, 100))
         button_y += button_spacing
 
         # 4. Botón de ver reglas
-        rules_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        self.draw_button(rules_rect, _("Ver Reglas"), COLOR_CRUZADOS)
+        rules_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, button_y, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
+        self.draw_button(rules_rect, _("Ver Reglas"), config.COLOR_CRUZADOS)
         button_y += button_spacing
 
         # 5. Botón de selección de bando
-        side_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
+        side_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, button_y, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
         self.draw_button(side_rect, _("Seleccionar bando"), (100, 200, 150))
         button_y += button_spacing
 
         # 6. Botón de salir
-        quit_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, button_y, BOTON_WIDTH, BOTON_HEIGHT)
-        self.draw_button(quit_rect, _("Salir"), COLOR_BOTON_CANCELAR)
+        quit_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, button_y, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
+        self.draw_button(quit_rect, _("Salir"), config.COLOR_BOTON_CANCELAR)
 
         pygame.display.flip()
         return scale_rect, language_rect, defaults_rect, rules_rect, side_rect, quit_rect
@@ -107,19 +109,19 @@ class SideSelectionMenu(Menu):
 
     def draw(self):
         """Dibuja la pantalla de selección de lado."""
-        self.screen.fill(COLOR_BG)
+        self.screen.fill(config.COLOR_BG)
 
         # Título
-        title = self.font.render(_("Selecciona tu bando:"), True, COLOR_TEXTO)
-        self.screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, TITULO_Y))
+        title = self.font.render(_("Selecciona tu bando:"), True, config.COLOR_TEXTO)
+        self.screen.blit(title, (config.SCREEN_WIDTH//2 - title.get_width()//2, config.TITLE_Y))
 
         # Botón Cruzados
-        cruzados_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, OPCIONES_Y, BOTON_WIDTH, BOTON_HEIGHT)
-        self.draw_button(cruzados_rect, _("Jugar como Cruzados"), COLOR_CRUZADOS)
+        cruzados_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, config.OPTIONS_Y, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
+        self.draw_button(cruzados_rect, _("Jugar como Cruzados"), config.COLOR_CRUZADOS)
 
         # Botón Sarracenos
-        sarracenos_rect = pygame.Rect(SCREEN_WIDTH//2 - BOTON_WIDTH//2, OPCIONES_Y + OPCIONES_ESPACIADO, BOTON_WIDTH, BOTON_HEIGHT)
-        self.draw_button(sarracenos_rect, _("Jugar como Sarracenos"), COLOR_SARRACENOS)
+        sarracenos_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, config.OPTIONS_Y + config.OPTIONS_SPACING, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
+        self.draw_button(sarracenos_rect, _("Jugar como Sarracenos"), config.COLOR_SARRACENOS)
 
         pygame.display.flip()
         return cruzados_rect, sarracenos_rect
@@ -131,7 +133,7 @@ class SideSelectionMenu(Menu):
             mouse_pos = pygame.mouse.get_pos()
 
             if cruzados_rect.collidepoint(mouse_pos):
-                return SIDE_CRUSADERS
+                return config.SIDE_CRUSADERS
             elif sarracenos_rect.collidepoint(mouse_pos):
-                return SIDE_SARACENS
+                return config.SIDE_SARACENS
         return None

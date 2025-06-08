@@ -1,5 +1,5 @@
 # main.py
-from config import CURRENT_LANGUAGE
+#from config import CURRENT_LANGUAGE
 from game import Game
 
 def main():
