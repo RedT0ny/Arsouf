@@ -1,5 +1,5 @@
 # main.py
-#from config import CURRENT_LANGUAGE
+from config import GAME_NAME, VERSION, AUTHOR
 from game import Game
 
 def main():
@@ -14,11 +14,9 @@ def main():
     5. Generar hexgrid y gameui
     6. Generar las unidades
     """
+    print(f"{GAME_NAME} - {VERSION} by {AUTHOR}")
     # Crear el juego (solo inicializa lo mínimo necesario para la intro)
     game = Game()
-
-    # Establecer el idioma según la configuración
-    #game._change_language(CURRENT_LANGUAGE)
 
     # Iniciar el bucle principal del juego
     # Los componentes se cargarán bajo demanda según se necesiten

@@ -61,7 +61,7 @@ BAGGAGE_NAME = _("Bagaje")
 # ------------------------------
 # 0. Configuración general
 GAME_NAME = _("game_name")
-VERSION = "Alfa 1.2.0"
+VERSION = "Alfa 1.6.0"
 AUTHOR = "Red Tony"
 # 0.1. Configuración de depuración
 DEBUG_MODE = False  # Cambia a False para producción
