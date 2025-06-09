@@ -48,7 +48,7 @@ class Game:
 
         # Inicializar pantalla (necesaria para la intro)
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
-        pygame.display.set_caption(f"{_('game_name')} {VERSION}")
+        pygame.display.set_caption(f"{GAME_NAME} {VERSION}")
 
         # Inicializar el reloj (necesario para el bucle principal)
         self.clock = pygame.time.Clock()
