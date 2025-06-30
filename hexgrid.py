@@ -163,7 +163,6 @@ class HexGrid:
 
         return neighbors
 
-
     def move_unit(self, from_row, from_col, to_row, to_col):
         """Mueve una unidad entre posiciones."""
         if not (0 <= to_row < self.rows and 0 <= to_col < self.cols):
@@ -256,6 +255,14 @@ class HexGrid:
 
         return pygame.Rect(x, y, width, height)
 
+    def scale_image(img, new_size):
+        # Escala en pasos para mejor calidad cuando la reducción es grande
+        current_size = img.get_size()
+        while max(current_size) > 2 * max(new_size):
+            current_size = (current_size[0] // 2, current_size[1] // 2)
+            img = pygame.transform.smoothscale(img, current_size)
+        return pygame.transform.smoothscale(img, new_size)
+
     def draw(self, screen, images, tablero_x=0, tablero_y=0):
         """
         Dibuja todas las unidades en el grid.
@@ -274,9 +281,12 @@ class HexGrid:
                     # Aplicar offset del tablero centrado
                     x += tablero_x
                     y += tablero_y
-
                     img = images.get(unit.image_key)
+
                     if img:
+                        size = int(min(config.HEX_WIDTH, config.HEX_HEIGHT) * 0.85)
+                        img = pygame.transform.smoothscale(img, (size,size))
+
                         # Centrar la imagen en el hexágono
                         img_x = x - img.get_width() // 2
                         img_y = y - img.get_height() // 2

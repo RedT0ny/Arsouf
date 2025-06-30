@@ -72,15 +72,13 @@ class Game:
 
     @staticmethod
     def _load_unit_images():
-        global size
         images = {}
+        size = int(min(config.HEX_WIDTH, config.HEX_HEIGHT) * 0.85)
         for key, path in config.IMAGE_PATHS.items():
             if key in {"board","cover","reglas","rules"}: continue
             try:
                 img = pygame.image.load(path).convert_alpha()
-                # Usar el tamaño más pequeño entre ancho y alto para que las unidades quepan bien en los hexágonos
-                size = int(min(config.HEX_WIDTH, config.HEX_HEIGHT) * 0.85)
-                images[key] = pygame.transform.smoothscale(img, (size, size))
+                images[key] = img
             except Exception as e:
                 print(f"{_('Error loading')} {path}: {e}")
                 images[key] = pygame.Surface((size, size), pygame.SRCALPHA)
@@ -683,7 +681,7 @@ class Game:
                 next_row, next_col = old_row + drow, old_col + dcol
 
                 # Verificar si el hexágono está dentro del tablero
-                if (0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols):
+                if 0 <= next_row < self.grid.rows and 0 <= next_col < self.grid.cols:
                     # Verificar si hay una unidad sarracena en ese hexágono
                     target_unit = self.grid.get_unit(next_row, next_col)
                     if target_unit and target_unit.side == config.SIDE_SARACENS:

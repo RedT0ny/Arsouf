@@ -271,8 +271,8 @@ class GameUI:
         y_offset += 30
         if hasattr(unit, 'image_key') and unit.image_key in self.game.images:
             img = self.game.images[unit.image_key]
-            img_size = min(max_width, 120)
-            img_scaled = pygame.transform.scale(img, (img_size, img_size))
+            img_size = min(max_width, 250)
+            img_scaled = pygame.transform.smoothscale(img, (img_size, img_size))
             img_x = content_rect.x + (max_width - img_size) // 2
             self.game.screen.blit(img_scaled, (img_x, y_offset))
             y_offset += img_size + 10
