@@ -195,7 +195,7 @@ class Game:
             tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
                                        self.tablero_escalado.get_height())
 
-            if tablero_rect.collidepoint(mouse_pos):
+            if tablero_rect.collidepoint(mouse_pos) and event.button not in (4, 5):
                 self._handle_board_click(mouse_pos, event.button)
 
     def _handle_combat_phase(self, event):
@@ -504,7 +504,7 @@ class Game:
             self._start_game(side)
 
     def _handle_deployment(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button not in (4,5):
             hex_pos = self.ui.handle_deployment_click(pygame.mouse.get_pos(), self)
             if hex_pos:
                 self._place_unit(hex_pos)

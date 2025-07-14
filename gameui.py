@@ -177,15 +177,15 @@ class GameUI:
 
     def _draw_map_scrollbars(self, tablero_surface):
         """Draw horizontal and vertical scrollbars for the map"""
-        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
-        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+        available_width = config.AVAILABLE_WIDTH
+        available_height = config.AVAILABLE_HEIGHT
 
         board_width = tablero_surface.get_width()
         board_height = tablero_surface.get_height()
 
-        scrollbar_width = 14
-        scrollbar_color = (60, 60, 80)
-        handle_color = (130, 130, 160)
+        scrollbar_width = config.LOG_SCROLLBAR_WIDTH
+        scrollbar_color = config.LOG_SCROLLBAR_COLOR
+        handle_color = config.LOG_SCROLLBAR_HANDLE_COLOR
 
         # Draw horizontal scrollbar if needed
         if board_width > available_width:
@@ -197,7 +197,12 @@ class GameUI:
 
             # Calculate handle position and size
             handle_width = max(40, (available_width / board_width) * scrollbar_rect.width)
-            handle_x = scrollbar_rect.x + (self.map_scroll_x / board_width) * (scrollbar_rect.width - handle_width)
+            max_scroll_x = board_width - available_width
+            # Fix handle position calculation to use proper scroll range
+            if max_scroll_x > 0:
+                handle_x = scrollbar_rect.x + (self.map_scroll_x / max_scroll_x) * (scrollbar_rect.width - handle_width)
+            else:
+                handle_x = scrollbar_rect.x
 
             self.map_scroll_handle_rect_h = pygame.Rect(
                 handle_x, scrollbar_rect.y,
@@ -216,7 +221,12 @@ class GameUI:
 
             # Calculate handle position and size
             handle_height = max(40, (available_height / board_height) * scrollbar_rect.height)
-            handle_y = scrollbar_rect.y + (self.map_scroll_y / board_height) * (scrollbar_rect.height - handle_height)
+            max_scroll_y = board_height - available_height
+            # Fix handle position calculation to use proper scroll range
+            if max_scroll_y > 0:
+                handle_y = scrollbar_rect.y + (self.map_scroll_y / max_scroll_y) * (scrollbar_rect.height - handle_height)
+            else:
+                handle_y = scrollbar_rect.y
 
             self.map_scroll_handle_rect_v = pygame.Rect(
                 scrollbar_rect.x, handle_y,
@@ -289,25 +299,37 @@ class GameUI:
         if hasattr(self, 'map_drag_start_x') and self.map_drag_start_x > 0:
             delta_x = mouse_pos[0] - self.map_drag_start_x
             if board_width > available_width:
-                scrollbar_width = available_width - 14
-                scroll_ratio = delta_x / scrollbar_width
-                max_scroll_x = board_width - available_width
-                self.map_scroll_x = max(0, min(
-                    self.map_drag_start_scroll_x + scroll_ratio * max_scroll_x,
-                    max_scroll_x
-                ))
+                scrollbar_width = available_width - config.LOG_SCROLLBAR_WIDTH
+                # Calculate handle dimensions to get proper movement range
+                handle_width = max(40, (available_width / board_width) * scrollbar_width)
+                handle_movement_range = scrollbar_width - handle_width
+
+                # Improved scroll ratio calculation for better control
+                if handle_movement_range > 0:
+                    scroll_ratio = delta_x / handle_movement_range
+                    max_scroll_x = board_width - available_width
+                    self.map_scroll_x = max(0, min(
+                        self.map_drag_start_scroll_x + scroll_ratio * max_scroll_x,
+                        max_scroll_x
+                    ))
 
         # Handle vertical scrollbar drag
         if hasattr(self, 'map_drag_start_y') and self.map_drag_start_y > 0:
             delta_y = mouse_pos[1] - self.map_drag_start_y
             if board_height > available_height:
-                scrollbar_height = available_height - 14
-                scroll_ratio = delta_y / scrollbar_height
-                max_scroll_y = board_height - available_height
-                self.map_scroll_y = max(0, min(
-                    self.map_drag_start_scroll_y + scroll_ratio * max_scroll_y,
-                    max_scroll_y
-                ))
+                scrollbar_height = available_height - config.LOG_SCROLLBAR_WIDTH
+                # Calculate handle dimensions to get proper movement range
+                handle_height = max(40, (available_height / board_height) * scrollbar_height)
+                handle_movement_range = scrollbar_height - handle_height
+
+                # Improved scroll ratio calculation for better control
+                if handle_movement_range > 0:
+                    scroll_ratio = delta_y / handle_movement_range
+                    max_scroll_y = board_height - available_height
+                    self.map_scroll_y = max(0, min(
+                        self.map_drag_start_scroll_y + scroll_ratio * max_scroll_y,
+                        max_scroll_y
+                    ))
 
         return True
 
@@ -320,23 +342,39 @@ class GameUI:
 
         scroll_speed = 50  # pixels per wheel step
 
-        # Vertical scrolling
-        if wheel_y != 0 and board_height > available_height:
+        # Check for CTRL key modifier for horizontal scrolling
+        keys = pygame.key.get_pressed()
+        ctrl_pressed = keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL]
+
+        # If CTRL is pressed, convert vertical wheel to horizontal scroll
+        if ctrl_pressed and wheel_y != 0 and board_width > available_width:
+            max_scroll_x = board_width - available_width
+            self.map_scroll_x = max(0, min(
+                self.map_scroll_x - wheel_y * scroll_speed,
+                max_scroll_x
+            ))
+            return True  # Consume the event to prevent click interpretation
+
+        # Normal vertical scrolling (when CTRL is not pressed)
+        if wheel_y != 0 and board_height > available_height and not ctrl_pressed:
             max_scroll_y = board_height - available_height
             self.map_scroll_y = max(0, min(
                 self.map_scroll_y - wheel_y * scroll_speed,
                 max_scroll_y
             ))
+            return True  # Consume the event to prevent click interpretation
 
-        # Horizontal scrolling (if supported)
+        # Horizontal scrolling (native wheel_x support for mice that have it)
         if wheel_x != 0 and board_width > available_width:
             max_scroll_x = board_width - available_width
             self.map_scroll_x = max(0, min(
                 self.map_scroll_x - wheel_x * scroll_speed,
                 max_scroll_x
             ))
+            return True  # Consume the event to prevent click interpretation
 
-        return True
+        # If no scrolling occurred, still consume the wheel event to prevent click interpretation
+        return wheel_x != 0 or wheel_y != 0
 
     def handle_deployment_click(self, mouse_pos, game):
         pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)

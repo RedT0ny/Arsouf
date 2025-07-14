@@ -88,7 +88,7 @@ HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["der
 HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 4. Configuración de pantalla
-DISPLAY_SCALING = 0.75  # Factor de escala para la pantalla (0.6 = 60% del tamaño original)
+DISPLAY_SCALING = 0.6  # Factor de escala para la pantalla (0.6 = 60% del tamaño original)
 SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
 SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60
@@ -151,7 +151,7 @@ FORD_HEX = (2,17)  # Hexágono donde se puede cruzar el río
 # Calculamos el factor de escala basado en el espacio disponible
 AVAILABLE_WIDTH = SCREEN_WIDTH - PANEL_WIDTH
 AVAILABLE_HEIGHT = SCREEN_HEIGHT - LOG_PANEL_HEIGHT
-ESCALA = min(AVAILABLE_WIDTH / TABLERO_REAL_WIDTH, AVAILABLE_HEIGHT / TABLERO_REAL_HEIGHT)
+ESCALA = 1
 
 # 7. Dimensiones originales del hexágono (según especificación)
 HEX_REAL_HEIGHT = 120  # Altura original del hexágono en píxeles
