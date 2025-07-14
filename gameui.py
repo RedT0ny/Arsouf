@@ -17,6 +17,17 @@ class GameUI:
         self.log_scroll_start_position = 0
         self.debug_drawn = False
 
+        # Map scrolling variables
+        self.map_scroll_x = 0
+        self.map_scroll_y = 0
+        self.map_scroll_dragging = False
+        self.map_scroll_handle_rect_h = None  # Horizontal scrollbar handle
+        self.map_scroll_handle_rect_v = None  # Vertical scrollbar handle
+        self.map_drag_start_x = 0
+        self.map_drag_start_y = 0
+        self.map_drag_start_scroll_x = 0
+        self.map_drag_start_scroll_y = 0
+
     def _get_visible_lines(self):
         line_height = config.LOG_LINE_HEIGHT
         panel_height = config.LOG_PANEL_HEIGHT - 2 * config.LOG_MARGIN
@@ -24,8 +35,25 @@ class GameUI:
         return max(1, visible_lines)
 
     def _calculate_board_position(self, tablero_surface):
-        pos_x = (config.SCREEN_WIDTH - tablero_surface.get_width() - config.PANEL_WIDTH) // 2
-        pos_y = (config.SCREEN_HEIGHT - tablero_surface.get_height() - config.LOG_PANEL_HEIGHT) // 2
+        # Calculate the available area for the map
+        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
+        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+
+        # Apply scroll offset (negative because we're moving the board, not the viewport)
+        pos_x = -self.map_scroll_x
+        pos_y = -self.map_scroll_y
+
+        # Limit scrolling to keep some part of the board visible
+        max_scroll_x = max(0, tablero_surface.get_width() - available_width)
+        max_scroll_y = max(0, tablero_surface.get_height() - available_height)
+
+        self.map_scroll_x = max(0, min(self.map_scroll_x, max_scroll_x))
+        self.map_scroll_y = max(0, min(self.map_scroll_y, max_scroll_y))
+
+        # Recalculate position with clamped scroll values
+        pos_x = -self.map_scroll_x
+        pos_y = -self.map_scroll_y
+
         return pos_x, pos_y
 
     def draw_log_panel(self):
@@ -146,6 +174,169 @@ class GameUI:
         total_lines = len(self.log_messages)
         max_scroll_position = max(0, total_lines - visible_lines)
         self.log_scroll_position = max_scroll_position
+
+    def _draw_map_scrollbars(self, tablero_surface):
+        """Draw horizontal and vertical scrollbars for the map"""
+        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
+        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+
+        board_width = tablero_surface.get_width()
+        board_height = tablero_surface.get_height()
+
+        scrollbar_width = 14
+        scrollbar_color = (60, 60, 80)
+        handle_color = (130, 130, 160)
+
+        # Draw horizontal scrollbar if needed
+        if board_width > available_width:
+            scrollbar_rect = pygame.Rect(
+                0, available_height - scrollbar_width,
+                available_width - scrollbar_width, scrollbar_width
+            )
+            pygame.draw.rect(self.game.screen, scrollbar_color, scrollbar_rect)
+
+            # Calculate handle position and size
+            handle_width = max(40, (available_width / board_width) * scrollbar_rect.width)
+            handle_x = scrollbar_rect.x + (self.map_scroll_x / board_width) * (scrollbar_rect.width - handle_width)
+
+            self.map_scroll_handle_rect_h = pygame.Rect(
+                handle_x, scrollbar_rect.y,
+                handle_width, scrollbar_rect.height
+            )
+            pygame.draw.rect(self.game.screen, handle_color, self.map_scroll_handle_rect_h)
+            pygame.draw.rect(self.game.screen, (200, 200, 230), self.map_scroll_handle_rect_h, 2)
+
+        # Draw vertical scrollbar if needed
+        if board_height > available_height:
+            scrollbar_rect = pygame.Rect(
+                available_width - scrollbar_width, 0,
+                scrollbar_width, available_height - scrollbar_width
+            )
+            pygame.draw.rect(self.game.screen, scrollbar_color, scrollbar_rect)
+
+            # Calculate handle position and size
+            handle_height = max(40, (available_height / board_height) * scrollbar_rect.height)
+            handle_y = scrollbar_rect.y + (self.map_scroll_y / board_height) * (scrollbar_rect.height - handle_height)
+
+            self.map_scroll_handle_rect_v = pygame.Rect(
+                scrollbar_rect.x, handle_y,
+                scrollbar_rect.width, handle_height
+            )
+            pygame.draw.rect(self.game.screen, handle_color, self.map_scroll_handle_rect_v)
+            pygame.draw.rect(self.game.screen, (200, 200, 230), self.map_scroll_handle_rect_v, 2)
+
+    def handle_map_scroll_event(self, event, tablero_surface):
+        """Handle scrolling events for the map"""
+        mouse_pos = pygame.mouse.get_pos()
+        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
+        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+
+        # Check if mouse is in the map area
+        map_area = pygame.Rect(0, 0, available_width, available_height)
+        if not map_area.collidepoint(mouse_pos):
+            return False
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            return self._handle_map_scroll_start(mouse_pos, tablero_surface)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            return self._handle_map_scroll_end()
+        elif event.type == pygame.MOUSEMOTION:
+            return self._handle_map_scroll_drag(mouse_pos, tablero_surface)
+        elif event.type == pygame.MOUSEWHEEL:
+            return self._handle_map_wheel_scroll(event.x, event.y, tablero_surface)
+        return False
+
+    def _handle_map_scroll_start(self, mouse_pos, tablero_surface):
+        """Handle start of map scrollbar dragging"""
+        # Check horizontal scrollbar
+        if (hasattr(self, 'map_scroll_handle_rect_h') and 
+            self.map_scroll_handle_rect_h and 
+            self.map_scroll_handle_rect_h.collidepoint(mouse_pos)):
+            self.map_scroll_dragging = True
+            self.map_drag_start_x = mouse_pos[0]
+            self.map_drag_start_scroll_x = self.map_scroll_x
+            return True
+
+        # Check vertical scrollbar
+        if (hasattr(self, 'map_scroll_handle_rect_v') and 
+            self.map_scroll_handle_rect_v and 
+            self.map_scroll_handle_rect_v.collidepoint(mouse_pos)):
+            self.map_scroll_dragging = True
+            self.map_drag_start_y = mouse_pos[1]
+            self.map_drag_start_scroll_y = self.map_scroll_y
+            return True
+
+        return False
+
+    def _handle_map_scroll_end(self):
+        """Handle end of map scrollbar dragging"""
+        if self.map_scroll_dragging:
+            self.map_scroll_dragging = False
+            return True
+        return False
+
+    def _handle_map_scroll_drag(self, mouse_pos, tablero_surface):
+        """Handle map scrollbar dragging"""
+        if not self.map_scroll_dragging:
+            return False
+
+        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
+        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+        board_width = tablero_surface.get_width()
+        board_height = tablero_surface.get_height()
+
+        # Handle horizontal scrollbar drag
+        if hasattr(self, 'map_drag_start_x') and self.map_drag_start_x > 0:
+            delta_x = mouse_pos[0] - self.map_drag_start_x
+            if board_width > available_width:
+                scrollbar_width = available_width - 14
+                scroll_ratio = delta_x / scrollbar_width
+                max_scroll_x = board_width - available_width
+                self.map_scroll_x = max(0, min(
+                    self.map_drag_start_scroll_x + scroll_ratio * max_scroll_x,
+                    max_scroll_x
+                ))
+
+        # Handle vertical scrollbar drag
+        if hasattr(self, 'map_drag_start_y') and self.map_drag_start_y > 0:
+            delta_y = mouse_pos[1] - self.map_drag_start_y
+            if board_height > available_height:
+                scrollbar_height = available_height - 14
+                scroll_ratio = delta_y / scrollbar_height
+                max_scroll_y = board_height - available_height
+                self.map_scroll_y = max(0, min(
+                    self.map_drag_start_scroll_y + scroll_ratio * max_scroll_y,
+                    max_scroll_y
+                ))
+
+        return True
+
+    def _handle_map_wheel_scroll(self, wheel_x, wheel_y, tablero_surface):
+        """Handle mouse wheel scrolling for the map"""
+        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
+        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+        board_width = tablero_surface.get_width()
+        board_height = tablero_surface.get_height()
+
+        scroll_speed = 50  # pixels per wheel step
+
+        # Vertical scrolling
+        if wheel_y != 0 and board_height > available_height:
+            max_scroll_y = board_height - available_height
+            self.map_scroll_y = max(0, min(
+                self.map_scroll_y - wheel_y * scroll_speed,
+                max_scroll_y
+            ))
+
+        # Horizontal scrolling (if supported)
+        if wheel_x != 0 and board_width > available_width:
+            max_scroll_x = board_width - available_width
+            self.map_scroll_x = max(0, min(
+                self.map_scroll_x - wheel_x * scroll_speed,
+                max_scroll_x
+            ))
+
+        return True
 
     def handle_deployment_click(self, mouse_pos, game):
         pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
@@ -330,6 +521,12 @@ class GameUI:
         x, y = self.game.grid.hex_to_pixel(start_row, start_col)
         x += pos_x
         y += pos_y
+
+        # Apply scroll offset to position the zone correctly
+        board_pos_x, board_pos_y = self._calculate_board_position(self.game.tablero_escalado)
+        x += board_pos_x
+        y += board_pos_y
+
         width = cols * hex_width * 1.025
         height = rows * hex_height * 0.79
         return pygame.Rect(x, y, width, height)
@@ -441,6 +638,14 @@ class GameUI:
             self.draw_side_selection()
         else:
             if game.tablero_escalado is not None:
+                # Create a clipping area for the map to prevent drawing outside bounds
+                available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
+                available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+                map_clip_rect = pygame.Rect(0, 0, available_width, available_height)
+
+                # Set clipping area
+                game.screen.set_clip(map_clip_rect)
+
                 pos_x, pos_y = self._calculate_board_position(game.tablero_escalado)
                 game.screen.blit(game.tablero_escalado, (pos_x, pos_y))
                 if hasattr(game, 'last_moved_unit_pos') and game.last_moved_unit_pos:
@@ -460,6 +665,13 @@ class GameUI:
                 if game.state == "PLAYER_TURN" and game.turn_phase == config.TURN_PHASES["COMBAT"]:
                     self.draw_combat_targets()
                 self.draw_deployment_zones()
+
+                # Remove clipping
+                game.screen.set_clip(None)
+
+                # Draw map scrollbars
+                self._draw_map_scrollbars(game.tablero_escalado)
+
                 #self.draw_victory_progress(game)
             self.draw_log_panel()
             self.draw_panel()

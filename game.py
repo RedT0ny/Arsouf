@@ -151,8 +151,13 @@ class Game:
             # Primero manejar eventos de UI (scroll)
             if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
                               pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
+                # Manejar scroll del log panel
                 if self.ui.handle_scroll_event(event):
                     continue  # Si el UI consumió el evento, no procesarlo más
+
+                # Manejar scroll del mapa
+                if self.tablero_escalado and self.ui.handle_map_scroll_event(event, self.tablero_escalado):
+                    continue  # Si el scroll del mapa consumió el evento, no procesarlo más
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
@@ -186,8 +191,7 @@ class Game:
         """Maneja la fase de movimiento (existente)"""
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            pos_x = (config.SCREEN_WIDTH - self.tablero_escalado.get_width() - config.PANEL_WIDTH) // 2
-            pos_y = (config.SCREEN_HEIGHT - self.tablero_escalado.get_height() - config.LOG_PANEL_HEIGHT) // 2
+            pos_x, pos_y = self.ui._calculate_board_position(self.tablero_escalado)
             tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
                                        self.tablero_escalado.get_height())
 
@@ -214,8 +218,7 @@ class Game:
                 return
 
             # Verificar clic en el tablero
-            pos_x = (config.SCREEN_WIDTH - self.tablero_escalado.get_width() - config.PANEL_WIDTH) // 2
-            pos_y = (config.SCREEN_HEIGHT - self.tablero_escalado.get_height() - config.LOG_PANEL_HEIGHT) // 2
+            pos_x, pos_y = self.ui._calculate_board_position(self.tablero_escalado)
             tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
                                        self.tablero_escalado.get_height())
             if tablero_rect.collidepoint(mouse_pos):
@@ -255,9 +258,8 @@ class Game:
 
     def _get_hex_under_mouse(self, mouse_pos):
         """Encuentra el hexágono bajo el cursor"""
-        # Calcular la posición del tablero
-        pos_x = (config.SCREEN_WIDTH - self.tablero_escalado.get_width() - config.PANEL_WIDTH) // 2
-        pos_y = (config.SCREEN_HEIGHT - self.tablero_escalado.get_height() - config.LOG_PANEL_HEIGHT) // 2
+        # Calcular la posición del tablero usando el nuevo sistema de scrolling
+        pos_x, pos_y = self.ui._calculate_board_position(self.tablero_escalado)
 
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
@@ -335,19 +337,17 @@ class Game:
                 self.running = False
 
     def _load_board(self):
-        """Carga y escala el tablero según la escala actual."""
+        """Carga el tablero manteniendo sus dimensiones reales."""
         if self.tablero_escalado is None:
             # Cargar la imagen del tablero
             board_img = pygame.image.load(config.IMAGE_PATHS["board"]).convert_alpha()
 
-            # Escalar el tablero según la escala actual
-            self.tablero_escalado = pygame.transform.smoothscale(
-                board_img,
-                (int(config.TABLERO_REAL_WIDTH * config.ESCALA), int(config.TABLERO_REAL_HEIGHT * config.ESCALA))
-            )
+            # Mantener el tablero en sus dimensiones reales (sin escalar)
+            # El scrolling se encargará de mostrar la parte visible
+            self.tablero_escalado = board_img
 
     def _change_display_scale(self, scale: float = None):
-        """Cambia la escala de pantalla."""
+        """Cambia la escala de pantalla manteniendo las dimensiones reales del tablero."""
         # Ciclar entre diferentes escalas (40%, 50%, 60%, 75%)
         scales = [0.4, 0.5, 0.6, 0.75]
 
@@ -362,7 +362,7 @@ class Game:
             next_index = (current_index + 1) % len(scales)
             config.DISPLAY_SCALING = scales[next_index]
 
-        # Actualizar dimensiones de pantalla
+        # Actualizar dimensiones de pantalla (para la ventana, no para el tablero)
         config.SCREEN_WIDTH = config.TABLERO_REAL_WIDTH * config.DISPLAY_SCALING + 300
         config.SCREEN_HEIGHT = config.TABLERO_REAL_HEIGHT * config.DISPLAY_SCALING + 170
 
@@ -377,21 +377,20 @@ class Game:
         # Ajustar el espaciado entre opciones
         config.OPTIONS_SPACING = int(100 * config.DISPLAY_SCALING / 0.75)
 
-        # Recalcular ESCALA basado en las nuevas dimensiones
-        config.AVAILABLE_WIDTH = config.SCREEN_WIDTH - config.PANEL_WIDTH
-        config.AVAILABLE_HEIGHT = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
-        config.ESCALA = min(config.AVAILABLE_WIDTH / config.TABLERO_REAL_WIDTH, config.AVAILABLE_HEIGHT / config.TABLERO_REAL_HEIGHT)
+        # Mantener ESCALA = 1.0 para que el tablero conserve sus dimensiones reales
+        # El scrolling se encargará de mostrar la parte visible
+        config.ESCALA = 1.0
 
-        # Recalcular dimensiones de hexágonos
-        config.HEX_HEIGHT = int(config.HEX_REAL_HEIGHT * config.ESCALA)
-        config.HEX_WIDTH = int(config.HEX_REAL_WIDTH * config.ESCALA)
+        # Mantener dimensiones de hexágonos en su tamaño real
+        config.HEX_HEIGHT = config.HEX_REAL_HEIGHT
+        config.HEX_WIDTH = config.HEX_REAL_WIDTH
         config.HEX_SIZE = config.HEX_WIDTH  # Mantenemos config.HEX_SIZE para compatibilidad
         config.HEX_MIN_SIZE = min(config.HEX_WIDTH, config.HEX_HEIGHT)
 
-        # Recalcular márgenes escalados
+        # Mantener márgenes en su tamaño real
         config.MARGENES_ESCALADOS = {
-            "superior": int(config.MARGENES["superior"] * config.ESCALA),
-            "izquierdo": int(config.MARGENES["izquierdo"] * config.ESCALA)
+            "superior": config.MARGENES["superior"],
+            "izquierdo": config.MARGENES["izquierdo"]
         }
 
         # Recrear la pantalla con las nuevas dimensiones
@@ -400,7 +399,7 @@ class Game:
         # Reiniciar componentes que dependen del tamaño de la pantalla
         self.setup_menu = None
         self.side_selection_menu = None
-        self.tablero_escalado = None
+        # No reiniciar tablero_escalado ya que mantiene sus dimensiones reales
         self.ui = None
 
         self._load_setup_menu()
@@ -564,9 +563,8 @@ class Game:
                 self._check_unit_recovery()
 
     def _handle_board_click(self, mouse_pos, button=1):
-        # Calcular la posición del tablero
-        pos_x = (config.SCREEN_WIDTH - self.tablero_escalado.get_width() - config.PANEL_WIDTH) // 2
-        pos_y = (config.SCREEN_HEIGHT - self.tablero_escalado.get_height() - config.LOG_PANEL_HEIGHT) // 2
+        # Calcular la posición del tablero usando el sistema de scrolling
+        pos_x, pos_y = self.ui._calculate_board_position(self.tablero_escalado)
 
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
