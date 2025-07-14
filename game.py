@@ -211,12 +211,6 @@ class Game:
 
             mouse_pos = pygame.mouse.get_pos()
 
-            # Primero verificar si se hizo clic en el botón de finalizar fase
-            button_rect = self.ui.get_button_rect()
-            if button_rect and button_rect.collidepoint(mouse_pos):
-                self._end_current_phase()
-                return
-
             # Verificar clic en el tablero
             pos_x, pos_y = self.ui._calculate_board_position(self.tablero_escalado)
             tablero_rect = pygame.Rect(pos_x, pos_y, self.tablero_escalado.get_width(),
@@ -226,27 +220,6 @@ class Game:
                 if hex_pos:
                     row, col = hex_pos
                     self._process_combat_click(row, col)
-
-    def _end_current_phase(self):
-        """Finaliza la fase actual y pasa a la siguiente"""
-        if self.state == config.GAME_STATES["PLAYER_TURN"]:
-            if self.turn_phase == config.TURN_PHASES["MOVEMENT"]:
-                self.turn_phase = config.TURN_PHASES["COMBAT"]
-                self.ui.add_log_message(_("Fase de combate iniciada"))
-                self.moved_units = set()  # Resetear unidades movidas
-                self.last_moved_unit_pos = None  # Resetear la última unidad movida
-                self.attacked_units = set()  # Resetear unidades atacantes
-            elif self.turn_phase == config.TURN_PHASES["COMBAT"]:
-                self.turn_phase = config.TURN_PHASES["MOVEMENT"]
-                self.state = config.GAME_STATES["AI_TURN"]
-                self.ui.add_log_message(_("Turno del jugador finalizado"))
-                self._check_unit_recovery()
-                self._reset_charging_flags()  # Limpiar flags de carga al final de la fase de combate
-
-        self.selected_unit = None
-        self.possible_moves = []
-        self.combat_attacker = None
-        self.combat_targets = []
 
     def _reset_charging_flags(self):
         """Resetea los flags de carga de todas las unidades en el tablero"""
@@ -555,12 +528,21 @@ class Game:
                 self.attacked_units = set()  # Resetear unidades atacantes
 
             elif self.turn_phase == config.TURN_PHASES["COMBAT"]:
+                # Center view on the AI leader before changing state
+                self._center_on_opposite_faction_leader(self.ai_side)
+
                 # Finalizar turno completo
                 self.turn_phase = config.TURN_PHASES["MOVEMENT"]
                 self.state = config.GAME_STATES["AI_TURN"]
                 self.current_turn_side = self.ai_side
                 self.ui.add_log_message(_("Turno del jugador finalizado"))
                 self._check_unit_recovery()
+                self._reset_charging_flags()  # Limpiar flags de carga al final de la fase de combate
+
+        self.selected_unit = None
+        self.possible_moves = []
+        self.combat_attacker = None
+        self.combat_targets = []
 
     def _handle_board_click(self, mouse_pos, button=1):
         # Calcular la posición del tablero usando el sistema de scrolling
@@ -945,6 +927,9 @@ class Game:
             self._ai_combat_units = self._prioritize_units_for_combat(all_ai_units)
 
     def _end_ai_turn(self):
+        # Center view on the player leader before changing state
+        self._center_on_opposite_faction_leader(self.player_side)
+
         self.state = config.GAME_STATES["PLAYER_TURN"]
         self.turn_phase = config.TURN_PHASES["MOVEMENT"]  # Reset to movement phase for player's turn
         self.ui.add_log_message(_("Turno del ordenador finalizado. ¡Te toca!"))
@@ -963,7 +948,32 @@ class Game:
         self.selected_unit = None
         self.possible_moves = []
         self.turn_count += 1  # Incrementa el contador de turnos aquí
+
         self._check_win_condition()
+
+    def _center_on_opposite_faction_leader(self, target_side):
+        """Center the view on the leader of the specified faction"""
+        # Find the leader of the target faction
+        leader_position = self._find_faction_leader(target_side)
+
+        if leader_position and self.tablero_escalado:
+            row, col = leader_position
+            self.ui.center_view_on_unit(row, col, self.tablero_escalado)
+
+            # Get leader name for log message
+            leader_unit = self.grid.get_unit(row, col)
+            if leader_unit:
+                leader_name = _(leader_unit.image_key)
+                self.ui.add_log_message(_("Vista centrada en {leader}").format(leader=leader_name))
+
+    def _find_faction_leader(self, faction_side):
+        """Find the position of the leader for the specified faction"""
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                unit = self.grid.get_unit(row, col)
+                if unit and unit.side == faction_side and hasattr(unit, 'leader') and unit.leader:
+                    return (row, col)
+        return None
 
     def _unit_reaches_arsouf(self, unit):
         """Registra una unidad que ha llegado a Arsouf"""

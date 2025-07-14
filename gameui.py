@@ -175,6 +175,33 @@ class GameUI:
         max_scroll_position = max(0, total_lines - visible_lines)
         self.log_scroll_position = max_scroll_position
 
+    def center_view_on_unit(self, unit_row, unit_col, tablero_surface):
+        """Center the map view on a specific unit position"""
+        if not tablero_surface:
+            return
+
+        # Get the pixel position of the hex
+        hex_pixel_x, hex_pixel_y = self.game.grid.hex_to_pixel(unit_row, unit_col)
+
+        # Calculate available screen area for the map
+        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
+        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+
+        # Calculate the center of the available area
+        center_screen_x = available_width // 2
+        center_screen_y = available_height // 2
+
+        # Calculate the scroll values needed to center the hex
+        target_scroll_x = hex_pixel_x - center_screen_x
+        target_scroll_y = hex_pixel_y - center_screen_y
+
+        # Limit scrolling to valid ranges
+        max_scroll_x = max(0, tablero_surface.get_width() - available_width)
+        max_scroll_y = max(0, tablero_surface.get_height() - available_height)
+
+        self.map_scroll_x = max(0, min(target_scroll_x, max_scroll_x))
+        self.map_scroll_y = max(0, min(target_scroll_y, max_scroll_y))
+
     def _draw_map_scrollbars(self, tablero_surface):
         """Draw horizontal and vertical scrollbars for the map"""
         available_width = config.AVAILABLE_WIDTH
