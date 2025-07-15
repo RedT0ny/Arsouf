@@ -207,7 +207,11 @@ class HexGrid:
         return None
 
     def eliminar_unidad(self, row, col):
+        unit = self.grid[row][col]
         self.grid[row][col] = None
+        if unit:
+            print(_("Unidad {unit} eliminada en ({row}, {col})").format(unit=unit, row=row, col=col))
+            return unit
 
     def get_units_in_radius(self, row, col, radius, side=None):
         """Obtiene unidades en un radio, filtrando por bando si se especifica"""

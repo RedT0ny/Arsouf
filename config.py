@@ -2,6 +2,7 @@
 import os
 import gettext
 import locale
+import ctypes
 
 # Configuración de internacionalización
 LOCALE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'locale')
@@ -61,7 +62,7 @@ BAGGAGE_NAME = _("Bagaje")
 # ------------------------------
 # 0. Configuración general
 GAME_NAME = _("game_name")
-VERSION = "Beta 1.0"
+VERSION = "Beta 2.1.0"
 AUTHOR = "Red Tony"
 # 0.1. Configuración de depuración
 DEBUG_MODE = False  # Cambia a False para producción
@@ -74,6 +75,18 @@ DEBUG_MODE = False  # Cambia a False para producción
 # (Estas son las dimensiones físicas del tablero en tu imagen JPG)
 TABLERO_REAL_WIDTH = 2340
 TABLERO_REAL_HEIGHT = 1470
+
+# 1.1. Obtener resolución de pantalla (para calcular escalado)
+def get_screen_resolution():
+    user32 = ctypes.windll.user32
+    return user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+
+screen_w, screen_h = get_screen_resolution()
+
+# Calcula el factor de escala máximo para que la ventana sea visible
+max_scaling_w = (screen_w - 300) / TABLERO_REAL_WIDTH
+max_scaling_h = (screen_h - 170) / TABLERO_REAL_HEIGHT
+DISPLAY_SCALING = min(max_scaling_w, max_scaling_h, 1.0)  # No escalar por encima del 100%
 
 # 2. Márgenes REALES (de tu imagen JPG)
 MARGENES = {
@@ -88,7 +101,6 @@ HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["der
 HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 4. Configuración de pantalla
-DISPLAY_SCALING = 0.75  # Factor de escala para la pantalla (0.6 = 60% del tamaño original)
 SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
 SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60

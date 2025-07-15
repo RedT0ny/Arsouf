@@ -643,14 +643,24 @@ class Game:
             isinstance(moved_unit, Hospitalario)):
 
             # Diccionario de direcciones de carga posibles
-            directions = {
-                (0, -2): (0, -3),    # O
-                (-2, -1): (-3, -1),  # NO
-                (-2, 1): (-3, 2),    # NE
-                (0, 2): (0, 3),      # E
-                (2, 1): (3, 2),      # SE
-                (2, -1): (3, -1)     # SO
-            }
+            if old_row % 2 == 0: # Fila par
+                directions = {
+                    (0, -2): (0, -3),    # O
+                    (-2, -1): (-3, -1),  # NO
+                    (-2, 1): (-3, 2),    # NE
+                    (0, 2): (0, 3),      # E
+                    (2, 1): (3, 2),      # SE
+                    (2, -1): (3, -1)     # SO
+                }
+            else: # Fila impar
+                directions = {
+                    (0, -2): (0, -3),    # O
+                    (-2, -1): (-3, -2),  # NO
+                    (-2, 1): (-3, 1),    # NE
+                    (0, 2): (0, 3),      # E
+                    (2, 1): (3, 1),      # SE
+                    (2, -1): (3, -2)     # SO
+                }
 
             # Calcular la dirección del movimiento
             dir = (row - old_row, col - old_col)
@@ -1091,6 +1101,10 @@ class Game:
                             _("¡Ataque exitoso! {attacker_type} hirió a {defender_type}").format(
                                 attacker_type=_(self.combat_attacker.image_key),
                                 defender_type=_(unit.image_key)))
+                    # Verificar si la unidad fue eliminada
+                    if unit.health == 0:
+                        self.ui.add_log_message(_("{} ha sido ELIMINADO").format(_(unit.image_key)))
+
                 else:
                     # Reproducir sonido de ataque fallido
                     self._play_sound("failed_attack")
@@ -1834,6 +1848,9 @@ class Game:
             if unit.attack(target, self.grid):
                 self.ui.add_log_message(
                     f"{_('¡IA ataca!')} {_(unit.image_key)} {_('hirió a')} {_(target.image_key)}")
+                # Verificar si la unidad fue eliminada
+                if target.health == 0:
+                    self.ui.add_log_message(_("{} ha sido ELIMINADO").format(_(target.image_key)))
             else:
                 self.ui.add_log_message(
                     f"{_('¡Ataque fallido de IA!')} {_(target.image_key)} {_('resistió el ataque de')} {_(unit.image_key)}")
