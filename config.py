@@ -88,7 +88,7 @@ HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["der
 HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
 
 # 4. Configuración de pantalla
-DISPLAY_SCALING = 0.6  # Factor de escala para la pantalla (0.6 = 60% del tamaño original)
+DISPLAY_SCALING = 0.75  # Factor de escala para la pantalla (0.6 = 60% del tamaño original)
 SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
 SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60
@@ -181,8 +181,8 @@ IMAGE_PATHS = {
     "board": os.path.join(ASSETS_DIR, "img", "Board.png"),
     "cover": os.path.join(ASSETS_DIR, "img", "Cover.png"),
     # Docs
-    "reglas": os.path.join(ASSETS_DIR, "img", "Reglas.jpg"),
-    "rules": os.path.join(ASSETS_DIR, "img", "Rules.jpg"),
+    "reglas": os.path.join(ASSETS_DIR, "doc", "Manual_ES.pdf"),
+    "rules": os.path.join(ASSETS_DIR, "doc", "Manual_EN.pdf"),
     # Cruzados
     "Ricardo": os.path.join(ASSETS_DIR, "img", "Ricardo.svg"),
     "Templario": os.path.join(ASSETS_DIR, "img", "Templario.svg"),

@@ -470,7 +470,7 @@ class GameUI:
         y_offset += 40
         if hasattr(self.game, 'current_deploying_unit') and self.game.current_deploying_unit:
             unit_name = self.game.current_deploying_unit.image_key
-            unit_info = f"{_('Coloca')}: {_(unit_name)}"
+            unit_info = f"{_('Despliega')}: {_(unit_name)}"
             unit_text = self.font.render(unit_info, True, config.COLOR_TEXTO)
             if unit_text.get_width() > content_rect.width:
                 small_font = pygame.font.SysFont('Arial', 18)
@@ -562,7 +562,7 @@ class GameUI:
         return button_rect
 
     def _draw_rules_button(self, panel_rect, y_position):
-        rules_button_rect = self._draw_button(panel_rect, _("Ver Reglas"), config.COLOR_CRUZADOS, y_position)
+        rules_button_rect = self._draw_button(panel_rect, _("Manual"), config.COLOR_CRUZADOS, y_position)
         return rules_button_rect
 
     def draw_deployment_zones(self):

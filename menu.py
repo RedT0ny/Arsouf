@@ -61,9 +61,9 @@ class SetupMenu(Menu):
         self.draw_button(defaults_rect, _("Valores predeterminados"), (200, 150, 100))
         button_y += button_spacing
 
-        # 4. Botón de ver reglas
+        # 4. Botón para ver el manual de instrucciones
         rules_rect = pygame.Rect(config.SCREEN_WIDTH // 2 - config.MENU_BUTTON_WIDTH // 2, button_y, config.MENU_BUTTON_WIDTH, config.MENU_BUTTON_HEIGHT)
-        self.draw_button(rules_rect, _("Ver Reglas"), config.COLOR_CRUZADOS)
+        self.draw_button(rules_rect, _("Manual"), config.COLOR_CRUZADOS)
         button_y += button_spacing
 
         # 5. Botón de selección de bando

@@ -277,7 +277,7 @@ class Game:
         self.ai_side = config.SIDE_SARACENS if player_side == config.SIDE_CRUSADERS else config.SIDE_CRUSADERS
         self.state = config.GAME_STATES["DEPLOY_PLAYER"]
         self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
-        self.ui.add_log_message(_("Jugando como {player_side}. Comienza el despliegue.").format(player_side=_(self.player_side)))
+        self.ui.add_log_message(_("Jugando como {player_side}. Despliega a tu líder.").format(player_side=_(self.player_side)))
 
     def _load_side_selection_menu(self):
         """Carga el menú de selección de bando"""
@@ -496,7 +496,7 @@ class Game:
             if self.units_to_deploy[self.player_side]:
                 self.current_deploying_unit = self.units_to_deploy[self.player_side].pop(0)
                 self.ui.add_log_message(
-                    _("Colocado {}. Siguiente unidad lista.").format(_(self.current_deploying_unit.image_key))
+                    _("Despliega: {}.").format(_(self.current_deploying_unit.image_key))
                 )
             else:
                 self.current_deploying_unit = None
