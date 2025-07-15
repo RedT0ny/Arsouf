@@ -38,7 +38,7 @@ class SetupMenu(Menu):
         self.screen.fill(config.COLOR_BG)
 
         # Título
-        title = self.font.render(_("Menú de Configuración"), True, config.COLOR_TEXTO)
+        title = self.font.render(_("Menú Principal"), True, config.COLOR_TEXTO)
         self.screen.blit(title, (config.SCREEN_WIDTH//2 - title.get_width()//2, config.TITLE_Y))
 
         # Botones del menú

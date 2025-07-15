@@ -64,7 +64,7 @@ class GameUI:
             text_area = pygame.Rect(
                 panel_rect.x + config.LOG_MARGIN,
                 panel_rect.y + config.LOG_MARGIN,
-                panel_rect.width - 2*config.LOG_MARGIN - config.LOG_SCROLLBAR_WIDTH,
+                panel_rect.width - 2*config.LOG_MARGIN - config.SCROLLBAR_WIDTH,
                 panel_rect.height - 2*config.LOG_MARGIN
             )
             visible_lines = self._get_visible_lines()
@@ -85,27 +85,27 @@ class GameUI:
             raise
 
     def _draw_log_scrollbar(self, panel_rect, total_lines, visible_lines):
-        scrollbar_rect = pygame.Rect(
-            panel_rect.right - config.LOG_SCROLLBAR_WIDTH - 5,
-            panel_rect.y + 5,
-            config.LOG_SCROLLBAR_WIDTH,
-            panel_rect.height - 10
-        )
-        pygame.draw.rect(self.game.screen, (80, 80, 100), scrollbar_rect)
-        handle_height = max(40, (visible_lines / total_lines) * scrollbar_rect.height)
-        handle_y = scrollbar_rect.y + (self.log_scroll_position / total_lines) * (scrollbar_rect.height - handle_height)
-        self.log_scroll_handle_rect = pygame.Rect(
-            scrollbar_rect.x - 2,
-            handle_y - 2,
-            scrollbar_rect.width + 4,
-            handle_height + 4
-        )
-        pygame.draw.rect(self.game.screen, (160, 160, 190), self.log_scroll_handle_rect)
-        pygame.draw.rect(self.game.screen, (200, 200, 230), self.log_scroll_handle_rect, 2)
-        if __debug__:
-            debug_font = pygame.font.SysFont('Arial', 12)
-            debug_text = debug_font.render(f"{int(self.log_scroll_position)}/{total_lines}", True, (255, 255, 255))
-            self.game.screen.blit(debug_text, (scrollbar_rect.x - 30, scrollbar_rect.y))
+                    scrollbar_rect = pygame.Rect(
+                        panel_rect.right - config.SCROLLBAR_WIDTH - 5,
+                        panel_rect.y + 5,
+                        config.SCROLLBAR_WIDTH,
+                        panel_rect.height - 10
+                    )
+                    pygame.draw.rect(self.game.screen, config.SCROLLBAR_COLOR, scrollbar_rect)
+                    handle_height = max(40, (visible_lines / total_lines) * scrollbar_rect.height)
+                    handle_y = scrollbar_rect.y + (self.log_scroll_position / max(1, total_lines - visible_lines)) * (scrollbar_rect.height - handle_height)
+                    self.log_scroll_handle_rect = pygame.Rect(
+                        scrollbar_rect.x,
+                        handle_y,
+                        scrollbar_rect.width,
+                        handle_height
+                    )
+                    pygame.draw.rect(self.game.screen, config.SCROLLBAR_HANDLE_COLOR, self.log_scroll_handle_rect)
+                    pygame.draw.rect(self.game.screen, (200, 200, 230), self.log_scroll_handle_rect, 2)
+                    if __debug__:
+                        debug_font = pygame.font.SysFont('Arial', 12)
+                        debug_text = debug_font.render(f"{int(self.log_scroll_position)}/{total_lines}", True, (255, 255, 255))
+                        self.game.screen.blit(debug_text, (scrollbar_rect.x - 30, scrollbar_rect.y))
 
     def handle_scroll_event(self, event):
         mouse_pos = pygame.mouse.get_pos()
@@ -184,8 +184,8 @@ class GameUI:
         hex_pixel_x, hex_pixel_y = self.game.grid.hex_to_pixel(unit_row, unit_col)
 
         # Calculate available screen area for the map
-        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
-        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+        available_width = config.AVAILABLE_WIDTH
+        available_height = config.AVAILABLE_HEIGHT
 
         # Calculate the center of the available area
         center_screen_x = available_width // 2
@@ -210,9 +210,9 @@ class GameUI:
         board_width = tablero_surface.get_width()
         board_height = tablero_surface.get_height()
 
-        scrollbar_width = config.LOG_SCROLLBAR_WIDTH
-        scrollbar_color = config.LOG_SCROLLBAR_COLOR
-        handle_color = config.LOG_SCROLLBAR_HANDLE_COLOR
+        scrollbar_width = config.SCROLLBAR_WIDTH
+        scrollbar_color = config.SCROLLBAR_COLOR
+        handle_color = config.SCROLLBAR_HANDLE_COLOR
 
         # Draw horizontal scrollbar if needed
         if board_width > available_width:
@@ -265,8 +265,8 @@ class GameUI:
     def handle_map_scroll_event(self, event, tablero_surface):
         """Handle scrolling events for the map"""
         mouse_pos = pygame.mouse.get_pos()
-        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
-        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+        available_width = config.AVAILABLE_WIDTH
+        available_height = config.AVAILABLE_HEIGHT
 
         # Check if mouse is in the map area
         map_area = pygame.Rect(0, 0, available_width, available_height)
@@ -317,8 +317,8 @@ class GameUI:
         if not self.map_scroll_dragging:
             return False
 
-        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
-        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+        available_width = config.AVAILABLE_WIDTH
+        available_height = config.AVAILABLE_HEIGHT
         board_width = tablero_surface.get_width()
         board_height = tablero_surface.get_height()
 
@@ -326,7 +326,7 @@ class GameUI:
         if hasattr(self, 'map_drag_start_x') and self.map_drag_start_x > 0:
             delta_x = mouse_pos[0] - self.map_drag_start_x
             if board_width > available_width:
-                scrollbar_width = available_width - config.LOG_SCROLLBAR_WIDTH
+                scrollbar_width = available_width - config.SCROLLBAR_WIDTH
                 # Calculate handle dimensions to get proper movement range
                 handle_width = max(40, (available_width / board_width) * scrollbar_width)
                 handle_movement_range = scrollbar_width - handle_width
@@ -344,7 +344,7 @@ class GameUI:
         if hasattr(self, 'map_drag_start_y') and self.map_drag_start_y > 0:
             delta_y = mouse_pos[1] - self.map_drag_start_y
             if board_height > available_height:
-                scrollbar_height = available_height - config.LOG_SCROLLBAR_WIDTH
+                scrollbar_height = available_height - config.SCROLLBAR_WIDTH
                 # Calculate handle dimensions to get proper movement range
                 handle_height = max(40, (available_height / board_height) * scrollbar_height)
                 handle_movement_range = scrollbar_height - handle_height
@@ -362,8 +362,8 @@ class GameUI:
 
     def _handle_map_wheel_scroll(self, wheel_x, wheel_y, tablero_surface):
         """Handle mouse wheel scrolling for the map"""
-        available_width = config.SCREEN_WIDTH - config.PANEL_WIDTH
-        available_height = config.SCREEN_HEIGHT - config.LOG_PANEL_HEIGHT
+        available_width = config.AVAILABLE_WIDTH
+        available_height = config.AVAILABLE_HEIGHT
         board_width = tablero_surface.get_width()
         board_height = tablero_surface.get_height()
 

@@ -25,8 +25,8 @@ class HexGrid:
         self.vertical_overlap_factor = 0.75
 
         # Offsets para alineación visual (ajustar según necesidad)
-        self.offset_x = config.MARGENES_ESCALADOS["izquierdo"] + int(self.hex_width * 0.5)
-        self.offset_y = config.MARGENES_ESCALADOS["superior"] + int(self.hex_height * 0.5)
+        self.offset_x = config.SCALED_MARGINS["izquierdo"] + int(self.hex_width * 0.5)
+        self.offset_y = config.SCALED_MARGINS["superior"] + int(self.hex_height * 0.5)
 
     def hex_to_pixel(self, row, col) -> tuple[int, int]:
         """

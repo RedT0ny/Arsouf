@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Alpha 1.4.0\n"
 "Report-Msgid-Bugs-To: redtony@gmail.com\n"
-"POT-Creation-Date: 2025-07-15 15:54+0200\n"
+"POT-Creation-Date: 2025-07-15 23:44+0200\n"
 "PO-Revision-Date: 2025-06-05 21:52+0200\n"
 "Last-Translator: RedT0ny <redtony@gmail.com>\n"
 "Language: en\n"
@@ -17,97 +17,97 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: config.py:40
+#: config.py:41
 msgid "Error al cargar traducciones:"
 msgstr "Error loading translations:"
 
-#: config.py:46
+#: config.py:47
 msgid "CRUZADOS"
 msgstr "CRUSADERS"
 
-#: config.py:47
+#: config.py:48
 msgid "SARRACENOS"
 msgstr "SARACENS"
 
-#: config.py:48
+#: config.py:49
 msgid "Ricardo"
 msgstr "Richard"
 
-#: config.py:49
+#: config.py:50
 msgid "Infanteria"
 msgstr "Infantry"
 
-#: config.py:50
+#: config.py:51
 msgid "Caballero"
 msgstr "Knight"
 
-#: config.py:51
+#: config.py:52
 msgid "Templario"
 msgstr "Templar"
 
-#: config.py:52
+#: config.py:53
 msgid "Hospitalario"
 msgstr "Hospitaller"
 
-#: config.py:53
+#: config.py:54
 msgid "Saladino"
 msgstr "Saladin"
 
-#: config.py:54
+#: config.py:55
 msgid "Mameluco"
 msgstr "Mamluk"
 
-#: config.py:55
+#: config.py:56
 msgid "Arquero"
 msgstr "Archer"
 
-#: config.py:56
+#: config.py:57
 msgid "Explorador"
 msgstr "Skirmisher"
 
-#: config.py:57
+#: config.py:58
 msgid "Bagaje"
 msgstr "Baggage"
 
-#: config.py:63
+#: config.py:64
 msgid "game_name"
 msgstr "The Battle of Arsouf"
 
-#: config.py:258
+#: config.py:272
 msgid "Movimiento"
 msgstr "Movement"
 
-#: config.py:259
+#: config.py:273
 msgid "Combate"
 msgstr "Combat"
 
-#: config.py:268
+#: config.py:282
 msgid "Configuración cargada correctamente:"
 msgstr "Configuration loaded successfully:"
 
-#: config.py:269
+#: config.py:283
 #, python-brace-format
 msgid "- Tamaño de ventana: {width}x{height}"
 msgstr "- Window size: {width}x{height}"
 
-#: config.py:270
+#: config.py:284
 #, python-brace-format
 msgid ""
 "- Tamaño del tablero: {width}x{height} (Utilizable: "
 "{area_width}x{area_height})"
 msgstr "- Board size: {width}x{height} (Usable: {area_width}x{area_height})"
 
-#: config.py:273
+#: config.py:287
 #, python-brace-format
 msgid "- Tamaño escalado: {width}x{height}"
 msgstr "- Scaled size: {width}x{height}"
 
-#: config.py:275
+#: config.py:289
 #, python-brace-format
 msgid "- Escala: {scale:.2f}"
 msgstr "- Scale: {scale:.2f}"
 
-#: config.py:276
+#: config.py:290
 #, python-brace-format
 msgid "- Hexágonos: {rows}x{cols} (size: {size}px)"
 msgstr "- Hexagons: {rows}x{cols} (size: {size}px)"
@@ -209,7 +209,7 @@ msgstr "{} returned to their original position"
 msgid "Ya has movido a {} este turno"
 msgstr "{} has already moved this turn"
 
-#: game.py:611 game.py:868
+#: game.py:611 game.py:878
 #, python-brace-format
 msgid "{} ha llegado a Arsouf!"
 msgstr "{} reached Arsouf!"
@@ -219,93 +219,98 @@ msgstr "{} reached Arsouf!"
 msgid "Mueves {unit_type} desde ({row},{col}) hasta ({new_row}, {new_col})"
 msgstr "{unit_type} moves from ({row},{col}) to ({new_row}, {new_col})"
 
-#: game.py:670
+#: game.py:680
 #, python-brace-format
 msgid "{unit_type} cargando sobre {target} en ({next_row},{next_col})!"
 msgstr "{unit_type} charging at {target} at ({next_row},{next_col})!"
 
-#: game.py:809
+#: game.py:819
 #, python-brace-format
 msgid "IA despliega {unit_type} en ({row},{col})"
 msgstr "AI deploys {unit_type} at ({row},{col})"
 
-#: game.py:817
+#: game.py:827
 msgid "Turno del ordenador - Fase de movimiento"
 msgstr "AI's turn - Movement phase"
 
-#: game.py:878
+#: game.py:888
 #, python-brace-format
 msgid "{unit_type} mueve desde ({row},{col}) hasta ({new_row}, {new_col})"
 msgstr "{unit_type} moves from ({row},{col}) to ({new_row}, {new_col})"
 
-#: game.py:892 game.py:916
+#: game.py:902 game.py:926
 msgid "Turno del ordenador - Fase de combate"
 msgstr "AI's turn - Combat phase"
 
-#: game.py:935
+#: game.py:945
 msgid "Turno del ordenador finalizado. ¡Te toca!"
 msgstr "AI's turn finished. Your turn!"
 
-#: game.py:936
+#: game.py:946
 #, python-brace-format
 msgid "Turno actual: {turn} / {max_turns}"
 msgstr "Current turn: {turn} / {max_turns}"
 
-#: game.py:967
+#: game.py:977
 #, python-brace-format
 msgid "Vista centrada en {leader}"
 msgstr "View centered on {leader}"
 
-#: game.py:982
+#: game.py:992
 #, python-brace-format
 msgid "¡Bagaje ha llegado a Arsouf! ({count}/2)"
 msgstr "Baggage reached Arsouf! ({count}/2)"
 
-#: game.py:985
+#: game.py:995
 #, python-brace-format
 msgid "¡{unit_type} ha llegado a Arsouf! ({count}/2)"
 msgstr "{unit_type} reached Arsouf! ({count}/2)"
 
-#: game.py:993
+#: game.py:1003
 msgid "¡VICTORIA DE LOS CRUZADOS! Han llegado suficientes unidades a Arsouf."
 msgstr "CRUSADERS WIN! Enough units reached Arsouf."
 
-#: game.py:1010
+#: game.py:1020
 msgid "¡VICTORIA DE LOS SARRACENOS! Los Cruzados no pueden llegar a Arsouf."
 msgstr "SARACENS WIN! Crusaders cannot reach Arsouf."
 
-#: game.py:1051
+#: game.py:1061
 #, python-brace-format
 msgid "{} ya ha atacado este turno"
 msgstr "{} has already attacked this turn"
 
-#: game.py:1059
+#: game.py:1069
 #, python-brace-format
 msgid "No hay enemigos adyacentes para que {} ataque"
 msgstr "No adjacent enemies for {} to attack"
 
-#: game.py:1067
+#: game.py:1077
 #, python-brace-format
 msgid "{} seleccionado. Elige objetivo. (Cancelar con click derecho)"
 msgstr "{} selected. Choose target. (Right-click to cancel)"
 
-#: game.py:1069
+#: game.py:1079
 msgid "Selecciona una unidad aliada sana para atacar"
 msgstr "Select a healthy allied unit to attack"
 
-#: game.py:1086
+#: game.py:1096
 #, python-brace-format
 msgid "¡Carga exitosa! {attacker_type} cargó contra {defender_type} y lo hirió"
 msgstr ""
 "Charge successful! {attacker_type} charged at {defender_type} and damaged"
 " them"
 
-#: game.py:1091
+#: game.py:1101
 #, python-brace-format
 msgid "¡Ataque exitoso! {attacker_type} hirió a {defender_type}"
 msgstr "Attack successful! {attacker_type} damaged {defender_type}"
 
-#: game.py:1101
+#: game.py:1106 game.py:1853
+#, python-brace-format
+msgid "{} ha sido ELIMINADO"
+msgstr "{} has been ELIMINATED"
+
+#: game.py:1115
 #, python-brace-format
 msgid ""
 "¡Carga fallida! {attacker_type} cargó contra {defender_type} pero no "
@@ -314,40 +319,40 @@ msgstr ""
 "Charge failed! {attacker_type} charged at {defender_type} but could not "
 "damage them"
 
-#: game.py:1106
+#: game.py:1120
 #, python-brace-format
 msgid "¡Ataque fallido! {} resistió el ataque"
 msgstr "Attack failed! {} resisted the attack"
 
-#: game.py:1115
+#: game.py:1129
 msgid "Objetivo no válido. Selecciona un enemigo adyacente"
 msgstr "Invalid target. Select an adjacent enemy"
 
-#: game.py:1836
+#: game.py:1850
 msgid "¡IA ataca!"
 msgstr "AI attacks!"
 
-#: game.py:1836
+#: game.py:1850
 msgid "hirió a"
 msgstr "damaged"
 
-#: game.py:1839
+#: game.py:1856
 msgid "¡Ataque fallido de IA!"
 msgstr "AI attack failed!"
 
-#: game.py:1839
+#: game.py:1856
 msgid "resistió el ataque de"
 msgstr "resisted the attack of"
 
-#: game.py:1927
+#: game.py:1944
 msgid "Error reproduciendo música"
 msgstr "Error playing music"
 
-#: game.py:1939
+#: game.py:1956
 msgid "Error reproduciendo sonido"
 msgstr "Error playing audio"
 
-#: game.py:2011
+#: game.py:2028
 msgid "Error loading cover:"
 msgstr "Error loading cover:"
 
@@ -371,7 +376,7 @@ msgstr "End Combat turn"
 msgid "Confirmar Despliegue"
 msgstr "Confirm Deployment"
 
-#: gameui.py:495 menu.py:41
+#: gameui.py:495
 msgid "Menú de Configuración"
 msgstr "Setup Menu"
 
@@ -476,6 +481,15 @@ msgstr "Coordinates ({row}, {col}) out of grid {rows}x{cols}"
 #, python-brace-format
 msgid "¡Advertencia: Sobreescribiendo unidad en ({row}, {col})!"
 msgstr "Warning: Overwriting unit at ({row}, {col})!"
+
+#: hexgrid.py:213
+#, python-brace-format
+msgid "Unidad {unit} eliminada en ({row}, {col})"
+msgstr "Unit {unit} eliminated at ({row},{col})"
+
+#: menu.py:41
+msgid "Menú Principal"
+msgstr "Main Menu"
 
 #: menu.py:51
 msgid "Escala de pantalla"

@@ -62,7 +62,7 @@ BAGGAGE_NAME = _("Bagaje")
 # ------------------------------
 # 0. Configuración general
 GAME_NAME = _("game_name")
-VERSION = "Beta 2.1.0"
+VERSION = "Beta 2.1.1"
 AUTHOR = "Red Tony"
 # 0.1. Configuración de depuración
 DEBUG_MODE = False  # Cambia a False para producción
@@ -73,8 +73,8 @@ DEBUG_MODE = False  # Cambia a False para producción
 
 # 1. Dimensiones ORIGINALES del tablero (en píxeles)
 # (Estas son las dimensiones físicas del tablero en tu imagen JPG)
-TABLERO_REAL_WIDTH = 2340
-TABLERO_REAL_HEIGHT = 1470
+MAP_WIDTH = 2340
+MAP_HEIGHT = 1470
 
 # 1.1. Obtener resolución de pantalla (para calcular escalado)
 def get_screen_resolution():
@@ -84,12 +84,12 @@ def get_screen_resolution():
 screen_w, screen_h = get_screen_resolution()
 
 # Calcula el factor de escala máximo para que la ventana sea visible
-max_scaling_w = (screen_w - 300) / TABLERO_REAL_WIDTH
-max_scaling_h = (screen_h - 170) / TABLERO_REAL_HEIGHT
+max_scaling_w = (screen_w - 300) / MAP_WIDTH
+max_scaling_h = (screen_h - 170 - 30) / MAP_HEIGHT  # Reserva espacio para el caption
 DISPLAY_SCALING = min(max_scaling_w, max_scaling_h, 1.0)  # No escalar por encima del 100%
 
 # 2. Márgenes REALES (de tu imagen JPG)
-MARGENES = {
+MAP_MARGINS = {
     "superior": 90,  #118,
     "inferior": 0,  #60,
     "izquierdo": 0, #45,
@@ -97,18 +97,18 @@ MARGENES = {
 }
 
 # 3. Área hexagonal REAL (píxeles en tu imagen)
-HEX_AREA_REAL_WIDTH = TABLERO_REAL_WIDTH - MARGENES["izquierdo"] - MARGENES["derecho"]
-HEX_AREA_REAL_HEIGHT = TABLERO_REAL_HEIGHT - MARGENES["superior"] - MARGENES["inferior"]
+HEX_AREA_REAL_WIDTH = MAP_WIDTH - MAP_MARGINS["izquierdo"] - MAP_MARGINS["derecho"]
+HEX_AREA_REAL_HEIGHT = MAP_HEIGHT - MAP_MARGINS["superior"] - MAP_MARGINS["inferior"]
 
 # 4. Configuración de pantalla
-SCREEN_WIDTH = TABLERO_REAL_WIDTH * DISPLAY_SCALING + 300
-SCREEN_HEIGHT = TABLERO_REAL_HEIGHT * DISPLAY_SCALING + 170
+SCREEN_WIDTH = MAP_WIDTH * DISPLAY_SCALING + 300
+SCREEN_HEIGHT = MAP_HEIGHT * DISPLAY_SCALING + 170
 FPS = 60
 COLOR_BG = (0, 0, 0)
 
 # 5. TAMAÑOS UI
 PANEL_WIDTH = 300
-MENU_BUTTON_WIDTH = 260
+MENU_BUTTON_WIDTH = 300
 MENU_BUTTON_HEIGHT = 50
 PANEL_BUTTON_WIDTH = 260
 PANEL_BUTTON_HEIGHT = 50
@@ -124,10 +124,12 @@ LOG_TEXT_COLOR = (200, 200, 200)
 LOG_FONT_SIZE = 18
 LOG_MARGIN = 10
 LOG_LINE_HEIGHT = 22 #LOG_FONT_SIZE + 2
-LOG_SCROLLBAR_WIDTH = 14
-LOG_SCROLLBAR_COLOR = (60, 60, 80)
-LOG_SCROLLBAR_HANDLE_COLOR = (130, 130, 160)
 LOG_MAX_MESSAGES = 500  # Máximo de mensajes almacenados
+
+# 5.2 Barras de desplazamiento
+SCROLLBAR_WIDTH = 14
+SCROLLBAR_COLOR = (60, 60, 80)
+SCROLLBAR_HANDLE_COLOR = (130, 130, 160)
 
 # 5. Grid hexagonal
 HEX_ROWS = 15
@@ -163,24 +165,24 @@ FORD_HEX = (2,17)  # Hexágono donde se puede cruzar el río
 # Calculamos el factor de escala basado en el espacio disponible
 AVAILABLE_WIDTH = SCREEN_WIDTH - PANEL_WIDTH
 AVAILABLE_HEIGHT = SCREEN_HEIGHT - LOG_PANEL_HEIGHT
-ESCALA = 1
+SCALING_MULTIPLIER = 1
 
 # 7. Dimensiones originales del hexágono (según especificación)
 HEX_REAL_HEIGHT = 120  # Altura original del hexágono en píxeles
 HEX_REAL_WIDTH = 104   # Ancho original del hexágono en píxeles
 
 # 8. Dimensiones escaladas del hexágono (para pantalla)
-HEX_HEIGHT = int(HEX_REAL_HEIGHT * ESCALA)
-HEX_WIDTH = int(HEX_REAL_WIDTH * ESCALA)
+HEX_HEIGHT = int(HEX_REAL_HEIGHT * SCALING_MULTIPLIER)
+HEX_WIDTH = int(HEX_REAL_WIDTH * SCALING_MULTIPLIER)
 # Para compatibilidad con código existente (usar HEX_WIDTH y HEX_HEIGHT en nuevo código)
 HEX_SIZE = HEX_WIDTH  # Mantenemos HEX_SIZE para compatibilidad
 # Para mejor ajuste visual, usar el tamaño más pequeño entre ancho y alto
 HEX_MIN_SIZE = min(HEX_WIDTH, HEX_HEIGHT)
 
 # 9. Márgenes escalados (calculados una vez)
-MARGENES_ESCALADOS = {
-    "superior": int(MARGENES["superior"] * ESCALA),
-    "izquierdo": int(MARGENES["izquierdo"] * ESCALA)
+SCALED_MARGINS = {
+    "superior": int(MAP_MARGINS["superior"] * SCALING_MULTIPLIER),
+    "izquierdo": int(MAP_MARGINS["izquierdo"] * SCALING_MULTIPLIER)
 }
 
 # ------------------------------
@@ -280,9 +282,9 @@ if __name__ == "__main__":
     print(_("Configuración cargada correctamente:"))
     print(_("- Tamaño de ventana: {width}x{height}").format(width=SCREEN_WIDTH, height=SCREEN_HEIGHT))
     print(_("- Tamaño del tablero: {width}x{height} (Utilizable: {area_width}x{area_height})").format(
-        width=TABLERO_REAL_WIDTH, height=TABLERO_REAL_HEIGHT, 
+        width=MAP_WIDTH, height=MAP_HEIGHT,
         area_width=HEX_AREA_REAL_WIDTH, area_height=HEX_AREA_REAL_HEIGHT))
     print(_("- Tamaño escalado: {width}x{height}").format(
         width=SCREEN_WIDTH - PANEL_WIDTH, height=SCREEN_HEIGHT - LOG_PANEL_HEIGHT))
-    print(_("- Escala: {scale:.2f}").format(scale=ESCALA))
+    print(_("- Escala: {scale:.2f}").format(scale=SCALING_MULTIPLIER))
     print(_("- Hexágonos: {rows}x{cols} (size: {size}px)").format(rows=HEX_ROWS, cols=HEX_COLS, size=HEX_SIZE))

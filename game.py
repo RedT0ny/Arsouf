@@ -200,7 +200,7 @@ class Game:
 
     def _handle_combat_phase(self, event):
         """Maneja los eventos durante la fase de combate"""
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button not in (4, 5):
             # Verificar si es un clic derecho y hay un atacante seleccionado
             if event.button == 3 and self.combat_attacker:
                 # Cancelar la selección del atacante
@@ -336,8 +336,8 @@ class Game:
             config.DISPLAY_SCALING = scales[next_index]
 
         # Actualizar dimensiones de pantalla (para la ventana, no para el tablero)
-        config.SCREEN_WIDTH = config.TABLERO_REAL_WIDTH * config.DISPLAY_SCALING + 300
-        config.SCREEN_HEIGHT = config.TABLERO_REAL_HEIGHT * config.DISPLAY_SCALING + 170
+        config.SCREEN_WIDTH = config.MAP_WIDTH * config.DISPLAY_SCALING + 300
+        config.SCREEN_HEIGHT = config.MAP_HEIGHT * config.DISPLAY_SCALING + 170
 
         # Ajustar el ancho y alto de los botones según la escala
         config.MENU_BUTTON_WIDTH = max(260 * config.DISPLAY_SCALING / 0.75, 200)
@@ -352,7 +352,7 @@ class Game:
 
         # Mantener ESCALA = 1.0 para que el tablero conserve sus dimensiones reales
         # El scrolling se encargará de mostrar la parte visible
-        config.ESCALA = 1.0
+        config.SCALING_MULTIPLIER = 1.0
 
         # Mantener dimensiones de hexágonos en su tamaño real
         config.HEX_HEIGHT = config.HEX_REAL_HEIGHT
@@ -361,9 +361,9 @@ class Game:
         config.HEX_MIN_SIZE = min(config.HEX_WIDTH, config.HEX_HEIGHT)
 
         # Mantener márgenes en su tamaño real
-        config.MARGENES_ESCALADOS = {
-            "superior": config.MARGENES["superior"],
-            "izquierdo": config.MARGENES["izquierdo"]
+        config.SCALED_MARGINS = {
+            "superior": config.MAP_MARGINS["superior"],
+            "izquierdo": config.MAP_MARGINS["izquierdo"]
         }
 
         # Recrear la pantalla con las nuevas dimensiones
