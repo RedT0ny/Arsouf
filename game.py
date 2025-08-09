@@ -558,8 +558,9 @@ class Game:
                 distance = ((mouse_pos[0] - x) ** 2 + (mouse_pos[1] - y) ** 2) ** 0.5
                 if distance < config.HEX_MIN_SIZE / 2:
                     # Mensaje de debug para verificar coordenadas
-                    print(_("Has hecho click en coordenadas del grid: ({row}, {col})").format(row=row, col=col))
-                    print(_("Posición en píxeles: ({x}, {y})").format(x=x, y=y))
+                    if __debug__:
+                        print(_("Has hecho click en coordenadas del grid: ({row}, {col})").format(row=row, col=col))
+                        print(_("Posición en píxeles: ({x}, {y})").format(x=x, y=y))
 
                     self._process_hex_click(row, col, button)
                     return
@@ -596,6 +597,8 @@ class Game:
             # Reproducir sonido de selección
             self._play_sound("select")
             self.selected_unit = (row, col)
+            # Centrar la vista en la unidad seleccionada
+            self.ui.center_view_on_unit(row, col, self.tablero_escalado)
             # Asignar el resultado a self.possible_moves
             self.possible_moves = self.grid.get_possible_moves(row, col, unit.speed, self.moved_units)
         elif self.selected_unit and (row, col) in self.possible_moves:
@@ -1073,7 +1076,10 @@ class Game:
                     # Solo seleccionar la unidad si hay objetivos válidos
                     # Reproducir sonido de selección
                     self._play_sound("select")
+                    # Asignar atacante
                     self.combat_attacker = unit
+                    # Centrar la vista en el atacante
+                    self.ui.center_view_on_unit(row, col, self.tablero_escalado)
                     self.ui.add_log_message(_("{} seleccionado. Elige objetivo. (Cancelar con click derecho)").format(_(unit.image_key)))
             else:
                 self.ui.add_log_message(_("Selecciona una unidad aliada sana para atacar"))
